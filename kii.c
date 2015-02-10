@@ -6,31 +6,89 @@
 kii_state_t
 kii_get_state(kii_t* kii)
 {
-    /* TODO: implement. */
-    return KII_STATE_IDLE;
+    return kii->_state;
 }
 
 kii_error_code_t
 kii_run(kii_t* kii)
 {
-    int ret = KIIE_FAIL;
+    kii_bool_t callbackResult;
     switch(kii->_state) {
         case KII_STATE_IDLE:
+            return KIIE_FAIL;
+        case KII_STATE_READY:
             kii->_sent_size = 0;
             kii->_last_chunk = 0;
             kii->_received_size = 0;
-            break;
+            kii->_state = KII_STATE_CONNECT;
+            return KIIE_OK;
         case KII_STATE_CONNECT:
-            break;
+            callbackResult = kii->callback_connect_ptr(kii->app_context, kii->app_host);
+            if (callbackResult == KII_TRUE) {
+                kii->_state = KII_STATE_SEND;
+                return KIIE_OK;
+            } else {
+                kii->_state = KII_STATE_IDLE;
+                return KIIE_FAIL;
+            }
         case KII_STATE_SEND:
-            break;
+            {
+                int remain;
+                int size = BUFF_SIZE;
+                remain = strlen(kii->buffer) - kii->_sent_size;
+                if (remain < BUFF_SIZE) {
+                    size = remain;
+                    kii->_last_chunk = 1;
+                }
+                callbackResult =
+                    kii->callback_send_ptr(
+                            kii->app_context,
+                            kii->buffer + kii->_sent_size,
+                            size);
+                if (callbackResult == KII_TRUE) {
+                    kii->_sent_size += size;
+                    if (kii->_last_chunk > 0) {
+                        kii->_state = KII_STATE_RECV;
+                    }
+                    return KIIE_OK;
+                } else {
+                    kii->_state = KII_STATE_IDLE;
+                    return KIIE_FAIL;
+                }
+            }
         case KII_STATE_RECV:
-            break;
+            {
+                int actualLength = 0;
+                char* buffPtr = kii->buffer + kii->_received_size;
+                if (kii->_received_size == 0) {
+                    memset(kii->buffer, 0x00, kii->buffer_size);
+                }
+                callbackResult = kii->callback_recv_ptr(
+                        kii->app_context,
+                        buffPtr, BUFF_SIZE,
+                        &actualLength);
+                if (callbackResult == KII_TRUE) {
+                    printf("recv buff:\n%s\n", kii->buffer);
+                    kii->_received_size += actualLength;
+                    if (actualLength < BUFF_SIZE) {
+                        kii->_state = KII_STATE_CLOSE;
+                    }
+                    return KIIE_OK;
+                } else {
+                    kii->_state = KII_STATE_IDLE;
+                    return KIIE_FAIL;
+                }
+            }
         case KII_STATE_CLOSE:
-            break;
+            callbackResult = kii->callback_close_ptr(kii->app_context);
+            kii->_state = KII_STATE_IDLE;
+            if (callbackResult == KII_TRUE) {
+                return KIIE_OK;
+            }
+            return KIIE_FAIL;
+        default:
+            assert(0);
     }
-    /* TODO: implement. */
-    return KIIE_FAIL;
 }
 
 static void prv_print_request_line(kii_t* kii, char* method)
@@ -101,6 +159,7 @@ kii_register_thing(kii_t* kii,
     prv_print_content_length(kii, contentLength);
     prv_print_CRLF(kii);
     prv_print_body(kii, thing_data);
+    kii->_state = KII_STATE_READY;
 
     return KIIE_OK;
 }

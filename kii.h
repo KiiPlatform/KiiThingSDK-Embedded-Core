@@ -5,12 +5,15 @@
 extern "C" {
 #endif
 
+#include <stdio.h>
+
+#define BUFF_SIZE 256
 typedef enum kii_bool_t {
     KII_FALSE = 0,
     KII_TRUE
 } kii_bool_t;
 
-typedef kii_bool_t (*KII_CB_CONNECT_PTR)(void* app_context, const char* host, const char* path);
+typedef kii_bool_t (*KII_CB_CONNECT_PTR)(void* app_context, const char* host);
 typedef kii_bool_t (*KII_CB_SEND_PTR)(void* app_context, const char* send_buff, int buff_length);
 typedef kii_bool_t (*KII_CB_RECV_PTR)(void* app_context, char* recv_buff, int length_to_read, int* out_actual_length);
 typedef kii_bool_t (*KII_CB_CLOSE_PTR)(void* app_context);
@@ -22,6 +25,7 @@ typedef enum kii_error_code_t {
 
 typedef enum kii_state_t {
     KII_STATE_IDLE = 0,
+    KII_STATE_READY,
     KII_STATE_CONNECT,
     KII_STATE_SEND,
     KII_STATE_RECV,
@@ -34,7 +38,7 @@ typedef struct kii_t
     char* app_key;
     char* app_host;
     char* buffer;
-    int buffer_size;
+    size_t buffer_size;
     char request_url[256];
     KII_CB_CONNECT_PTR callback_connect_ptr;
     KII_CB_SEND_PTR callback_send_ptr;
