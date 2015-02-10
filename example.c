@@ -34,7 +34,7 @@ kii_bool_t my_connect(void* app_context, const char* host, const char* path)
     
     servhost = gethostbyname(host);
     if (servhost == NULL) {
-        printf("failed to get host.\n)";
+        printf("failed to get host.\n");
         return KII_FALSE;
     }
     memset(&server, sizeof(server), 0x00);
@@ -52,7 +52,7 @@ kii_bool_t my_connect(void* app_context, const char* host, const char* path)
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
-        printf("failed to init socket.\n)";
+        printf("failed to init socket.\n");
         return KII_FALSE;
     }
 
@@ -60,19 +60,19 @@ kii_bool_t my_connect(void* app_context, const char* host, const char* path)
     SSL_library_init();
     ssl_ctx = SSL_CTX_new(SSLv23_client_method());
     if (ssl_ctx == NULL){
-        printf("failed to init ssl context.\n)";
+        printf("failed to init ssl context.\n");
         return KII_FALSE;
     }
 
     ssl = SSL_new(ssl_ctx);
     if (ssl == NULL){
-        printf("failed to init ssl.\n)";
+        printf("failed to init ssl.\n");
         return KII_FALSE;
     }
 
     ret = SSL_set_fd(ssl, sock);
     if (ret == 0){
-        printf("failed to set fd.\n)";
+        printf("failed to set fd.\n");
         return KII_FALSE;
     }
 
@@ -84,7 +84,7 @@ kii_bool_t my_connect(void* app_context, const char* host, const char* path)
 
     ret = SSL_connect(ssl);
     if ( ret != 1 ){
-        printf("failed to connect.\n)";
+        printf("failed to connect.\n");
         return KII_FALSE;
     }
     ctx->sock = sock;
@@ -95,8 +95,14 @@ kii_bool_t my_connect(void* app_context, const char* host, const char* path)
 
 kii_bool_t my_send(void* app_context, const char* send_buff, int buff_length)
 {
-    /* TODO: implement. */
-    return KII_TRUE;
+    context_t* ctx = (context_t*)app_context;
+    int ret = SSL_write(ctx->ssl, send_buff, buff_length);
+    if (ret > 0) {
+        return KII_TRUE;
+    } else {
+        printf("failed to send\n");
+        return KII_FALSE;
+    }
 }
 
 kii_bool_t my_recv(void* app_context, char* recv_buff, int length_to_read, int* out_actual_length)
