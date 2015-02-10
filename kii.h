@@ -34,6 +34,8 @@ typedef struct kii_t
     char* app_key;
     char* app_host;
     char* buffer;
+    int buffer_size;
+    char request_url[256];
     KII_CB_CONNECT_PTR callback_connect_ptr;
     KII_CB_SEND_PTR callback_send_ptr;
     KII_CB_RECV_PTR callback_recv_ptr;
