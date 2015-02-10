@@ -107,8 +107,16 @@ kii_bool_t my_send(void* app_context, const char* send_buff, int buff_length)
 
 kii_bool_t my_recv(void* app_context, char* recv_buff, int length_to_read, int* out_actual_length)
 {
-    /* TODO: implement. */
-    return KII_TRUE;
+    context_t* ctx = (context_t*)app_context;
+    int ret = SSL_read(ctx->ssl, recv_buff, length_to_read);
+    if (ret > 0) {
+        *out_actual_length = ret;
+        return KII_TRUE;
+    } else {
+        // TOOD: could be 0 on success?
+        *out_actual_length = 0;
+        return KII_FALSE;
+    }
 }
 
 
