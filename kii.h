@@ -53,7 +53,8 @@ typedef struct kii_t
     char* app_id;
     char* app_key;
     char* app_host;
-    char buff[4096];
+    char* buff;
+    size_t buff_size;
 
     void* http_context;
     KII_HTTPCB_SET_REQUEST_LINE_PTR http_set_request_line_cb;
