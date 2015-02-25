@@ -7,16 +7,35 @@ extern "C" {
 
 #include <stdio.h>
 
-#define BUFF_SIZE 256
 typedef enum kii_bool_t {
     KII_FALSE = 0,
     KII_TRUE
 } kii_bool_t;
 
-typedef kii_bool_t (*KII_CB_CONNECT_PTR)(void* app_context, const char* host);
-typedef kii_bool_t (*KII_CB_SEND_PTR)(void* app_context, const char* send_buff, int buff_length);
-typedef kii_bool_t (*KII_CB_RECV_PTR)(void* app_context, char* recv_buff, int length_to_read, int* out_actual_length);
-typedef kii_bool_t (*KII_CB_CLOSE_PTR)(void* app_context);
+typedef enum kii_http_client_code_t {
+    KII_HTTPC_OK = 0,
+    KII_HTTPC_FAIL,
+    KII_HTTPC_AGAIN
+} kii_http_client_code_t;
+
+typedef kii_http_client_code_t
+        (*KII_HTTPCB_SET_REQUEST_LINE_PTR)(
+                void* http_context,
+                const char* method,
+                const char* request_uri);
+typedef kii_http_client_code_t
+        (*KII_HTTPCB_SET_HEADER_PTR)(
+                void* http_context,
+                const char* key,
+                const char* value);
+typedef kii_http_client_code_t
+        (*KII_HTTPCB_SET_BODY_PTR)(
+                void* http_context,
+                const char* body_data);
+typedef kii_http_client_code_t
+        (*KII_HTTPCB_EXECUTE)(
+                void* http_context,
+                char* response_body);
 
 typedef enum kii_error_code_t {
     KIIE_OK = 0,
@@ -26,10 +45,7 @@ typedef enum kii_error_code_t {
 typedef enum kii_state_t {
     KII_STATE_IDLE = 0,
     KII_STATE_READY,
-    KII_STATE_CONNECT,
-    KII_STATE_SEND,
-    KII_STATE_RECV,
-    KII_STATE_CLOSE
+    KII_STATE_EXECUTE
 } kii_state_t;
 
 typedef struct kii_t
@@ -37,22 +53,16 @@ typedef struct kii_t
     char* app_id;
     char* app_key;
     char* app_host;
-    char* buffer;
-    size_t buffer_size;
-    char request_url[256];
-    KII_CB_CONNECT_PTR callback_connect_ptr;
-    KII_CB_SEND_PTR callback_send_ptr;
-    KII_CB_RECV_PTR callback_recv_ptr;
-    KII_CB_CLOSE_PTR callback_close_ptr;
-    void* app_context;
+    char buff[4096];
 
-    /* private properties */
-    /* TODO: hide from public headers */
+    void* http_context;
+    KII_HTTPCB_SET_REQUEST_LINE_PTR http_set_request_line_cb;
+    KII_HTTPCB_SET_HEADER_PTR http_set_header_cb;
+    KII_HTTPCB_SET_BODY_PTR http_set_body_cb;
+    KII_HTTPCB_EXECUTE http_execute_cb;
+    char http_request_uri[256];
+
     kii_state_t _state;
-    int _last_chunk;
-    int _sent_size;
-    int _received_size;
-
 } kii_t;
 
 kii_state_t kii_get_state(kii_t* kii);
