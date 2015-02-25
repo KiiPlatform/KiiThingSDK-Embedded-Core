@@ -20,7 +20,7 @@ kii_run(kii_t* kii)
             kii->_state = KII_STATE_EXECUTE;
             return KIIE_OK;
         case KII_STATE_EXECUTE:
-            cbr = kii->http_execute_cb(kii->http_context, kii->buff);
+            cbr = kii->http_execute_cb(kii->http_context, kii->buffer);
             if (cbr == KII_HTTPC_OK) {
                 kii->_state = KII_STATE_IDLE;
                 return KIIE_OK;

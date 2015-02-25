@@ -1,5 +1,5 @@
 build:
-	gcc -shared kii.c 
+	gcc -w kii.c example.c -lssl -lcrypto
 	#gcc kii.c example.c -lssl -lcrypto
 
 clean:
