@@ -22,7 +22,8 @@ typedef kii_http_client_code_t
         (*KII_HTTPCB_SET_REQUEST_LINE_PTR)(
                 void* http_context,
                 const char* method,
-                const char* request_uri);
+                const char* host,
+                const char* path);
 typedef kii_http_client_code_t
         (*KII_HTTPCB_SET_HEADER_PTR)(
                 void* http_context,
@@ -35,7 +36,7 @@ typedef kii_http_client_code_t
 typedef kii_http_client_code_t
         (*KII_HTTPCB_EXECUTE)(
                 void* http_context,
-                char* response_body);
+                char** response_body);
 
 typedef enum kii_error_code_t {
     KIIE_OK = 0,
@@ -55,13 +56,14 @@ typedef struct kii_t
     char* app_host;
     char* buffer;
     size_t buffer_size;
+    char* response_body;
 
     void* http_context;
     KII_HTTPCB_SET_REQUEST_LINE_PTR http_set_request_line_cb;
     KII_HTTPCB_SET_HEADER_PTR http_set_header_cb;
     KII_HTTPCB_SET_BODY_PTR http_set_body_cb;
     KII_HTTPCB_EXECUTE http_execute_cb;
-    char http_request_uri[256];
+    char http_request_path[256];
 
     kii_state_t _state;
 } kii_t;

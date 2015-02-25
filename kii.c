@@ -20,12 +20,11 @@ kii_run(kii_t* kii)
             kii->_state = KII_STATE_EXECUTE;
             return KIIE_OK;
         case KII_STATE_EXECUTE:
-            cbr = kii->http_execute_cb(kii->http_context, kii->buffer);
+            cbr = kii->http_execute_cb(kii->http_context, &(kii->response_body));
             if (cbr == KII_HTTPC_OK) {
                 kii->_state = KII_STATE_IDLE;
                 return KIIE_OK;
             } else if (cbr == KII_HTTPC_AGAIN) {
-                kii->_state = KII_STATE_EXECUTE;
                 return KIIE_OK;
             } else {
                 kii->_state = KII_STATE_IDLE;
@@ -41,11 +40,10 @@ static void prv_content_length_str(size_t content_length, char* buff, size_t buf
     snprintf(buff, buff_len, "%zu", content_length);
 }
 
-static void prv_set_thing_register_url(kii_t* kii)
+static void prv_set_thing_register_path(kii_t* kii)
 {
-    sprintf(kii->http_request_uri,
-            "https://%s/api/apps/%s/things",
-            kii->app_host,
+    sprintf(kii->http_request_path,
+            "api/apps/%s/things",
             kii->app_id);
 }
 
@@ -53,11 +51,12 @@ kii_error_code_t
 kii_register_thing(kii_t* kii,
         const char* thing_data)
 {
-    prv_set_thing_register_url(kii);
+    prv_set_thing_register_path(kii);
     kii->http_set_request_line_cb(
             kii->http_context,
             "POST",
-            kii->http_request_uri);
+            kii->app_host,
+            kii->http_request_path);
     kii->http_set_header_cb(
             kii->http_context,
             "content-type",
@@ -75,7 +74,7 @@ kii_register_thing(kii_t* kii,
     prv_content_length_str(strlen(thing_data), content_length, 8);
     kii->http_set_header_cb(
             kii->http_context,
-            "content_length",
+            "content-length",
             content_length);
     kii->http_set_body_cb(
             kii->http_context,
