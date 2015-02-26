@@ -3,13 +3,13 @@
 #include <string.h>
 #include <assert.h>
 
-kii_state_t
+    kii_state_t
 kii_get_state(kii_t* kii)
 {
     return kii->_state;
 }
 
-kii_error_code_t
+    kii_error_code_t
 kii_run(kii_t* kii)
 {
     kii_http_client_code_t cbr;
@@ -38,20 +38,26 @@ kii_run(kii_t* kii)
     }
 }
 
-static void prv_content_length_str(size_t content_length, char* buff, size_t buff_len)
+    static void
+prv_content_length_str(
+        size_t content_length,
+        char* buff,
+        size_t buff_len)
 {
     snprintf(buff, buff_len, "%zu", content_length);
 }
 
-static void prv_set_thing_register_path(kii_t* kii)
+    static void
+prv_set_thing_register_path(kii_t* kii)
 {
     sprintf(kii->_http_request_path,
             "api/apps/%s/things",
             kii->app_id);
 }
 
-kii_error_code_t
-kii_register_thing(kii_t* kii,
+    kii_error_code_t
+kii_register_thing(
+        kii_t* kii,
         const char* thing_data)
 {
     prv_set_thing_register_path(kii);
@@ -63,7 +69,8 @@ kii_register_thing(kii_t* kii,
     kii->http_set_header_cb(
             kii->http_context,
             "content-type",
-            "application/vnd.kii.ThingRegistrationAndAuthorizationRequest+json");
+            "application/vnd.kii.ThingRegistrationAndAuthorizationRequest+json"
+            );
     kii->http_set_header_cb(
             kii->http_context,
             "x-kii-appid",
@@ -87,8 +94,9 @@ kii_register_thing(kii_t* kii,
     return KIIE_OK;
 }
 
-kii_error_code_t
-kii_create_new_object(kii_t* kii,
+    kii_error_code_t
+kii_create_new_object(
+        kii_t* kii,
         const char* access_token,
         const char* thing_id,
         const char* bucket_name,
@@ -98,8 +106,9 @@ kii_create_new_object(kii_t* kii,
     return KIIE_FAIL;
 }
 
-kii_error_code_t
-kii_create_new_object_with_id(kii_t* kii,
+    kii_error_code_t
+kii_create_new_object_with_id(
+        kii_t* kii,
         const char* access_token,
         const char* thing_id,
         const char* bucket_name,
@@ -110,8 +119,9 @@ kii_create_new_object_with_id(kii_t* kii,
     return KIIE_FAIL;
 }
 
-kii_error_code_t
-kii_patch_object(kii_t* kii,
+    kii_error_code_t
+kii_patch_object(
+        kii_t* kii,
         const char* access_token,
         const char* thing_id,
         const char* bucket_name,
@@ -123,8 +133,9 @@ kii_patch_object(kii_t* kii,
     return KIIE_FAIL;
 }
 
-kii_error_code_t
-kii_replace_object(kii_t* kii,
+    kii_error_code_t
+kii_replace_object(
+        kii_t* kii,
         const char* access_token,
         const char* thing_id,
         const char* bucket_name,
@@ -136,8 +147,9 @@ kii_replace_object(kii_t* kii,
     return KIIE_FAIL;
 }
 
-kii_error_code_t
-kii_get_object(kii_t* kii,
+    kii_error_code_t
+kii_get_object(
+        kii_t* kii,
         const char* access_token,
         const char* thing_id,
         const char* bucket_name,
@@ -147,8 +159,9 @@ kii_get_object(kii_t* kii,
     return KIIE_FAIL;
 }
 
-kii_error_code_t
-kii_delete_object(kii_t* kii,
+    kii_error_code_t
+kii_delete_object(
+        kii_t* kii,
         const char* access_token,
         const char* thing_id,
         const char* bucket_name,
@@ -158,8 +171,9 @@ kii_delete_object(kii_t* kii,
     return KIIE_FAIL;
 }
 
-kii_error_code_t
-kii_subscribe_bucket(kii_t* kii,
+    kii_error_code_t
+kii_subscribe_bucket(
+        kii_t* kii,
         const char* access_token,
         const char* thing_id,
         const char* bucket_name)
@@ -168,8 +182,9 @@ kii_subscribe_bucket(kii_t* kii,
     return KIIE_FAIL;
 }
 
-kii_error_code_t
-kii_unsubscribe_bucket(kii_t* kii,
+    kii_error_code_t
+kii_unsubscribe_bucket(
+        kii_t* kii,
         const char* access_token,
         const char* thing_id,
         const char* bucket_name)
@@ -178,8 +193,9 @@ kii_unsubscribe_bucket(kii_t* kii,
     return KIIE_FAIL;
 }
 
-kii_error_code_t
-kii_subscribe_topic(kii_t* kii,
+    kii_error_code_t
+kii_subscribe_topic(
+        kii_t* kii,
         const char* access_token,
         const char* thing_id,
         const char* topic_name)
@@ -188,8 +204,9 @@ kii_subscribe_topic(kii_t* kii,
     return KIIE_FAIL;
 }
 
-kii_error_code_t
-kii_unsubscribe_topic(kii_t* app,
+    kii_error_code_t
+kii_unsubscribe_topic(
+        kii_t* app,
         const char* access_token,
         const char* thing_id,
         const char* topic_name)
@@ -198,8 +215,9 @@ kii_unsubscribe_topic(kii_t* app,
     return KIIE_FAIL;
 }
 
-kii_error_code_t
-kii_install_thing_push(kii_t* kii,
+    kii_error_code_t
+kii_install_thing_push(
+        kii_t* kii,
         const char* access_token,
         kii_bool_t development)
 {
@@ -207,8 +225,9 @@ kii_install_thing_push(kii_t* kii,
     return KIIE_FAIL;
 }
 
-kii_error_code_t
-kii_get_mqtt_endpoint(kii_t* kii,
+    kii_error_code_t
+kii_get_mqtt_endpoint(
+        kii_t* kii,
         const char* access_token,
         const char** installation_id)
 {
