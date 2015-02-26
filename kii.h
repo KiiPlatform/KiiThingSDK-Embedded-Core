@@ -70,6 +70,25 @@ typedef struct kii_t
     kii_state_t _state;
 } kii_t;
 
+typedef enum kii_scope_type_t {
+    KII_SCOPE_APP,
+    KII_SCOPE_USER,
+    KII_SCOPE_GROUP,
+    KII_SCOPE_THING
+} kii_scope_type_t;
+
+typedef struct kii_bucket_t {
+    kii_scope_type_t scope;
+    char* scope_id;
+    char* bucket_name;
+} kii_bucket_t;
+
+typedef struct kii_topic_t {
+    kii_scope_type_t scope;
+    char* scope_id;
+    char* topic_name;
+} kii_topic_t;
+
 kii_state_t kii_get_state(kii_t* kii);
 kii_error_code_t kii_run(kii_t* kii);
 
@@ -78,75 +97,71 @@ kii_register_thing(kii_t* kii,
         const char* thing_data);
 
 kii_error_code_t
-kii_create_new_object(kii_t* kii,
+kii_create_new_object(
+        kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+        const kii_bucket_t* bucket,
         const char* object_data);
 
 kii_error_code_t
-kii_create_new_object_with_id(kii_t* kii,
+kii_create_new_object_with_id(
+        kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+        const kii_bucket_t* bucket,
         const char* object_id,
         const char* object_data);
 
 kii_error_code_t
-kii_patch_object(kii_t* kii,
+kii_patch_object(
+        kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+        const kii_bucket_t* bucket,
         const char* object_id,
         const char* patch_data,
         const char* opt_etag);
 
 kii_error_code_t
-kii_replace_object(kii_t* kii,
+kii_replace_object(
+        kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+        const kii_bucket_t* bucket,
         const char* object_id,
         const char* replace_data,
         const char* opt_etag);
 
 kii_error_code_t
-kii_get_object(kii_t* kii,
+kii_get_object(
+        kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+        const kii_bucket_t* bucket,
         const char* object_id);
 
 kii_error_code_t
-kii_delete_object(kii_t* kii,
+kii_delete_object(
+        kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+        const kii_bucket_t* bucket,
         const char* object_id);
 
 kii_error_code_t
 kii_subscribe_bucket(kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name);
+        const kii_bucket_t* bucket);
 
 kii_error_code_t
 kii_unsubscribe_bucket(kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name);
+        const kii_bucket_t* bucket);
 
 kii_error_code_t
 kii_subscribe_topic(kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* topic_name);
+        const kii_topic_t* topic);
 
 kii_error_code_t
 kii_unsubscribe_topic(kii_t* app,
         const char* access_token,
-        const char* thing_id,
-        const char* topic_name);
+        const kii_topic_t* topic);
 
 kii_error_code_t
 kii_install_thing_push(kii_t* kii,

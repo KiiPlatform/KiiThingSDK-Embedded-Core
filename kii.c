@@ -98,8 +98,7 @@ kii_register_thing(
 kii_create_new_object(
         kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+        const kii_bucket_t* bucket,
         const char* object_data)
 {
     /* TODO: implement. */
@@ -110,8 +109,7 @@ kii_create_new_object(
 kii_create_new_object_with_id(
         kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+        const kii_bucket_t* bucket,
         const char* object_id,
         const char* object_data)
 {
@@ -123,8 +121,7 @@ kii_create_new_object_with_id(
 kii_patch_object(
         kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+        const kii_bucket_t* bucket,
         const char* object_id,
         const char* patch_data,
         const char* opt_etag)
@@ -137,8 +134,7 @@ kii_patch_object(
 kii_replace_object(
         kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+        const kii_bucket_t* bucket,
         const char* object_id,
         const char* replace_data,
         const char* opt_etag)
@@ -151,8 +147,7 @@ kii_replace_object(
 kii_get_object(
         kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+        const kii_bucket_t* bucket,
         const char* object_id)
 {
     /* TODO: implement. */
@@ -163,8 +158,7 @@ kii_get_object(
 kii_delete_object(
         kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+        const kii_bucket_t* bucket,
         const char* object_id)
 {
     /* TODO: implement. */
@@ -175,8 +169,7 @@ kii_delete_object(
 kii_subscribe_bucket(
         kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name)
+        const kii_bucket_t* bucket)
 {
     /* TODO: implement. */
     return KIIE_FAIL;
@@ -186,8 +179,7 @@ kii_subscribe_bucket(
 kii_unsubscribe_bucket(
         kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* bucket_name)
+        const kii_bucket_t* bucket)
 {
     /* TODO: implement. */
     return KIIE_FAIL;
@@ -197,8 +189,7 @@ kii_unsubscribe_bucket(
 kii_subscribe_topic(
         kii_t* kii,
         const char* access_token,
-        const char* thing_id,
-        const char* topic_name)
+        const kii_topic_t* topic)
 {
     /* TODO: implement. */
     return KIIE_FAIL;
@@ -208,8 +199,7 @@ kii_subscribe_topic(
 kii_unsubscribe_topic(
         kii_t* app,
         const char* access_token,
-        const char* thing_id,
-        const char* topic_name)
+        const kii_topic_t* topic)
 {
     /* TODO: implement. */
     return KIIE_FAIL;
