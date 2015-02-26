@@ -309,11 +309,10 @@ kii_http_client_code_t
     return KII_HTTPC_OK;
 }
 
-void parse_response(char* buff)
+void parse_response(char* resp_body)
 {
-    printf("response:\n%s\n", buff);
+    printf("response:\n%s\n", resp_body);
     /* TODO: implement */
-    /* buff : raw http response */
 }
 
 int main()
