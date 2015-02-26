@@ -42,7 +42,7 @@ static void prv_content_length_str(size_t content_length, char* buff, size_t buf
 
 static void prv_set_thing_register_path(kii_t* kii)
 {
-    sprintf(kii->http_request_path,
+    sprintf(kii->_http_request_path,
             "api/apps/%s/things",
             kii->app_id);
 }
@@ -56,7 +56,7 @@ kii_register_thing(kii_t* kii,
             kii->http_context,
             "POST",
             kii->app_host,
-            kii->http_request_path);
+            kii->_http_request_path);
     kii->http_set_header_cb(
             kii->http_context,
             "content-type",

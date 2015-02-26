@@ -63,7 +63,7 @@ typedef struct kii_t
     KII_HTTPCB_SET_HEADER_PTR http_set_header_cb;
     KII_HTTPCB_SET_BODY_PTR http_set_body_cb;
     KII_HTTPCB_EXECUTE http_execute_cb;
-    char http_request_path[256];
+    char _http_request_path[256];
 
     kii_state_t _state;
 } kii_t;
