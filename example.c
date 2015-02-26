@@ -37,7 +37,6 @@ typedef struct context_t
     int last_chunk;
     int sent_size;
     int received_size;
-    char* resp_body_ptr;
 } context_t;
 
 static kii_http_client_code_t prv_ssl_connect(void* app_context, const char* host)
@@ -221,6 +220,7 @@ kii_http_client_code_t
 kii_http_client_code_t
     execute_cb(
         void* http_context,
+        int* response_code,
         char** response_body)
 {
     context_t* ctx = (context_t*)http_context;
@@ -292,9 +292,24 @@ kii_http_client_code_t
         {
             res = prv_ssl_close(ctx);
             if (res == KII_HTTPC_OK) {
-                ctx->resp_body_ptr = strstr(ctx->buff, "\r\n\r\n");
-                ctx->resp_body_ptr += 4;
-                *response_body = ctx->resp_body_ptr;
+                /* parse status code */
+                char* statusPtr = strstr(ctx->buff, "HTTP/1.1 ");
+                int numCode = 0;
+                char* bodyPtr = NULL;
+                if (statusPtr != NULL) {
+                    char c_status_code[4];
+                    c_status_code[3] = '\0';
+                    statusPtr += strlen("HTTP/1.1 ");
+                    memcpy(c_status_code, statusPtr, 3);
+                    numCode = atoi(c_status_code);
+                    *response_code = numCode;
+                }
+                /* set body pointer */
+                bodyPtr = strstr(ctx->buff, "\r\n\r\n");
+                if (bodyPtr != NULL) {
+                    bodyPtr += 4;
+                }
+                *response_body = bodyPtr;
                 ctx->state = PRV_SSL_STATE_IDLE;
                 return KII_HTTPC_OK;
             } else if (res == KII_HTTPC_AGAIN) {
@@ -311,7 +326,6 @@ kii_http_client_code_t
 
 void parse_response(char* resp_body)
 {
-    printf("response:\n%s\n", resp_body);
     /* TODO: implement */
 }
 
@@ -353,13 +367,16 @@ int main()
     do {
         state = kii_get_state(&kii);
         err = kii_run(&kii);
-        printf ("state : %d\n", state);
-        printf ("err: %d\n", err);
         state = kii_get_state(&kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
     }
+    printf("========response========\n");
+    printf("%s\n", kii.buffer);
+    printf("========response========\n");
+    printf("response_code: %d\n", kii.response_code);
+    printf("response_body:\n%s\n", kii.response_body);
     parse_response(kii.response_body);
 }
 

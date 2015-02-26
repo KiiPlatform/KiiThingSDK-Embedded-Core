@@ -36,6 +36,7 @@ typedef kii_http_client_code_t
 typedef kii_http_client_code_t
         (*KII_HTTPCB_EXECUTE)(
                 void* http_context,
+                int* response_code,
                 char** response_body);
 
 typedef enum kii_error_code_t {
@@ -56,6 +57,7 @@ typedef struct kii_t
     char* app_host;
     char* buffer;
     size_t buffer_size;
+    int response_code;
     char* response_body;
 
     void* http_context;
