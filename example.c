@@ -324,6 +324,14 @@ kii_http_client_code_t
     return KII_HTTPC_OK;
 }
 
+void logger_cb(const char* format, ...)
+{
+    va_list list;
+    va_start(list, format);
+    vprintf(format, list);
+    va_end(list);
+}
+
 void parse_response(char* resp_body)
 {
     /* TODO: implement */
@@ -351,6 +359,7 @@ int main()
     kii.http_set_header_cb = header_cb;
     kii.http_set_body_cb = body_cb;
     kii.http_execute_cb = execute_cb;
+    kii.logger_cb = logger_cb;
 
     memset(&ctx, 0x00, sizeof(ctx));
     /* share the request and response buffer.*/

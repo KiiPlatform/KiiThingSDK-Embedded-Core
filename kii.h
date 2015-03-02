@@ -39,6 +39,12 @@ typedef kii_http_client_code_t
                 int* response_code,
                 char** response_body);
 
+typedef void
+        (*KII_LOGGER)(
+                const char* format,
+                ...
+                );
+
 typedef enum kii_error_code_t {
     KIIE_OK = 0,
     KIIE_FAIL
@@ -65,6 +71,7 @@ typedef struct kii_t
     KII_HTTPCB_SET_HEADER_PTR http_set_header_cb;
     KII_HTTPCB_SET_BODY_PTR http_set_body_cb;
     KII_HTTPCB_EXECUTE http_execute_cb;
+    KII_LOGGER logger_cb;
     char _http_request_path[256];
 
     kii_state_t _state;
