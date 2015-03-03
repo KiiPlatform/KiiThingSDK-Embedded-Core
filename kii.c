@@ -44,7 +44,7 @@ prv_content_length_str(
         char* buff,
         size_t buff_len)
 {
-    snprintf(buff, buff_len, "%zu", content_length);
+    snprintf(buff, buff_len, "%d", content_length);
 }
 
     static void
