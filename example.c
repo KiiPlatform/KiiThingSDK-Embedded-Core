@@ -344,7 +344,8 @@ int main()
     kii_state_t state;
     kii_error_code_t err;
     char buff[4096];
-    char thingData[] = "{\"_vendorThingID\":\"thing-xxx-yyy\", \"_password\":\"1234\"}";
+    pid_t pid;
+    char thingData[1024];
 
     /* Initialization */
     memset(&kii, 0x00, sizeof(kii));
@@ -366,6 +367,13 @@ int main()
     ctx.buff = buff;
     ctx.buff_size = 4096;
 
+    if (0) {
+    /* Prepare Thing Data */
+    memset(thingData, 0x00, 1024);
+    pid = getpid();
+    sprintf(thingData,
+            "{\"_vendorThingID\":\"%d\", \"_password\":\"1234\"}",
+            pid);
     /* Register Thing */
     err = kii_register_thing(&kii, thingData);
     printf("request:\n%s\n", kii.buffer);
@@ -387,5 +395,39 @@ int main()
     printf("response_code: %d\n", kii.response_code);
     printf("response_body:\n%s\n", kii.response_body);
     parse_response(kii.response_body);
+    }
+
+    /* Create New Object */
+    kii_bucket_t bucket;
+    bucket.scope = KII_SCOPE_THING;
+    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
+    bucket.bucket_name = "myBucket";
+
+    err = kii_create_new_object(
+            &kii,
+            "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o",
+            &bucket,
+            NULL,
+            "{}");
+    printf("request:\n%s\n", kii.buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }    
+    do {
+        state = kii_get_state(&kii);
+        err = kii_run(&kii);
+        state = kii_get_state(&kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    printf("========response========\n");
+    printf("%s\n", kii.buffer);
+    printf("========response========\n");
+    printf("response_code: %d\n", kii.response_code);
+    printf("response_body:\n%s\n", kii.response_body);
+    parse_response(kii.response_body);
+
 }
 

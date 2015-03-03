@@ -26,6 +26,8 @@
 #define M_KII_LOG(x)
 #endif
 
+const char DEFAULT_OBJECT_CONTENT_TYPE[] = "application/json";
+
     kii_state_t
 kii_get_state(kii_t* kii)
 {
@@ -129,12 +131,12 @@ prv_http_request(
     }
 
     if (access_token != NULL) {
-        char bearer = "bearer ";
+        char bearer[] = "bearer ";
         int token_len = strlen(access_token);
         int bearer_len = token_len + strlen(bearer);
         char* bearer_buff[bearer_len + 1];
         memset(bearer_buff, 0x00, bearer_len + 1);
-        sprintf(bearer_buff, "%s %s", bearer, access_token);
+        sprintf(bearer_buff, "%s%s", bearer, access_token);
         result = kii->http_set_header_cb(
                 kii->http_context,
                 "authorization",
@@ -171,6 +173,42 @@ prv_http_request(
     return KIIE_OK;
 }
 
+    static void
+prv_bucket_path(
+        kii_t* kii,
+        const kii_bucket_t* bucket,
+        char* path)
+{
+    switch(bucket->scope) {
+        case KII_SCOPE_APP:
+            sprintf(path,
+                    "api/apps/%s/buckets/%s",
+                    kii->app_id,
+                    bucket->bucket_name);
+            break;
+        case KII_SCOPE_USER:
+            sprintf(path,
+                    "api/apps/%s/users/%s/buckets/%s",
+                    kii->app_id,
+                    bucket->scope_id,
+                    bucket->bucket_name);
+            break;
+        case KII_SCOPE_GROUP:
+            sprintf(path,
+                    "api/apps/%s/groups/%s/buckets/%s",
+                    kii->app_id,
+                    bucket->scope_id,
+                    bucket->bucket_name);
+            break;
+        case KII_SCOPE_THING:
+            sprintf(path,
+                    "api/apps/%s/things/%s/buckets/%s",
+                    kii->app_id,
+                    bucket->scope_id,
+                    bucket->bucket_name);
+            break;
+    }
+}
 
     kii_error_code_t
 kii_register_thing(
@@ -199,10 +237,27 @@ kii_create_new_object(
         kii_t* kii,
         const char* access_token,
         const kii_bucket_t* bucket,
+        const char* object_content_type,
         const char* object_data)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    strcat(kii->_http_request_path, "/objects");
+    if (object_content_type == NULL) {
+        object_content_type = DEFAULT_OBJECT_CONTENT_TYPE;
+    }
+    result = prv_http_request(
+            kii,
+            "POST",
+            kii->_http_request_path,
+            object_content_type,
+            access_token,
+            object_data);
+
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
     kii_error_code_t

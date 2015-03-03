@@ -108,6 +108,7 @@ kii_create_new_object(
         kii_t* kii,
         const char* access_token,
         const kii_bucket_t* bucket,
+        const char* object_content_type,
         const char* object_data);
 
 kii_error_code_t
