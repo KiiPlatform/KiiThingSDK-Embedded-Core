@@ -34,7 +34,7 @@ kii_run(kii_t* kii)
                 return KIIE_FAIL;
             }
         default:
-            assert(0);
+            return KIIE_FAIL;
     }
 }
 
@@ -66,6 +66,10 @@ kii_register_thing(
             "POST",
             kii->app_host,
             kii->_http_request_path);
+    kii->http_set_header_cb(
+            kii->http_context,
+            "Connection",
+            "Close");
     kii->http_set_header_cb(
             kii->http_context,
             "content-type",
