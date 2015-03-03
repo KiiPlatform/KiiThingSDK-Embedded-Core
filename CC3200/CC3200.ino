@@ -135,14 +135,12 @@ char** response_body)
     }
 
     http_free(&rt);
-    Serial.println("--------------------");
-    String status = "Status " ;
-    Serial.print(status.c_str());
-    Serial.println(response.code);
-    Serial.println("Body:");
-    Serial.println(response.body.c_str());
-    Serial.println("--------------------");
-    Serial.println("Disconnected by remote host.");
+    
+    *response_code = response.code;
+    char *temp = new char[response.body.length()+1];
+    strcpy(temp, response.body.c_str());
+    *response_body = temp;
+    delete temp;
   }
   else {
     Serial.println("Error connecting ");
@@ -187,7 +185,7 @@ void setup() {
   kii_state_t state;
   kii_error_code_t err;
   char buff[4096];
-  char thingData[] = "{\"_vendorThingID\":\"thing-xxx-yyy-zzz\", \"_password\":\"1234\"}";
+  char thingData[] = "{\"_vendorThingID\":\"thing-112-www-xxx-yyy-zzz\", \"_password\":\"1234\"}";
 
   /* Initialization */
   memset(&kii, 0x00, sizeof(kii));
@@ -221,6 +219,14 @@ void setup() {
     state = kii_get_state(&kii);
   } 
   while (state != KII_STATE_IDLE);
+  Serial.println("========response========");
+  Serial.println(kii.buffer);
+  Serial.println("========response========\n");
+  Serial.print("response_code:");
+  Serial.println( kii.response_code);
+  Serial.println("response_body:");
+  Serial.println( kii.response_body);
+  //parse_response(kii.response_body);
 }
 
 void loop()
