@@ -3,6 +3,29 @@
 #include <string.h>
 #include <assert.h>
 
+
+#ifdef DEBUG
+#define M_REQUEST_LINE_CB_FAILED "failed to set request line\n"
+#define M_REQUEST_HEADER_CB_FAILED "failed to set request header\n"
+#define M_REQUEST_BODY_CB_FAILED "failed to set request body\n"
+
+#ifndef __FILE__
+#define __FILE__ ("__FILE__ macro is not available")
+#endif
+
+#ifndef __LINE__
+#define __LINE__ (-1)
+#endif
+
+#define M_KII_LOG(x) \
+    if (kii->logger_cb != NULL) {\
+        kii->logger_cb("file:%s, line:%d ", __FILE__, __LINE__); \
+        kii->logger_cb(x); \
+    }
+#else
+#define M_KII_LOG(x)
+#endif
+
     kii_state_t
 kii_get_state(kii_t* kii)
 {
@@ -55,47 +78,124 @@ prv_set_thing_register_path(kii_t* kii)
             kii->app_id);
 }
 
+    static kii_http_client_code_t
+prv_http_request(
+        kii_t* kii,
+        const char* method,
+        const char* resource_path,
+        const char* content_type,
+        const char* access_token,
+        const char* body)
+{
+    kii_http_client_code_t result;
+    result = kii->http_set_request_line_cb(
+            kii->http_context,
+            method,
+            kii->app_host,
+            resource_path);
+    if (result != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    kii->http_set_header_cb(
+            kii->http_context,
+            "Connection",
+            "Close");
+
+    result = kii->http_set_header_cb(
+            kii->http_context,
+            "x-kii-appid",
+            kii->app_id);
+    if (result != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    result = kii->http_set_header_cb(
+            kii->http_context,
+            "x-kii-appkey",
+            kii->app_key);
+    if (result != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    if (content_type != NULL) {
+        result = kii->http_set_header_cb(
+                kii->http_context,
+                "content-type",
+                content_type
+                );
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+            return KIIE_FAIL;
+        }
+    }
+
+    if (access_token != NULL) {
+        char bearer = "bearer ";
+        int token_len = strlen(access_token);
+        int bearer_len = token_len + strlen(bearer);
+        char* bearer_buff[bearer_len + 1];
+        memset(bearer_buff, 0x00, bearer_len + 1);
+        sprintf(bearer_buff, "%s %s", bearer, access_token);
+        result = kii->http_set_header_cb(
+                kii->http_context,
+                "authorization",
+                bearer_buff
+                );
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+            return KIIE_FAIL;
+        }
+    }
+
+    if (body != NULL) {
+        char content_length[8];
+        memset(content_length, 0x00, 8);
+        prv_content_length_str(strlen(body), content_length, 8);
+        result = kii->http_set_header_cb(
+                kii->http_context,
+                "content-length",
+                content_length
+                );
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+            return KIIE_FAIL;
+        }
+
+        kii->http_set_body_cb(
+                kii->http_context,
+                body);
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
+    }
+    return KIIE_OK;
+}
+
+
     kii_error_code_t
 kii_register_thing(
         kii_t* kii,
         const char* thing_data)
 {
+    kii_http_client_code_t result;
     prv_set_thing_register_path(kii);
-    kii->http_set_request_line_cb(
-            kii->http_context,
+    result = prv_http_request(
+            kii,
             "POST",
-            kii->app_host,
-            kii->_http_request_path);
-    kii->http_set_header_cb(
-            kii->http_context,
-            "Connection",
-            "Close");
-    kii->http_set_header_cb(
-            kii->http_context,
-            "content-type",
-            "application/vnd.kii.ThingRegistrationAndAuthorizationRequest+json"
+            kii->_http_request_path,
+            "application/vnd.kii.ThingRegistrationAndAuthorizationRequest+json",
+            NULL,
+            thing_data
             );
-    kii->http_set_header_cb(
-            kii->http_context,
-            "x-kii-appid",
-            kii->app_id);
-    kii->http_set_header_cb(
-            kii->http_context,
-            "x-kii-appkey",
-            kii->app_key);
-    char content_length[8];
-    memset(content_length, 0x00, 8);
-    prv_content_length_str(strlen(thing_data), content_length, 8);
-    kii->http_set_header_cb(
-            kii->http_context,
-            "content-length",
-            content_length);
-    kii->http_set_body_cb(
-            kii->http_context,
-            thing_data);
 
-    kii->_state = KII_STATE_READY;
-    return KIIE_OK;
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
     kii_error_code_t

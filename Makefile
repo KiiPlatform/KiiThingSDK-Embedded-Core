@@ -1,5 +1,5 @@
 build:
-	gcc -w kii.c example.c -lssl -lcrypto
+	gcc -w kii.c example.c -lssl -lcrypto -DDEBUG
 	#gcc kii.c example.c -lssl -lcrypto
 
 clean:
