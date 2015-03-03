@@ -162,7 +162,7 @@ void setup() {
   Serial.println(ssid);
   // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
   WiFi.begin(ssid, password);
-  Serial.print(WiFi.status());
+
   while ( WiFi.status() != WL_CONNECTED) {
     // print dots while we wait to connect
     Serial.print(".");
