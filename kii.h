@@ -85,7 +85,7 @@ typedef struct kii_error_t
 
 typedef struct kii_thing_t
 {
-    char* vendor_id;
+    char* vendor_thing_id;
     char* thing_id;
     char* access_token;
 } kii_thing_t;

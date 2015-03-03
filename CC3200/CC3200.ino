@@ -259,7 +259,7 @@ kii_thing_t parse_thing(char* thing_data)
     aJsonObject* thingID = aJson.getObjectItem(root, "_thingID"); 
     aJsonObject* vendorID = aJson.getObjectItem(root, "_vendorThingID"); 
     aJsonObject* accessToken = aJson.getObjectItem(root, "_accessToken"); 
-    thing.vendor_id = vendorID!=NULL?vendorID->valuestring:NULL;
+    thing.vendor_thing_id = vendorID!=NULL?vendorID->valuestring:NULL;
     thing.thing_id = thingID!=NULL?thingID->valuestring:NULL;
     thing.access_token = accessToken!=NULL?accessToken->valuestring:NULL;
   }
