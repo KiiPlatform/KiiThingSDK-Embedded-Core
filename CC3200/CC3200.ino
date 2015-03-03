@@ -1,8 +1,10 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WiFiServer.h>
+#include <aJSON.h>
 #include "kii.h"
 #include "http.h"
+
 // Response data/funcs
 struct HttpResponse {
   String body;
@@ -149,7 +151,8 @@ char** response_body)
 }
 
 void printWifiStatus();
-
+kii_thing_t parse_thing(char*);
+kii_error_t parse_error(char*);
 void setup() {
   //Initialize serial and wait for port to open:
   Serial.begin(115200);
@@ -185,7 +188,7 @@ void setup() {
   kii_state_t state;
   kii_error_code_t err;
   char buff[4096];
-  char thingData[] = "{\"_vendorThingID\":\"thing-112-www-xxx-yyy-zzz\", \"_password\":\"1234\"}";
+  char thingData[] = "{\"_vendorThingID\":\"thing-7777-www-xxx-yyy-zzz\", \"_password\":\"1234\"}";
 
   /* Initialization */
   memset(&kii, 0x00, sizeof(kii));
@@ -226,7 +229,21 @@ void setup() {
   Serial.println( kii.response_code);
   Serial.println("response_body:");
   Serial.println( kii.response_body);
-  //parse_response(kii.response_body);
+  kii_thing_t thing;
+  if(kii.response_code==201)
+  {
+    thing=parse_thing(kii.response_body);
+    Serial.print("thingID:");
+    Serial.println(thing.thing_id);
+    Serial.print("access token:");
+    Serial.println(thing.access_token);
+    
+  }else
+  {
+    kii_error_t error = parse_error(kii.response_body);
+    Serial.print("error_code:");
+    Serial.println(error.error_code);
+  }
 }
 
 void loop()
@@ -234,7 +251,34 @@ void loop()
 
 }
 
-
+kii_thing_t parse_thing(char* thing_data)
+{
+  kii_thing_t thing;
+  aJsonObject* root = aJson.parse(thing_data);
+  if(root != NULL){
+    aJsonObject* thingID = aJson.getObjectItem(root, "_thingID"); 
+    aJsonObject* vendorID = aJson.getObjectItem(root, "_vendorThingID"); 
+    aJsonObject* accessToken = aJson.getObjectItem(root, "_accessToken"); 
+    thing.vendor_id = vendorID!=NULL?vendorID->valuestring:NULL;
+    thing.thing_id = thingID!=NULL?thingID->valuestring:NULL;
+    thing.access_token = accessToken!=NULL?accessToken->valuestring:NULL;
+  }
+  return thing;
+}
+  
+kii_error_t parse_error(char* error_data)
+{
+  kii_error_t error;
+  aJsonObject* root = aJson.parse(error_data);
+  if(root != NULL){
+    aJsonObject* errorCode = aJson.getObjectItem(root, "errorCode"); 
+    aJsonObject* errorMsg = aJson.getObjectItem(root, "message"); 
+    error.error_code = errorCode!=NULL?errorCode->valuestring:NULL;
+    error.error_message = errorMsg!=NULL?errorMsg->valuestring:NULL;
+  }
+  return error;
+}
+  
 void printWifiStatus() {
   // print the SSID of the network you're attached to:
   Serial.print("SSID: ");

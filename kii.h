@@ -70,6 +70,19 @@ typedef struct kii_t
     kii_state_t _state;
 } kii_t;
 
+typedef struct kii_error_t
+{
+    char* error_code;
+    char* error_message;
+} kii_error_t;
+
+typedef struct kii_thing_t
+{
+    char* vendor_id;
+    char* thing_id;
+    char* access_token;
+} kii_thing_t;
+
 typedef enum kii_scope_type_t {
     KII_SCOPE_APP,
     KII_SCOPE_USER,
