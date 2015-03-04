@@ -3,7 +3,6 @@
 #include <string.h>
 #include <assert.h>
 
-
 #ifdef DEBUG
 #define M_REQUEST_LINE_CB_FAILED "failed to set request line\n"
 #define M_REQUEST_HEADER_CB_FAILED "failed to set request header\n"
@@ -237,8 +236,8 @@ kii_create_new_object(
         kii_t* kii,
         const char* access_token,
         const kii_bucket_t* bucket,
-        const char* object_content_type,
-        const char* object_data)
+        const char* object_data,
+        const char* object_content_type)
 {
     kii_http_client_code_t result;
     prv_bucket_path(kii, bucket, kii->_http_request_path);
@@ -266,10 +265,30 @@ kii_create_new_object_with_id(
         const char* access_token,
         const kii_bucket_t* bucket,
         const char* object_id,
-        const char* object_data)
+        const char* object_data,
+        const char* object_content_type
+        )
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/objects/%s",
+            kii->_http_request_path,
+            object_id);
+    if (object_content_type == NULL) {
+        object_content_type = DEFAULT_OBJECT_CONTENT_TYPE;
+    }
+    result = prv_http_request(
+            kii,
+            "PUT",
+            kii->_http_request_path,
+            object_content_type,
+            access_token,
+            object_data);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
     kii_error_code_t

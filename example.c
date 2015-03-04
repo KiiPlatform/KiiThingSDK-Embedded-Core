@@ -15,6 +15,8 @@
 #include <openssl/err.h>
 #include <openssl/rand.h>
 
+#include <getopt.h>
+
 #define BUFF_SIZE 256
 
 typedef enum prv_ssl_state_t {
@@ -337,37 +339,43 @@ void parse_response(char* resp_body)
     /* TODO: implement */
 }
 
-int main()
+void init(kii_t* kii, char* buff, context_t* ctx) {
+    memset(kii, 0x00, sizeof(kii_t));
+    kii->app_id = "9ab34d8b";
+    kii->app_key = "7a950d78956ed39f3b0815f0f001b43b";
+    kii->app_host = "api-jp.kii.com";
+    kii->buffer = buff;
+    kii->buffer_size = 4096;
+
+    kii->http_context = ctx;
+    kii->http_set_request_line_cb = request_line_cb;
+    kii->http_set_header_cb = header_cb;
+    kii->http_set_body_cb = body_cb;
+    kii->http_execute_cb = execute_cb;
+    kii->logger_cb = logger_cb;
+
+    memset(ctx, 0x00, sizeof(context_t));
+    /* share the request and response buffer.*/
+    ctx->buff = buff;
+    ctx->buff_size = 4096;
+}
+
+static void print_response(kii_t* kii)
 {
-    context_t ctx;
-    kii_t kii;
+    printf("========response========\n");
+    printf("%s\n", kii->buffer);
+    printf("========response========\n");
+    printf("response_code: %d\n", kii->response_code);
+    printf("response_body:\n%s\n", kii->response_body);
+}
+
+static int register_thing(kii_t* kii)
+{
     kii_state_t state;
     kii_error_code_t err;
-    char buff[4096];
     pid_t pid;
     char thingData[1024];
-
-    /* Initialization */
-    memset(&kii, 0x00, sizeof(kii));
-    kii.app_id = "9ab34d8b";
-    kii.app_key = "7a950d78956ed39f3b0815f0f001b43b";
-    kii.app_host = "api-jp.kii.com";
-    kii.buffer = buff;
-    kii.buffer_size = 4096;
-
-    kii.http_context = &ctx;
-    kii.http_set_request_line_cb = request_line_cb;
-    kii.http_set_header_cb = header_cb;
-    kii.http_set_body_cb = body_cb;
-    kii.http_execute_cb = execute_cb;
-    kii.logger_cb = logger_cb;
-
-    memset(&ctx, 0x00, sizeof(ctx));
-    /* share the request and response buffer.*/
-    ctx.buff = buff;
-    ctx.buff_size = 4096;
-
-    if (0) {
+    
     /* Prepare Thing Data */
     memset(thingData, 0x00, 1024);
     pid = getpid();
@@ -375,59 +383,144 @@ int main()
             "{\"_vendorThingID\":\"%d\", \"_password\":\"1234\"}",
             pid);
     /* Register Thing */
-    err = kii_register_thing(&kii, thingData);
-    printf("request:\n%s\n", kii.buffer);
+    err = kii_register_thing(kii, thingData);
+    printf("request:\n%s\n", kii->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
     }
     do {
-        state = kii_get_state(&kii);
-        err = kii_run(&kii);
-        state = kii_get_state(&kii);
+        err = kii_run(kii);
+        state = kii_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
     }
-    printf("========response========\n");
-    printf("%s\n", kii.buffer);
-    printf("========response========\n");
-    printf("response_code: %d\n", kii.response_code);
-    printf("response_body:\n%s\n", kii.response_body);
-    parse_response(kii.response_body);
-    }
+    print_response(kii);
+    parse_response(kii->response_body);
+}
 
-    /* Create New Object */
+static int create_new_object(kii_t* kii)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+    
     kii_bucket_t bucket;
     bucket.scope = KII_SCOPE_THING;
     bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
     bucket.bucket_name = "myBucket";
 
     err = kii_create_new_object(
-            &kii,
+            kii,
             "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o",
             &bucket,
-            NULL,
-            "{}");
-    printf("request:\n%s\n", kii.buffer);
+            "{}",
+            NULL);
+    printf("request:\n%s\n", kii->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
     }    
     do {
-        state = kii_get_state(&kii);
-        err = kii_run(&kii);
-        state = kii_get_state(&kii);
+        err = kii_run(kii);
+        state = kii_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
     }
-    printf("========response========\n");
-    printf("%s\n", kii.buffer);
-    printf("========response========\n");
-    printf("response_code: %d\n", kii.response_code);
-    printf("response_body:\n%s\n", kii.response_body);
-    parse_response(kii.response_body);
+    print_response(kii);
+    parse_response(kii->response_body);
+}
 
+static int create_new_object_with_id(kii_t* kii, const char* id)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+    
+    kii_bucket_t bucket;
+    bucket.scope = KII_SCOPE_THING;
+    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
+    bucket.bucket_name = "myBucket";
+
+    err = kii_create_new_object_with_id(
+            kii,
+            "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o",
+            &bucket,
+            id,
+            "{}",
+            NULL);
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }    
+    do {
+        state = kii_get_state(kii);
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+}
+
+int main(int argc, char** argv)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+
+    context_t ctx;
+    kii_t kii;
+    char buff[4096];
+
+    int optval;
+    int digit_optind = 0;
+
+    /* Initialization */
+    init(&kii, buff, &ctx);
+
+    while (1) {
+        int this_option_optind = optind ? optind : 1;
+        int option_index = 0;
+        static struct option long_options[] = {
+            {"register", no_argument, NULL,  0},
+            {"new-object", no_argument, NULL, 1},
+            {"new-object-with-id", no_argument, NULL, 2},
+            {0, 0, 0, 0 }
+        };
+
+        optval = getopt_long(argc, argv, "",
+                 long_options, &option_index);
+        if (optval == -1)
+            break;
+
+        switch (optval) {
+        case 0:
+            printf("register thing\n");
+            register_thing(&kii);
+            break;
+        case 1:
+            printf("create new object\n");
+            create_new_object(&kii);
+            break;
+        case 2:
+            printf("create new object with id\n");
+            create_new_object_with_id(&kii, "my_object");
+            break;
+        case '?':
+            break;
+        default:
+            printf("?? getopt returned character code 0%o ??\n", optval);
+        }
+    }
+
+    if (optind < argc) {
+        printf("non-option ARGV-elements: ");
+        while (optind < argc)
+            printf("%s ", argv[optind++]);
+        printf("\n");
+    }
 }
 

@@ -108,8 +108,9 @@ kii_create_new_object(
         kii_t* kii,
         const char* access_token,
         const kii_bucket_t* bucket,
-        const char* object_content_type,
-        const char* object_data);
+        const char* object_data,
+        const char* object_content_type
+        );
 
 kii_error_code_t
 kii_create_new_object_with_id(
@@ -117,7 +118,9 @@ kii_create_new_object_with_id(
         const char* access_token,
         const kii_bucket_t* bucket,
         const char* object_id,
-        const char* object_data);
+        const char* object_data,
+        const char* object_content_type
+        );
 
 kii_error_code_t
 kii_patch_object(
