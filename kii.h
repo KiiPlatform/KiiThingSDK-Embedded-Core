@@ -56,6 +56,13 @@ typedef enum kii_state_t {
     KII_STATE_EXECUTE
 } kii_state_t;
 
+
+typedef struct kii_author_t
+{
+    char* author_id;
+    char* access_token;
+} kii_author_t;
+
 typedef struct kii_t
 {
     char* app_id;
@@ -65,6 +72,8 @@ typedef struct kii_t
     size_t buffer_size;
     int response_code;
     char* response_body;
+
+    kii_author_t* author;
 
     void* http_context;
     KII_HTTPCB_SET_REQUEST_LINE_PTR http_set_request_line_cb;
@@ -161,7 +170,6 @@ kii_subscribe_bucket(kii_t* kii,
 
 kii_error_code_t
 kii_unsubscribe_bucket(kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket);
 
 kii_error_code_t

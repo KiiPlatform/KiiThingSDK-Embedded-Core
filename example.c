@@ -595,6 +595,71 @@ static int delete_object(kii_t* kii, const char* id)
     parse_response(kii->response_body);
 }
 
+static int subscribe_bucket(kii_t* kii, const char* bucket_name)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+
+    kii_bucket_t bucket;
+    bucket.scope = KII_SCOPE_THING;
+    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
+    bucket.bucket_name = "myBucket";
+
+    err = kii_subscribe_bucket(
+            kii,
+            "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o",
+            &bucket);
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+}
+
+static int unsubscribe_bucket(kii_t* kii, const char* bucket_name)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+
+    kii_bucket_t bucket;
+    bucket.scope = KII_SCOPE_THING;
+    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
+    bucket.bucket_name = "myBucket";
+
+    kii_author_t author;
+    memset(&author, 0x00, sizeof(kii_author_t));
+    author.author_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
+    author.access_token = "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o";
+    kii->author = &author;
+
+    err = kii_unsubscribe_bucket(
+            kii,
+            &bucket);
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+}
+
 int main(int argc, char** argv)
 {
     kii_state_t state;
@@ -621,6 +686,8 @@ int main(int argc, char** argv)
             {"replace-object", no_argument, NULL, 4},
             {"get-object", no_argument, NULL, 5},
             {"delete-object", no_argument, NULL, 6},
+            {"subscribe-bucket", no_argument, NULL, 7},
+            {"unsubscribe-bucket", no_argument, NULL, 8},
             {0, 0, 0, 0}
         };
 
@@ -657,6 +724,14 @@ int main(int argc, char** argv)
         case 6:
             printf("delete object\n");
             delete_object(&kii, "my_object");
+            break;
+        case 7:
+            printf("subscribe bucket\n");
+            subscribe_bucket(&kii, "myBucket");
+            break;
+        case 8:
+            printf("unsubscribe bucket\n");
+            unsubscribe_bucket(&kii, "myBucket");
             break;
         case '?':
             break;

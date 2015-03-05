@@ -148,6 +148,24 @@ prv_http_request(
         }
     }
 
+    if (kii->author != NULL) {
+        char bearer[] = "bearer ";
+        int token_len = strlen(kii->author->access_token);
+        int bearer_len = token_len + strlen(bearer);
+        char* bearer_buff[bearer_len + 1];
+        memset(bearer_buff, 0x00, bearer_len + 1);
+        sprintf(bearer_buff, "%s%s", bearer, kii->author->access_token);
+        result = kii->http_set_header_cb(
+                kii->http_context,
+                "authorization",
+                bearer_buff
+                );
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+            return KIIE_FAIL;
+        }
+    }
+
     if (etag != NULL) {
         result = kii->http_set_header_cb(
                 kii->http_context,
@@ -433,18 +451,48 @@ kii_subscribe_bucket(
         const char* access_token,
         const kii_bucket_t* bucket)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/filters/all/push/subscriptions/things",
+            kii->_http_request_path);
+    result = prv_http_request(
+            kii,
+            "POST",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
     kii_error_code_t
 kii_unsubscribe_bucket(
         kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/filters/all/push/subscriptions/things/%s",
+            kii->_http_request_path,
+            kii->author->author_id);
+    result = prv_http_request(
+            kii,
+            "DELETE",
+            kii->_http_request_path,
+            NULL,
+            NULL,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
     kii_error_code_t
