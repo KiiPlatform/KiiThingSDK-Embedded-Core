@@ -230,6 +230,43 @@ prv_bucket_path(
     }
 }
 
+    static void
+prv_topic_path(
+        kii_t* kii,
+        const kii_topic_t* topic,
+        char* path)
+{
+    switch(topic->scope) {
+        case KII_SCOPE_APP:
+            sprintf(path,
+                    "api/apps/%s/topic/%s",
+                    kii->app_id,
+                    topic->topic_name);
+            break;
+        case KII_SCOPE_USER:
+            sprintf(path,
+                    "api/apps/%s/users/%s/topic/%s",
+                    kii->app_id,
+                    topic->scope_id,
+                    topic->topic_name);
+            break;
+        case KII_SCOPE_GROUP:
+            sprintf(path,
+                    "api/apps/%s/groups/%s/topics/%s",
+                    kii->app_id,
+                    topic->scope_id,
+                    topic->topic_name);
+            break;
+        case KII_SCOPE_THING:
+            sprintf(path,
+                    "api/apps/%s/things/%s/topics/%s",
+                    kii->app_id,
+                    topic->scope_id,
+                    topic->topic_name);
+            break;
+    }
+}
+
     kii_error_code_t
 kii_register_thing(
         kii_t* kii,
@@ -488,21 +525,102 @@ kii_unsubscribe_bucket(
 }
 
     kii_error_code_t
+kii_create_topic(
+        kii_t* kii,
+        const kii_topic_t* topic)
+{
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_topic_path(kii, topic, kii->_http_request_path);
+    result = prv_http_request(
+            kii,
+            "PUT",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
+}
+
+    kii_error_code_t
+kii_delete_topic(
+        kii_t* kii,
+        const kii_topic_t* topic)
+{
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_topic_path(kii, topic, kii->_http_request_path);
+    result = prv_http_request(
+            kii,
+            "DELETE",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
+}
+
+    kii_error_code_t
 kii_subscribe_topic(
         kii_t* kii,
         const kii_topic_t* topic)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_topic_path(kii, topic, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/push/subscriptions/things",
+            kii->_http_request_path);
+    result = prv_http_request(
+            kii,
+            "POST",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
     kii_error_code_t
 kii_unsubscribe_topic(
-        kii_t* app,
+        kii_t* kii,
         const kii_topic_t* topic)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_topic_path(kii, topic, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/push/subscriptions/things/%s",
+            kii->_http_request_path,
+            kii->author->author_id);
+    result = prv_http_request(
+            kii,
+            "DELETE",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
     kii_error_code_t

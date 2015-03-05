@@ -377,6 +377,13 @@ static void init_bucket(kii_bucket_t* bucket) {
     bucket->bucket_name = "myBucket";
 }
 
+static void init_topic(kii_topic_t* topic) {
+    memset(topic, 0x00, sizeof(kii_topic_t));
+    topic->scope = KII_SCOPE_THING;
+    topic->scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
+    topic->topic_name = "myTopic";
+}
+
 static void print_response(kii_t* kii)
 {
     printf("========response========\n");
@@ -662,6 +669,122 @@ static int unsubscribe_bucket(kii_t* kii, const char* bucket_name)
     parse_response(kii->response_body);
 }
 
+static int create_topic(kii_t* kii)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+
+    kii_topic_t topic;
+    init_topic(&topic);
+    kii_author_t author;
+    set_author(kii, &author);
+
+    err = kii_create_topic(
+            kii,
+            &topic);
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+}
+
+static int delete_topic(kii_t* kii)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+
+    kii_topic_t topic;
+    init_topic(&topic);
+    kii_author_t author;
+    set_author(kii, &author);
+
+    err = kii_delete_topic(
+            kii,
+            &topic);
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+}
+
+static int subscribe_topic(kii_t* kii)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+
+    kii_topic_t topic;
+    init_topic(&topic);
+    kii_author_t author;
+    set_author(kii, &author);
+
+    err = kii_subscribe_topic(
+            kii,
+            &topic);
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+}
+
+static int unsubscribe_topic(kii_t* kii)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+
+    kii_topic_t topic;
+    init_topic(&topic);
+    kii_author_t author;
+    set_author(kii, &author);
+
+    err = kii_unsubscribe_topic(
+            kii,
+            &topic);
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+}
+
 int main(int argc, char** argv)
 {
     kii_state_t state;
@@ -690,6 +813,10 @@ int main(int argc, char** argv)
             {"delete-object", no_argument, NULL, 6},
             {"subscribe-bucket", no_argument, NULL, 7},
             {"unsubscribe-bucket", no_argument, NULL, 8},
+            {"create-topic", no_argument, NULL, 9},
+            {"delete-topic", no_argument, NULL, 10},
+            {"subscribe-topic", no_argument, NULL, 11},
+            {"unsubscribe-topic", no_argument, NULL, 12},
             {0, 0, 0, 0}
         };
 
@@ -734,6 +861,22 @@ int main(int argc, char** argv)
         case 8:
             printf("unsubscribe bucket\n");
             unsubscribe_bucket(&kii, "myBucket");
+            break;
+        case 9:
+            printf("create topic\n");
+            create_topic(&kii);
+            break;
+        case 10:
+            printf("delete topic\n");
+            delete_topic(&kii);
+            break;
+        case 11:
+            printf("subscribe topic\n");
+            subscribe_topic(&kii);
+            break;
+        case 12:
+            printf("unsubscribe topic\n");
+            unsubscribe_topic(&kii);
             break;
         case '?':
             break;

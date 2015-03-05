@@ -166,11 +166,19 @@ kii_unsubscribe_bucket(kii_t* kii,
         const kii_bucket_t* bucket);
 
 kii_error_code_t
+kii_create_topic(kii_t* kii,
+        const kii_topic_t* topic);
+
+kii_error_code_t
+kii_delete_topic(kii_t* kii,
+        const kii_topic_t* topic);
+
+kii_error_code_t
 kii_subscribe_topic(kii_t* kii,
         const kii_topic_t* topic);
 
 kii_error_code_t
-kii_unsubscribe_topic(kii_t* app,
+kii_unsubscribe_topic(kii_t* kii,
         const kii_topic_t* topic);
 
 kii_error_code_t
