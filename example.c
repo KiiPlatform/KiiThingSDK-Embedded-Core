@@ -215,7 +215,9 @@ kii_http_client_code_t
     // TODO: prevent overflow.
     char* reqBuff = ((context_t*)http_context)->buff;
     strcat(reqBuff, "\r\n");
-    strcat(reqBuff, body_data);
+    if (body_data != NULL) {
+        strcat(reqBuff, body_data);
+    }
     return KII_HTTPC_OK;
 }
 
@@ -534,6 +536,70 @@ static int replace_object(kii_t* kii, const char* id)
     parse_response(kii->response_body);
 }
 
+static int get_object(kii_t* kii, const char* id)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+
+    kii_bucket_t bucket;
+    bucket.scope = KII_SCOPE_THING;
+    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
+    bucket.bucket_name = "myBucket";
+
+    err = kii_get_object(
+            kii,
+            "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o",
+            &bucket,
+            id);
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        state = kii_get_state(kii);
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+}
+
+static int delete_object(kii_t* kii, const char* id)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+
+    kii_bucket_t bucket;
+    bucket.scope = KII_SCOPE_THING;
+    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
+    bucket.bucket_name = "myBucket";
+
+    err = kii_delete_object(
+            kii,
+            "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o",
+            &bucket,
+            id);
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        state = kii_get_state(kii);
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+}
+
 int main(int argc, char** argv)
 {
     kii_state_t state;
@@ -558,6 +624,8 @@ int main(int argc, char** argv)
             {"new-object-with-id", no_argument, NULL, 2},
             {"patch-object", no_argument, NULL, 3},
             {"replace-object", no_argument, NULL, 4},
+            {"get-object", no_argument, NULL, 5},
+            {"delete-object", no_argument, NULL, 6},
             {0, 0, 0, 0}
         };
 
@@ -586,6 +654,14 @@ int main(int argc, char** argv)
         case 4:
             printf("replace object\n");
             replace_object(&kii, "my_object");
+            break;
+        case 5:
+            printf("get object\n");
+            get_object(&kii, "my_object");
+            break;
+        case 6:
+            printf("delete object\n");
+            delete_object(&kii, "my_object");
             break;
         case '?':
             break;

@@ -181,6 +181,14 @@ prv_http_request(
             M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
             return KIIE_FAIL;
         }
+    } else {
+        kii->http_set_body_cb(
+                kii->http_context,
+                NULL);
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
     }
     return KIIE_OK;
 }
@@ -372,8 +380,24 @@ kii_get_object(
         const kii_bucket_t* bucket,
         const char* object_id)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/objects/%s",
+            kii->_http_request_path,
+            object_id);
+    result = prv_http_request(
+            kii,
+            "GET",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
     kii_error_code_t
@@ -383,8 +407,24 @@ kii_delete_object(
         const kii_bucket_t* bucket,
         const char* object_id)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/objects/%s",
+            kii->_http_request_path,
+            object_id);
+    result = prv_http_request(
+            kii,
+            "DELETE",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
     kii_error_code_t
