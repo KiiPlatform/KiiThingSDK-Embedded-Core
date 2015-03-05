@@ -457,7 +457,6 @@ static int create_new_object_with_id(kii_t* kii, const char* id)
         return 1;
     }    
     do {
-        state = kii_get_state(kii);
         err = kii_run(kii);
         state = kii_get_state(kii);
     } while (state != KII_STATE_IDLE);
@@ -491,7 +490,6 @@ static int patch_object(kii_t* kii, const char* id)
         return 1;
     }    
     do {
-        state = kii_get_state(kii);
         err = kii_run(kii);
         state = kii_get_state(kii);
     } while (state != KII_STATE_IDLE);
@@ -525,7 +523,6 @@ static int replace_object(kii_t* kii, const char* id)
         return 1;
     }    
     do {
-        state = kii_get_state(kii);
         err = kii_run(kii);
         state = kii_get_state(kii);
     } while (state != KII_STATE_IDLE);
@@ -557,7 +554,6 @@ static int get_object(kii_t* kii, const char* id)
         return 1;
     }
     do {
-        state = kii_get_state(kii);
         err = kii_run(kii);
         state = kii_get_state(kii);
     } while (state != KII_STATE_IDLE);
@@ -589,7 +585,6 @@ static int delete_object(kii_t* kii, const char* id)
         return 1;
     }
     do {
-        state = kii_get_state(kii);
         err = kii_run(kii);
         state = kii_get_state(kii);
     } while (state != KII_STATE_IDLE);
