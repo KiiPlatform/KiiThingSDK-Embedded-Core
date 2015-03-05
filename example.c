@@ -466,6 +466,40 @@ static int create_new_object_with_id(kii_t* kii, const char* id)
     parse_response(kii->response_body);
 }
 
+static int patch_object(kii_t* kii, const char* id)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+
+    kii_bucket_t bucket;
+    bucket.scope = KII_SCOPE_THING;
+    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
+    bucket.bucket_name = "myBucket";
+
+    err = kii_patch_object(
+            kii,
+            "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o",
+            &bucket,
+            id,
+            "{}",
+            NULL);
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }    
+    do {
+        state = kii_get_state(kii);
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+}
+
 int main(int argc, char** argv)
 {
     kii_state_t state;
@@ -488,7 +522,8 @@ int main(int argc, char** argv)
             {"register", no_argument, NULL,  0},
             {"new-object", no_argument, NULL, 1},
             {"new-object-with-id", no_argument, NULL, 2},
-            {0, 0, 0, 0 }
+            {"patch-object", no_argument, NULL, 3},
+            {0, 0, 0, 0}
         };
 
         optval = getopt_long(argc, argv, "",
@@ -509,6 +544,9 @@ int main(int argc, char** argv)
             printf("create new object with id\n");
             create_new_object_with_id(&kii, "my_object");
             break;
+        case 3:
+            printf("patch object\n");
+            patch_object(&kii, "my_object");
         case '?':
             break;
         default:

@@ -86,6 +86,7 @@ prv_http_request(
         const char* resource_path,
         const char* content_type,
         const char* access_token,
+        const char* etag,
         const char* body)
 {
     kii_http_client_code_t result;
@@ -140,6 +141,18 @@ prv_http_request(
                 kii->http_context,
                 "authorization",
                 bearer_buff
+                );
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+            return KIIE_FAIL;
+        }
+    }
+
+    if (etag != NULL) {
+        result = kii->http_set_header_cb(
+                kii->http_context,
+                "etag",
+                etag 
                 );
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
@@ -222,6 +235,7 @@ kii_register_thing(
             kii->_http_request_path,
             "application/vnd.kii.ThingRegistrationAndAuthorizationRequest+json",
             NULL,
+            NULL,
             thing_data
             );
 
@@ -251,6 +265,7 @@ kii_create_new_object(
             kii->_http_request_path,
             object_content_type,
             access_token,
+            NULL,
             object_data);
 
     if (result == KIIE_OK) {
@@ -284,6 +299,7 @@ kii_create_new_object_with_id(
             kii->_http_request_path,
             object_content_type,
             access_token,
+            NULL,
             object_data);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
@@ -300,8 +316,24 @@ kii_patch_object(
         const char* patch_data,
         const char* opt_etag)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/objects/%s",
+            kii->_http_request_path,
+            object_id);
+    result = prv_http_request(
+            kii,
+            "PATCH",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            patch_data);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
     kii_error_code_t
