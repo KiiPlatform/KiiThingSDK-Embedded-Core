@@ -148,24 +148,6 @@ prv_http_request(
         }
     }
 
-    if (kii->author != NULL) {
-        char bearer[] = "bearer ";
-        int token_len = strlen(kii->author->access_token);
-        int bearer_len = token_len + strlen(bearer);
-        char* bearer_buff[bearer_len + 1];
-        memset(bearer_buff, 0x00, bearer_len + 1);
-        sprintf(bearer_buff, "%s%s", bearer, kii->author->access_token);
-        result = kii->http_set_header_cb(
-                kii->http_context,
-                "authorization",
-                bearer_buff
-                );
-        if (result != KII_HTTPC_OK) {
-            M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
-            return KIIE_FAIL;
-        }
-    }
-
     if (etag != NULL) {
         result = kii->http_set_header_cb(
                 kii->http_context,
@@ -274,12 +256,14 @@ kii_register_thing(
     kii_error_code_t
 kii_create_new_object(
         kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket,
         const char* object_data,
         const char* object_content_type)
 {
     kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+
     prv_bucket_path(kii, bucket, kii->_http_request_path);
     strcat(kii->_http_request_path, "/objects");
     if (object_content_type == NULL) {
@@ -303,7 +287,6 @@ kii_create_new_object(
     kii_error_code_t
 kii_create_new_object_with_id(
         kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket,
         const char* object_id,
         const char* object_data,
@@ -311,6 +294,8 @@ kii_create_new_object_with_id(
         )
 {
     kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
     sprintf(kii->_http_request_path,
             "%s/objects/%s",
@@ -336,13 +321,14 @@ kii_create_new_object_with_id(
     kii_error_code_t
 kii_patch_object(
         kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket,
         const char* object_id,
         const char* patch_data,
         const char* opt_etag)
 {
     kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
     sprintf(kii->_http_request_path,
             "%s/objects/%s",
@@ -365,13 +351,14 @@ kii_patch_object(
     kii_error_code_t
 kii_replace_object(
         kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket,
         const char* object_id,
         const char* replace_data,
         const char* opt_etag)
 {
     kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
     sprintf(kii->_http_request_path,
             "%s/objects/%s",
@@ -394,11 +381,12 @@ kii_replace_object(
     kii_error_code_t
 kii_get_object(
         kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket,
         const char* object_id)
 {
     kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
     sprintf(kii->_http_request_path,
             "%s/objects/%s",
@@ -421,11 +409,12 @@ kii_get_object(
     kii_error_code_t
 kii_delete_object(
         kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket,
         const char* object_id)
 {
     kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
     sprintf(kii->_http_request_path,
             "%s/objects/%s",
@@ -448,10 +437,11 @@ kii_delete_object(
     kii_error_code_t
 kii_subscribe_bucket(
         kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket)
 {
     kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
     sprintf(kii->_http_request_path,
             "%s/filters/all/push/subscriptions/things",
@@ -476,6 +466,8 @@ kii_unsubscribe_bucket(
         const kii_bucket_t* bucket)
 {
     kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
     sprintf(kii->_http_request_path,
             "%s/filters/all/push/subscriptions/things/%s",
@@ -486,7 +478,7 @@ kii_unsubscribe_bucket(
             "DELETE",
             kii->_http_request_path,
             NULL,
-            NULL,
+            access_token,
             NULL,
             NULL);
     if (result == KIIE_OK) {
@@ -498,7 +490,6 @@ kii_unsubscribe_bucket(
     kii_error_code_t
 kii_subscribe_topic(
         kii_t* kii,
-        const char* access_token,
         const kii_topic_t* topic)
 {
     /* TODO: implement. */
@@ -508,7 +499,6 @@ kii_subscribe_topic(
     kii_error_code_t
 kii_unsubscribe_topic(
         kii_t* app,
-        const char* access_token,
         const kii_topic_t* topic)
 {
     /* TODO: implement. */
@@ -518,7 +508,6 @@ kii_unsubscribe_topic(
     kii_error_code_t
 kii_install_thing_push(
         kii_t* kii,
-        const char* access_token,
         kii_bool_t development)
 {
     /* TODO: implement. */
@@ -528,7 +517,6 @@ kii_install_thing_push(
     kii_error_code_t
 kii_get_mqtt_endpoint(
         kii_t* kii,
-        const char* access_token,
         const char** installation_id)
 {
     /* TODO: implement. */

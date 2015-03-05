@@ -362,6 +362,21 @@ void init(kii_t* kii, char* buff, context_t* ctx) {
     ctx->buff_size = 4096;
 }
 
+static void set_author(kii_t* kii, kii_author_t* author)
+{
+    memset(author, 0x00, sizeof(kii_author_t));
+    author->author_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
+    author->access_token = "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o";
+    kii->author = author;
+}
+
+static void init_bucket(kii_bucket_t* bucket) {
+    memset(bucket, 0x00, sizeof(kii_bucket_t));
+    bucket->scope = KII_SCOPE_THING;
+    bucket->scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
+    bucket->bucket_name = "myBucket";
+}
+
 static void print_response(kii_t* kii)
 {
     printf("========response========\n");
@@ -408,13 +423,12 @@ static int create_new_object(kii_t* kii)
     kii_error_code_t err;
     
     kii_bucket_t bucket;
-    bucket.scope = KII_SCOPE_THING;
-    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
-    bucket.bucket_name = "myBucket";
+    init_bucket(&bucket);
+    kii_author_t author;
+    set_author(kii, &author);
 
     err = kii_create_new_object(
             kii,
-            "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o",
             &bucket,
             "{}",
             NULL);
@@ -440,13 +454,12 @@ static int create_new_object_with_id(kii_t* kii, const char* id)
     kii_error_code_t err;
     
     kii_bucket_t bucket;
-    bucket.scope = KII_SCOPE_THING;
-    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
-    bucket.bucket_name = "myBucket";
+    init_bucket(&bucket);
+    kii_author_t author;
+    set_author(kii, &author);
 
     err = kii_create_new_object_with_id(
             kii,
-            "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o",
             &bucket,
             id,
             "{}",
@@ -473,13 +486,12 @@ static int patch_object(kii_t* kii, const char* id)
     kii_error_code_t err;
 
     kii_bucket_t bucket;
-    bucket.scope = KII_SCOPE_THING;
-    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
-    bucket.bucket_name = "myBucket";
+    init_bucket(&bucket);
+    kii_author_t author;
+    set_author(kii, &author);
 
     err = kii_patch_object(
             kii,
-            "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o",
             &bucket,
             id,
             "{}",
@@ -506,13 +518,12 @@ static int replace_object(kii_t* kii, const char* id)
     kii_error_code_t err;
 
     kii_bucket_t bucket;
-    bucket.scope = KII_SCOPE_THING;
-    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
-    bucket.bucket_name = "myBucket";
+    init_bucket(&bucket);
+    kii_author_t author;
+    set_author(kii, &author);
 
     err = kii_replace_object(
             kii,
-            "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o",
             &bucket,
             id,
             "{}",
@@ -539,13 +550,12 @@ static int get_object(kii_t* kii, const char* id)
     kii_error_code_t err;
 
     kii_bucket_t bucket;
-    bucket.scope = KII_SCOPE_THING;
-    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
-    bucket.bucket_name = "myBucket";
+    init_bucket(&bucket);
+    kii_author_t author;
+    set_author(kii, &author);
 
     err = kii_get_object(
             kii,
-            "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o",
             &bucket,
             id);
     printf("request:\n%s\n", kii->buffer);
@@ -570,13 +580,12 @@ static int delete_object(kii_t* kii, const char* id)
     kii_error_code_t err;
 
     kii_bucket_t bucket;
-    bucket.scope = KII_SCOPE_THING;
-    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
-    bucket.bucket_name = "myBucket";
+    init_bucket(&bucket);
+    kii_author_t author;
+    set_author(kii, &author);
 
     err = kii_delete_object(
             kii,
-            "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o",
             &bucket,
             id);
     printf("request:\n%s\n", kii->buffer);
@@ -601,13 +610,12 @@ static int subscribe_bucket(kii_t* kii, const char* bucket_name)
     kii_error_code_t err;
 
     kii_bucket_t bucket;
-    bucket.scope = KII_SCOPE_THING;
-    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
-    bucket.bucket_name = "myBucket";
+    init_bucket(&bucket);
+    kii_author_t author;
+    set_author(kii, &author);
 
     err = kii_subscribe_bucket(
             kii,
-            "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o",
             &bucket);
     printf("request:\n%s\n", kii->buffer);
     if (err != KIIE_OK) {
@@ -631,15 +639,9 @@ static int unsubscribe_bucket(kii_t* kii, const char* bucket_name)
     kii_error_code_t err;
 
     kii_bucket_t bucket;
-    bucket.scope = KII_SCOPE_THING;
-    bucket.scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
-    bucket.bucket_name = "myBucket";
-
+    init_bucket(&bucket);
     kii_author_t author;
-    memset(&author, 0x00, sizeof(kii_author_t));
-    author.author_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
-    author.access_token = "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o";
-    kii->author = &author;
+    set_author(kii, &author);
 
     err = kii_unsubscribe_bucket(
             kii,

@@ -115,7 +115,6 @@ kii_register_thing(kii_t* kii,
 kii_error_code_t
 kii_create_new_object(
         kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket,
         const char* object_data,
         const char* object_content_type
@@ -124,7 +123,6 @@ kii_create_new_object(
 kii_error_code_t
 kii_create_new_object_with_id(
         kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket,
         const char* object_id,
         const char* object_data,
@@ -134,7 +132,6 @@ kii_create_new_object_with_id(
 kii_error_code_t
 kii_patch_object(
         kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket,
         const char* object_id,
         const char* patch_data,
@@ -143,7 +140,6 @@ kii_patch_object(
 kii_error_code_t
 kii_replace_object(
         kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket,
         const char* object_id,
         const char* replace_data,
@@ -152,20 +148,17 @@ kii_replace_object(
 kii_error_code_t
 kii_get_object(
         kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket,
         const char* object_id);
 
 kii_error_code_t
 kii_delete_object(
         kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket,
         const char* object_id);
 
 kii_error_code_t
 kii_subscribe_bucket(kii_t* kii,
-        const char* access_token,
         const kii_bucket_t* bucket);
 
 kii_error_code_t
@@ -174,22 +167,18 @@ kii_unsubscribe_bucket(kii_t* kii,
 
 kii_error_code_t
 kii_subscribe_topic(kii_t* kii,
-        const char* access_token,
         const kii_topic_t* topic);
 
 kii_error_code_t
 kii_unsubscribe_topic(kii_t* app,
-        const char* access_token,
         const kii_topic_t* topic);
 
 kii_error_code_t
 kii_install_thing_push(kii_t* kii,
-        const char* access_token,
         kii_bool_t development);
 
 kii_error_code_t
 kii_get_mqtt_endpoint(kii_t* kii,
-        const char* access_token,
         const char** installation_id);
 
 #ifdef __cplusplus
