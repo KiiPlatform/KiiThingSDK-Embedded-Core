@@ -328,7 +328,7 @@ kii_patch_object(
             kii->_http_request_path,
             NULL,
             access_token,
-            NULL,
+            opt_etag,
             patch_data);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
@@ -345,8 +345,24 @@ kii_replace_object(
         const char* replace_data,
         const char* opt_etag)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/objects/%s",
+            kii->_http_request_path,
+            object_id);
+    result = prv_http_request(
+            kii,
+            "PUT",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            opt_etag,
+            replace_data);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
     kii_error_code_t
