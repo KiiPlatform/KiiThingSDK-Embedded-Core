@@ -785,6 +785,60 @@ static int unsubscribe_topic(kii_t* kii)
     parse_response(kii->response_body);
 }
 
+static int install_push(kii_t* kii)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+
+    kii_author_t author;
+    set_author(kii, &author);
+
+    err = kii_install_thing_push(
+            kii,
+            KII_FALSE);
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+}
+
+static int get_endpoint(kii_t* kii)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+
+    kii_author_t author;
+    set_author(kii, &author);
+
+    err = kii_get_mqtt_endpoint(
+            kii,
+            "p6i5c3h59b193cmht5gdyzi3a");
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+}
+
 int main(int argc, char** argv)
 {
     kii_state_t state;
@@ -817,6 +871,8 @@ int main(int argc, char** argv)
             {"delete-topic", no_argument, NULL, 10},
             {"subscribe-topic", no_argument, NULL, 11},
             {"unsubscribe-topic", no_argument, NULL, 12},
+            {"install-push", no_argument, NULL, 13},
+            {"get-endpoint", no_argument, NULL, 14},
             {0, 0, 0, 0}
         };
 
@@ -877,6 +933,14 @@ int main(int argc, char** argv)
         case 12:
             printf("unsubscribe topic\n");
             unsubscribe_topic(&kii);
+            break;
+        case 13:
+            printf("install push\n");
+            install_push(&kii);
+            break;
+        case 14:
+            printf("get endpoint\n");
+            get_endpoint(&kii);
             break;
         case '?':
             break;

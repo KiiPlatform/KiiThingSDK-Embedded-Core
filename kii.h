@@ -187,7 +187,7 @@ kii_install_thing_push(kii_t* kii,
 
 kii_error_code_t
 kii_get_mqtt_endpoint(kii_t* kii,
-        const char** installation_id);
+        const char* installation_id);
 
 #ifdef __cplusplus
 }

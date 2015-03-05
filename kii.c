@@ -623,21 +623,72 @@ kii_unsubscribe_topic(
     return result;
 }
 
+    static void
+prv_set_installation_path(kii_t* kii)
+{
+    sprintf(kii->_http_request_path,
+            "api/apps/%s/installations",
+            kii->app_id);
+}
+
+    static void
+prv_set_mqtt_endpoint_path(kii_t* kii, const char* installation_id)
+{
+    sprintf(kii->_http_request_path,
+            "api/apps/%s/installations/%s/mqtt-endpoint",
+            kii->app_id,
+            installation_id);
+}
     kii_error_code_t
 kii_install_thing_push(
         kii_t* kii,
         kii_bool_t development)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char body[256];
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    char* c_development = development == KII_TRUE ? "true" : "false";
+    prv_set_installation_path(kii);
+
+    memset(body, 0x00, 256);
+    sprintf(body,
+            "{\"installationType\":\"MQTT\", \"development\":%s}",
+            c_development);
+    result = prv_http_request(
+            kii,
+            "POST",
+            kii->_http_request_path,
+            "application/vnd.kii.InstallationCreationRequest+json",
+            access_token,
+            NULL,
+            body);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
     kii_error_code_t
 kii_get_mqtt_endpoint(
         kii_t* kii,
-        const char** installation_id)
+        const char* installation_id)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_set_mqtt_endpoint_path(kii, installation_id);
+    result = prv_http_request(
+            kii,
+            "GET",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
