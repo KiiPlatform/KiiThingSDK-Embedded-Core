@@ -67,7 +67,7 @@ prv_content_length_str(
         char* buff,
         size_t buff_len)
 {
-    snprintf(buff, buff_len, "%d", content_length);
+    snprintf(buff, buff_len, "%lu", content_length);
 }
 
     static void
@@ -97,10 +97,6 @@ prv_http_request(
         M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
         return KIIE_FAIL;
     }
-    kii->http_set_header_cb(
-            kii->http_context,
-            "Connection",
-            "Close");
 
     result = kii->http_set_header_cb(
             kii->http_context,

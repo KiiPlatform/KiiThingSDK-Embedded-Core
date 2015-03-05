@@ -1,3 +1,5 @@
+
+
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WiFiServer.h>
@@ -10,6 +12,21 @@ struct HttpResponse {
   String body;
   int code;
 };
+
+typedef struct kii_error_t
+{
+  char* error_code;
+  char* error_message;
+} 
+kii_error_t;
+
+typedef struct kii_thing_t
+{
+  char* vendor_thing_id;
+  char* thing_id;
+  char* access_token;
+} 
+kii_thing_t;
 
 static void* response_realloc(void* opaque, void* ptr, int size)
 {
@@ -122,7 +139,9 @@ char** response_body)
   Serial.println(ctx->buff);
   if (http.sslConnect(ctx->host, 443)) 
   {
+    
     http.println(ctx->buff);
+    http.println("Connection:Close");
     String resp = "";
     Serial.println("Waiting for response...");
     while (http.connected()) {
@@ -137,7 +156,7 @@ char** response_body)
     }
 
     http_free(&rt);
-    
+
     *response_code = response.code;
     char *temp = new char[response.body.length()+1];
     strcpy(temp, response.body.c_str());
@@ -151,8 +170,7 @@ char** response_body)
 }
 
 void printWifiStatus();
-kii_thing_t parse_thing(char*);
-kii_error_t parse_error(char*);
+
 void setup() {
   //Initialize serial and wait for port to open:
   Serial.begin(115200);
@@ -165,30 +183,39 @@ void setup() {
   Serial.println(ssid);
   // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
   WiFi.begin(ssid, password);
-
+  long rand =0;
+  long rand2=0;
   while ( WiFi.status() != WL_CONNECTED) {
     // print dots while we wait to connect
     Serial.print(".");
-    delay(300);
+    rand +=random(10000);
+    rand2 +=random(rand);
+    delay(30);
   }
-
+  
   Serial.println("\nYou're connected to the network");
   Serial.println("Waiting for an ip address");
 
   while (WiFi.localIP() == INADDR_NONE) {
     // print dots while we wait for an ip addresss
     Serial.print(".");
-    delay(300);
+    rand +=random(10000 + rand);
+    delay(30);
   }
 
-  Serial.println("\nIP Address obtained");
+  aJsonObject* payload = aJson.createObject();
+  String generatedVendorID= "aaaa-"+String(rand, HEX)+"-"+ String(rand2, HEX) ;
+  aJson.addItemToObject(payload,"_vendorThingID",aJson.createItem(generatedVendorID.c_str()));
+  aJson.addItemToObject(payload,"_password",aJson.createItem("1234"));
+  
+  Serial.println("\nIP Address obtained :");
+  Serial.print(payload->valuestring);
   printWifiStatus();
   context_t ctx;
   kii_t kii;
   kii_state_t state;
   kii_error_code_t err;
   char buff[4096];
-  char thingData[] = "{\"_vendorThingID\":\"thing-7777-www-xxx-yyy-zzz\", \"_password\":\"1234\"}";
 
   /* Initialization */
   memset(&kii, 0x00, sizeof(kii));
@@ -209,7 +236,7 @@ void setup() {
   ctx.buff = buff;
   ctx.buff_size = 4096;
   /* Register Thing */
-  err = kii_register_thing(&kii, thingData);
+  err = kii_register_thing(&kii, aJson.print(payload));
   Serial.print("request:\n");
 
   if (err != KIIE_OK) {
@@ -222,25 +249,36 @@ void setup() {
     state = kii_get_state(&kii);
   } 
   while (state != KII_STATE_IDLE);
-  Serial.println("========response========");
-  Serial.println(kii.buffer);
-  Serial.println("========response========\n");
-  Serial.print("response_code:");
-  Serial.println( kii.response_code);
-  Serial.println("response_body:");
-  Serial.println( kii.response_body);
-  kii_thing_t thing;
+  
+  aJsonObject* root = aJson.parse(kii.response_body);
   if(kii.response_code==201)
   {
-    thing=parse_thing(kii.response_body);
+    kii_thing_t thing;
+
+    if(root != NULL){
+      aJsonObject* thingID = aJson.getObjectItem(root, "_thingID"); 
+      aJsonObject* vendorID = aJson.getObjectItem(root, "_vendorThingID"); 
+      aJsonObject* accessToken = aJson.getObjectItem(root, "_accessToken"); 
+      thing.vendor_thing_id = vendorID!=NULL?vendorID->valuestring:NULL;
+      thing.thing_id = thingID!=NULL?thingID->valuestring:NULL;
+      thing.access_token = accessToken!=NULL?accessToken->valuestring:NULL;
+    }
     Serial.print("thingID:");
     Serial.println(thing.thing_id);
     Serial.print("access token:");
     Serial.println(thing.access_token);
-    
-  }else
+
+  }
+  else
   {
-    kii_error_t error = parse_error(kii.response_body);
+    kii_error_t error;
+
+    if(root != NULL){
+      aJsonObject* errorCode = aJson.getObjectItem(root, "errorCode"); 
+      aJsonObject* errorMsg = aJson.getObjectItem(root, "message"); 
+      error.error_code = errorCode!=NULL?errorCode->valuestring:NULL;
+      error.error_message = errorMsg!=NULL?errorMsg->valuestring:NULL;
+    }
     Serial.print("error_code:");
     Serial.println(error.error_code);
   }
@@ -251,34 +289,8 @@ void loop()
 
 }
 
-kii_thing_t parse_thing(char* thing_data)
-{
-  kii_thing_t thing;
-  aJsonObject* root = aJson.parse(thing_data);
-  if(root != NULL){
-    aJsonObject* thingID = aJson.getObjectItem(root, "_thingID"); 
-    aJsonObject* vendorID = aJson.getObjectItem(root, "_vendorThingID"); 
-    aJsonObject* accessToken = aJson.getObjectItem(root, "_accessToken"); 
-    thing.vendor_thing_id = vendorID!=NULL?vendorID->valuestring:NULL;
-    thing.thing_id = thingID!=NULL?thingID->valuestring:NULL;
-    thing.access_token = accessToken!=NULL?accessToken->valuestring:NULL;
-  }
-  return thing;
-}
-  
-kii_error_t parse_error(char* error_data)
-{
-  kii_error_t error;
-  aJsonObject* root = aJson.parse(error_data);
-  if(root != NULL){
-    aJsonObject* errorCode = aJson.getObjectItem(root, "errorCode"); 
-    aJsonObject* errorMsg = aJson.getObjectItem(root, "message"); 
-    error.error_code = errorCode!=NULL?errorCode->valuestring:NULL;
-    error.error_message = errorMsg!=NULL?errorMsg->valuestring:NULL;
-  }
-  return error;
-}
-  
+
+
 void printWifiStatus() {
   // print the SSID of the network you're attached to:
   Serial.print("SSID: ");
@@ -295,6 +307,12 @@ void printWifiStatus() {
   Serial.print(rssi);
   Serial.println(" dBm");
 }
+
+void print_current_time_with_ms (void)
+{
+    
+}
+
 
 
 
