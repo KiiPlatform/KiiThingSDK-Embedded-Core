@@ -134,7 +134,9 @@ prv_http_request(
         char bearer[] = "bearer ";
         int token_len = strlen(access_token);
         int bearer_len = token_len + strlen(bearer);
-        char* bearer_buff[bearer_len + 1];
+        char* bearer_buff = NULL;
+
+        bearer_buff = (char *)malloc(bearer_len + 1);
         memset(bearer_buff, 0x00, bearer_len + 1);
         sprintf(bearer_buff, "%s%s", bearer, access_token);
         result = kii->http_set_header_cb(
@@ -142,6 +144,7 @@ prv_http_request(
                 "authorization",
                 bearer_buff
                 );
+        free(bearer_buff);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
             return KIIE_FAIL;
