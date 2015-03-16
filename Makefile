@@ -1,4 +1,4 @@
-CFLAGS = -std=gnu89
+CFLAGS = -std=gnu89 -Wall
 ifdef DEBUG
 CFLAGS += -g -DDEBUG
 endif

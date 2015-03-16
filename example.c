@@ -857,21 +857,16 @@ static int get_endpoint(kii_t* kii)
 
 int main(int argc, char** argv)
 {
-    kii_state_t state;
-    kii_error_code_t err;
-
     context_t ctx;
     kii_t kii;
     char buff[4096];
 
     int optval;
-    int digit_optind = 0;
 
     /* Initialization */
     init(&kii, buff, &ctx);
 
     while (1) {
-        int this_option_optind = optind ? optind : 1;
         int option_index = 0;
         static struct option long_options[] = {
             {"register", no_argument, NULL,  0},
@@ -971,5 +966,6 @@ int main(int argc, char** argv)
             printf("%s ", argv[optind++]);
         printf("\n");
     }
+    return 0;
 }
 
