@@ -155,8 +155,8 @@ static kii_http_client_code_t prv_ssl_close(void* app_context)
     context_t* ctx = (context_t*)app_context;
     int ret = SSL_shutdown(ctx->ssl);
     if (ret != 1) {
-        int sslErr= SSL_get_error(ctx->ssl, ret);
-        if (sslErr = SSL_ERROR_SYSCALL) {
+        int sslErr = SSL_get_error(ctx->ssl, ret);
+        if (sslErr == SSL_ERROR_SYSCALL) {
             /* This is OK.*/
             /* See https://www.openssl.org/docs/ssl/SSL_shutdown.html */
             ret = 1;
@@ -265,7 +265,7 @@ kii_http_client_code_t
                     ctx->state = PRV_SSL_STATE_RECV;
                 }
                 return KII_HTTPC_AGAIN;
-            } else if(res = KII_HTTPC_AGAIN) {
+            } else if(res == KII_HTTPC_AGAIN) {
                 return KII_HTTPC_AGAIN;
             } else {
                 ctx->state = PRV_SSL_STATE_IDLE;
@@ -366,23 +366,23 @@ void init(kii_t* kii, char* buff, context_t* ctx) {
 static void set_author(kii_t* kii, kii_author_t* author)
 {
     memset(author, 0x00, sizeof(kii_author_t));
-    author->author_id = EX_THING_ID;
-    author->access_token = EX_ACCESS_TOKEN;
+    author->author_id = (char*)EX_THING_ID;
+    author->access_token = (char*)EX_ACCESS_TOKEN;
     kii->author = author;
 }
 
 static void init_bucket(kii_bucket_t* bucket) {
     memset(bucket, 0x00, sizeof(kii_bucket_t));
     bucket->scope = KII_SCOPE_THING;
-    bucket->scope_id = EX_THING_ID;
-    bucket->bucket_name = EX_BUCKET_NAME;
+    bucket->scope_id = (char*)EX_THING_ID;
+    bucket->bucket_name = (char*)EX_BUCKET_NAME;
 }
 
 static void init_topic(kii_topic_t* topic) {
     memset(topic, 0x00, sizeof(kii_topic_t));
     topic->scope = KII_SCOPE_THING;
-    topic->scope_id = EX_THING_ID;
-    topic->topic_name = EX_TOPIC_NAME;
+    topic->scope_id = (char*)EX_THING_ID;
+    topic->topic_name = (char*)EX_TOPIC_NAME;
 }
 
 static void print_response(kii_t* kii)
@@ -423,6 +423,7 @@ static int register_thing(kii_t* kii)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 static int create_new_object(kii_t* kii)
@@ -454,6 +455,7 @@ static int create_new_object(kii_t* kii)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 static int create_new_object_with_id(kii_t* kii, const char* id)
@@ -486,6 +488,7 @@ static int create_new_object_with_id(kii_t* kii, const char* id)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 static int patch_object(kii_t* kii, const char* id)
@@ -518,6 +521,7 @@ static int patch_object(kii_t* kii, const char* id)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 static int replace_object(kii_t* kii, const char* id)
@@ -550,6 +554,7 @@ static int replace_object(kii_t* kii, const char* id)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 static int get_object(kii_t* kii, const char* id)
@@ -580,6 +585,7 @@ static int get_object(kii_t* kii, const char* id)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 static int delete_object(kii_t* kii, const char* id)
@@ -610,6 +616,7 @@ static int delete_object(kii_t* kii, const char* id)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 static int subscribe_bucket(kii_t* kii, const char* bucket_name)
@@ -639,6 +646,7 @@ static int subscribe_bucket(kii_t* kii, const char* bucket_name)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 static int unsubscribe_bucket(kii_t* kii, const char* bucket_name)
@@ -668,6 +676,7 @@ static int unsubscribe_bucket(kii_t* kii, const char* bucket_name)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 static int create_topic(kii_t* kii)
@@ -697,6 +706,7 @@ static int create_topic(kii_t* kii)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 static int delete_topic(kii_t* kii)
@@ -726,6 +736,7 @@ static int delete_topic(kii_t* kii)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 static int subscribe_topic(kii_t* kii)
@@ -755,6 +766,7 @@ static int subscribe_topic(kii_t* kii)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 static int unsubscribe_topic(kii_t* kii)
@@ -784,6 +796,7 @@ static int unsubscribe_topic(kii_t* kii)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 static int install_push(kii_t* kii)
@@ -811,6 +824,7 @@ static int install_push(kii_t* kii)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 static int get_endpoint(kii_t* kii)
@@ -838,6 +852,7 @@ static int get_endpoint(kii_t* kii)
     }
     print_response(kii);
     parse_response(kii->response_body);
+    return 0;
 }
 
 int main(int argc, char** argv)
