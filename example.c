@@ -25,7 +25,7 @@ typedef enum prv_ssl_state_t {
     PRV_SSL_STATE_CONNECT,
     PRV_SSL_STATE_SEND,
     PRV_SSL_STATE_RECV,
-    PRV_SSL_STATE_CLOSE,
+    PRV_SSL_STATE_CLOSE
 } prv_ssl_state_t;
 
 typedef struct context_t
@@ -143,7 +143,7 @@ static kii_http_client_code_t prv_ssl_recv(void* app_context, char* recv_buff, i
         return KII_HTTPC_OK;
     } else {
         printf("failed to receive:\n");
-        // TOOD: could be 0 on success?
+        /* TOOD: could be 0 on success? */
         *out_actual_length = 0;
         return KII_HTTPC_FAIL;
     }
@@ -187,7 +187,7 @@ kii_http_client_code_t
     context_t* ctx = (context_t*)http_context;
     char* reqBuff = ctx->buff;
     strncpy(ctx->host, host, strlen(host));
-    // TODO: prevent overflow.
+    /* TODO: prevent overflow. */
     sprintf(reqBuff, "%s https://%s/%s HTTP/1.1\r\n", method, host, path);
 
     return KII_HTTPC_OK;
@@ -199,7 +199,7 @@ kii_http_client_code_t
         const char* key,
         const char* value)
 {
-    // TODO: prevent overflow.
+    /* TODO: prevent overflow. */
     char* reqBuff = ((context_t*)http_context)->buff;
     strcat(reqBuff, key);
     strcat(reqBuff, ":");
@@ -213,7 +213,7 @@ kii_http_client_code_t
         void* http_context,
         const char* body_data)
 {
-    // TODO: prevent overflow.
+    /* TODO: prevent overflow. */
     char* reqBuff = ((context_t*)http_context)->buff;
     strcat(reqBuff, "\r\n");
     if (body_data != NULL) {
@@ -229,8 +229,9 @@ kii_http_client_code_t
         char** response_body)
 {
     context_t* ctx = (context_t*)http_context;
-    printf("client state: %d\n", ctx->state);
     kii_http_client_code_t res;
+
+    printf("client state: %d\n", ctx->state);
     switch (ctx->state) {
         case PRV_SSL_STATE_IDLE:
             ctx->state = PRV_SSL_STATE_CONNECT;
@@ -248,13 +249,14 @@ kii_http_client_code_t
             }
         case PRV_SSL_STATE_SEND:
         {
+            char* sendBuff = NULL;
             int size = BUFF_SIZE;
             int remain = strlen(ctx->buff) - ctx->sent_size;
             if (remain < size) {
                 size = remain;
                 ctx->last_chunk = 1;
             }
-            char* sendBuff = ctx->buff + ctx->sent_size;
+            sendBuff = ctx->buff + ctx->sent_size;
             res = prv_ssl_send(
                     ctx,
                     sendBuff,
@@ -432,8 +434,9 @@ static int create_new_object(kii_t* kii)
     kii_error_code_t err;
     
     kii_bucket_t bucket;
-    init_bucket(&bucket);
     kii_author_t author;
+
+    init_bucket(&bucket);
     set_author(kii, &author);
 
     err = kii_create_new_object(
@@ -464,8 +467,9 @@ static int create_new_object_with_id(kii_t* kii, const char* id)
     kii_error_code_t err;
     
     kii_bucket_t bucket;
-    init_bucket(&bucket);
     kii_author_t author;
+
+    init_bucket(&bucket);
     set_author(kii, &author);
 
     err = kii_create_new_object_with_id(
@@ -497,8 +501,9 @@ static int patch_object(kii_t* kii, const char* id)
     kii_error_code_t err;
 
     kii_bucket_t bucket;
-    init_bucket(&bucket);
     kii_author_t author;
+
+    init_bucket(&bucket);
     set_author(kii, &author);
 
     err = kii_patch_object(
@@ -530,8 +535,9 @@ static int replace_object(kii_t* kii, const char* id)
     kii_error_code_t err;
 
     kii_bucket_t bucket;
-    init_bucket(&bucket);
     kii_author_t author;
+
+    init_bucket(&bucket);
     set_author(kii, &author);
 
     err = kii_replace_object(
@@ -563,8 +569,9 @@ static int get_object(kii_t* kii, const char* id)
     kii_error_code_t err;
 
     kii_bucket_t bucket;
-    init_bucket(&bucket);
     kii_author_t author;
+
+    init_bucket(&bucket);
     set_author(kii, &author);
 
     err = kii_get_object(
@@ -594,8 +601,9 @@ static int delete_object(kii_t* kii, const char* id)
     kii_error_code_t err;
 
     kii_bucket_t bucket;
-    init_bucket(&bucket);
     kii_author_t author;
+
+    init_bucket(&bucket);
     set_author(kii, &author);
 
     err = kii_delete_object(
@@ -625,8 +633,9 @@ static int subscribe_bucket(kii_t* kii, const char* bucket_name)
     kii_error_code_t err;
 
     kii_bucket_t bucket;
-    init_bucket(&bucket);
     kii_author_t author;
+
+    init_bucket(&bucket);
     set_author(kii, &author);
 
     err = kii_subscribe_bucket(
@@ -655,8 +664,9 @@ static int unsubscribe_bucket(kii_t* kii, const char* bucket_name)
     kii_error_code_t err;
 
     kii_bucket_t bucket;
-    init_bucket(&bucket);
     kii_author_t author;
+
+    init_bucket(&bucket);
     set_author(kii, &author);
 
     err = kii_unsubscribe_bucket(
@@ -685,8 +695,9 @@ static int create_topic(kii_t* kii)
     kii_error_code_t err;
 
     kii_topic_t topic;
-    init_topic(&topic);
     kii_author_t author;
+
+    init_topic(&topic);
     set_author(kii, &author);
 
     err = kii_create_topic(
@@ -715,8 +726,9 @@ static int delete_topic(kii_t* kii)
     kii_error_code_t err;
 
     kii_topic_t topic;
-    init_topic(&topic);
     kii_author_t author;
+
+    init_topic(&topic);
     set_author(kii, &author);
 
     err = kii_delete_topic(
@@ -745,8 +757,9 @@ static int subscribe_topic(kii_t* kii)
     kii_error_code_t err;
 
     kii_topic_t topic;
-    init_topic(&topic);
     kii_author_t author;
+
+    init_topic(&topic);
     set_author(kii, &author);
 
     err = kii_subscribe_topic(
@@ -775,8 +788,9 @@ static int unsubscribe_topic(kii_t* kii)
     kii_error_code_t err;
 
     kii_topic_t topic;
-    init_topic(&topic);
     kii_author_t author;
+
+    init_topic(&topic);
     set_author(kii, &author);
 
     err = kii_unsubscribe_topic(
