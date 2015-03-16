@@ -1,4 +1,4 @@
-#include "kii.h"
+#include "../kii.h"
 #include "example.h"
 #include <stdio.h>
 #include <string.h>
