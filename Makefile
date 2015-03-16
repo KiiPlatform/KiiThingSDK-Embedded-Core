@@ -7,12 +7,12 @@ LIBS = -lssl -lcrypto
 SOURCES = $(wildcard *.c)
 TARGET = exampleapp
 
+all: clean $(TARGET)
+
 $(TARGET):
 	gcc $(CFLAGS) $(SOURCES) $(LIBS) -o $@
 
 clean:
 	rm $(TARGET)
 
-all: $(TARGET)
-
-.PHONY: clean
+.PHONY: all clean
