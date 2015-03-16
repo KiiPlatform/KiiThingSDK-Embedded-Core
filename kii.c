@@ -88,7 +88,7 @@ prv_set_thing_register_path(kii_t* kii)
             kii->app_id);
 }
 
-    static kii_http_client_code_t
+    static kii_error_code_t 
 prv_http_request(
         kii_t* kii,
         const char* method,
@@ -141,7 +141,7 @@ prv_http_request(
 
     if (access_token != NULL) {
         char bearer[] = "bearer ";
-        char* bearer_buff[MAX_AUTH_BUFF_SIZE];
+        char bearer_buff[MAX_AUTH_BUFF_SIZE];
 
         if (strlen(access_token) + strlen(bearer) >= MAX_AUTH_BUFF_SIZE) {
             M_KII_LOG(M_REQUEST_HEADER_CB_AUTH_HEADER);
@@ -284,7 +284,7 @@ kii_register_thing(
         kii_t* kii,
         const char* thing_data)
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     prv_set_thing_register_path(kii);
     result = prv_http_request(
             kii,
@@ -315,7 +315,7 @@ kii_thing_authentication(kii_t* kii,
         const char* password
         )
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char body[256];
 
     prv_set_auth_path(kii);
@@ -349,7 +349,7 @@ kii_create_new_object(
         const char* object_data,
         const char* object_content_type)
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
 
@@ -382,7 +382,7 @@ kii_create_new_object_with_id(
         const char* object_content_type
         )
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
@@ -415,7 +415,7 @@ kii_patch_object(
         const char* patch_data,
         const char* opt_etag)
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
@@ -445,7 +445,7 @@ kii_replace_object(
         const char* replace_data,
         const char* opt_etag)
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
@@ -473,7 +473,7 @@ kii_get_object(
         const kii_bucket_t* bucket,
         const char* object_id)
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
@@ -501,7 +501,7 @@ kii_delete_object(
         const kii_bucket_t* bucket,
         const char* object_id)
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
@@ -528,7 +528,7 @@ kii_subscribe_bucket(
         kii_t* kii,
         const kii_bucket_t* bucket)
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
@@ -554,7 +554,7 @@ kii_unsubscribe_bucket(
         kii_t* kii,
         const kii_bucket_t* bucket)
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
@@ -581,7 +581,7 @@ kii_create_topic(
         kii_t* kii,
         const kii_topic_t* topic)
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_topic_path(kii, topic, kii->_http_request_path);
@@ -604,7 +604,7 @@ kii_delete_topic(
         kii_t* kii,
         const kii_topic_t* topic)
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_topic_path(kii, topic, kii->_http_request_path);
@@ -627,7 +627,7 @@ kii_subscribe_topic(
         kii_t* kii,
         const kii_topic_t* topic)
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_topic_path(kii, topic, kii->_http_request_path);
@@ -653,7 +653,7 @@ kii_unsubscribe_topic(
         kii_t* kii,
         const kii_topic_t* topic)
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_topic_path(kii, topic, kii->_http_request_path);
@@ -696,7 +696,7 @@ kii_install_thing_push(
         kii_t* kii,
         kii_bool_t development)
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char body[256];
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
@@ -726,7 +726,7 @@ kii_get_mqtt_endpoint(
         kii_t* kii,
         const char* installation_id)
 {
-    kii_http_client_code_t result;
+    kii_error_code_t result;
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_set_mqtt_endpoint_path(kii, installation_id);
