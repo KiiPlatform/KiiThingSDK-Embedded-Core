@@ -6,6 +6,7 @@
 #ifdef DEBUG
 #define M_REQUEST_LINE_CB_FAILED "failed to set request line\n"
 #define M_REQUEST_HEADER_CB_FAILED "failed to set request header\n"
+#define M_REQUEST_HEADER_CB_AUTH_HEADER "access token is too long\n"
 #define M_REQUEST_BODY_CB_FAILED "failed to set request body\n"
 
 #ifndef __FILE__
@@ -24,6 +25,14 @@
 #else
 #define M_KII_LOG(x)
 #endif
+
+/*
+  This is a size of authorization header.
+  128 may be enough size to set authorization header.
+  If length of access token becomes large, then this size should be
+  changed.
+*/
+#define MAX_AUTH_BUFF_SIZE 128
 
 const char DEFAULT_OBJECT_CONTENT_TYPE[] = "application/json";
 
@@ -132,10 +141,13 @@ prv_http_request(
 
     if (access_token != NULL) {
         char bearer[] = "bearer ";
-        int token_len = strlen(access_token);
-        int bearer_len = token_len + strlen(bearer);
-        char bearer_buff[bearer_len + 1];
-        memset(bearer_buff, 0x00, bearer_len + 1);
+        char* bearer_buff[MAX_AUTH_BUFF_SIZE];
+
+        if (strlen(access_token) + strlen(bearer) >= MAX_AUTH_BUFF_SIZE) {
+            M_KII_LOG(M_REQUEST_HEADER_CB_AUTH_HEADER);
+            return KIIE_FAIL;
+        }
+        memset(bearer_buff, 0x00, MAX_AUTH_BUFF_SIZE);
         sprintf(bearer_buff, "%s%s", bearer, access_token);
         result = kii->http_set_header_cb(
                 kii->http_context,
