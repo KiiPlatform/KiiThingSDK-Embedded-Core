@@ -1,4 +1,5 @@
 #include "kii.h"
+#include "example.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -365,23 +366,23 @@ void init(kii_t* kii, char* buff, context_t* ctx) {
 static void set_author(kii_t* kii, kii_author_t* author)
 {
     memset(author, 0x00, sizeof(kii_author_t));
-    author->author_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
-    author->access_token = "rYZCxdQ2z1pLwt0su2mjrzUezCqCguaawIwZxMyca7o";
+    author->author_id = EX_THING_ID;
+    author->access_token = EX_ACCESS_TOKEN;
     kii->author = author;
 }
 
 static void init_bucket(kii_bucket_t* bucket) {
     memset(bucket, 0x00, sizeof(kii_bucket_t));
     bucket->scope = KII_SCOPE_THING;
-    bucket->scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
-    bucket->bucket_name = "myBucket";
+    bucket->scope_id = EX_THING_ID;
+    bucket->bucket_name = EX_BUCKET_NAME;
 }
 
 static void init_topic(kii_topic_t* topic) {
     memset(topic, 0x00, sizeof(kii_topic_t));
     topic->scope = KII_SCOPE_THING;
-    topic->scope_id = "th.34cc40051321-0eab-4e11-f71c-09eb58f4";
-    topic->topic_name = "myTopic";
+    topic->scope_id = EX_THING_ID;
+    topic->topic_name = EX_TOPIC_NAME;
 }
 
 static void print_response(kii_t* kii)
@@ -437,7 +438,7 @@ static int create_new_object(kii_t* kii)
     err = kii_create_new_object(
             kii,
             &bucket,
-            "{}",
+            EX_OBJECT_DATA,
             NULL);
     printf("request:\n%s\n", kii->buffer);
     if (err != KIIE_OK) {
@@ -469,7 +470,7 @@ static int create_new_object_with_id(kii_t* kii, const char* id)
             kii,
             &bucket,
             id,
-            "{}",
+            EX_OBJECT_DATA,
             NULL);
     printf("request:\n%s\n", kii->buffer);
     if (err != KIIE_OK) {
@@ -501,7 +502,7 @@ static int patch_object(kii_t* kii, const char* id)
             kii,
             &bucket,
             id,
-            "{}",
+            EX_OBJECT_DATA,
             NULL);
     printf("request:\n%s\n", kii->buffer);
     if (err != KIIE_OK) {
@@ -533,7 +534,7 @@ static int replace_object(kii_t* kii, const char* id)
             kii,
             &bucket,
             id,
-            "{}",
+            EX_OBJECT_DATA,
             NULL);
     printf("request:\n%s\n", kii->buffer);
     if (err != KIIE_OK) {
@@ -822,7 +823,7 @@ static int get_endpoint(kii_t* kii)
 
     err = kii_get_mqtt_endpoint(
             kii,
-            "p6i5c3h59b193cmht5gdyzi3a");
+            EX_MQTT_ENDPOINT);
     printf("request:\n%s\n", kii->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
@@ -892,31 +893,31 @@ int main(int argc, char** argv)
             break;
         case 2:
             printf("create new object with id\n");
-            create_new_object_with_id(&kii, "my_object");
+            create_new_object_with_id(&kii, EX_OBJECT_ID);
             break;
         case 3:
             printf("patch object\n");
-            patch_object(&kii, "my_object");
+            patch_object(&kii, EX_OBJECT_ID);
             break;
         case 4:
             printf("replace object\n");
-            replace_object(&kii, "my_object");
+            replace_object(&kii, EX_OBJECT_ID);
             break;
         case 5:
             printf("get object\n");
-            get_object(&kii, "my_object");
+            get_object(&kii, EX_OBJECT_ID);
             break;
         case 6:
             printf("delete object\n");
-            delete_object(&kii, "my_object");
+            delete_object(&kii, EX_OBJECT_ID);
             break;
         case 7:
             printf("subscribe bucket\n");
-            subscribe_bucket(&kii, "myBucket");
+            subscribe_bucket(&kii, EX_BUCKET_NAME);
             break;
         case 8:
             printf("unsubscribe bucket\n");
-            unsubscribe_bucket(&kii, "myBucket");
+            unsubscribe_bucket(&kii, EX_BUCKET_NAME);
             break;
         case 9:
             printf("create topic\n");
