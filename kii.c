@@ -25,10 +25,12 @@
 #define M_KII_LOG(x)
 #endif
 
-// This is a size of authorization header.
-// 128 may be enough size to set authorization header.
-// If length of access token becomes large, then this size should be
-// changed.
+/*
+  This is a size of authorization header.
+  128 may be enough size to set authorization header.
+  If length of access token becomes large, then this size should be
+  changed.
+*/
 #define MAX_AUTH_BUFF_SIZE 128
 
 const char DEFAULT_OBJECT_CONTENT_TYPE[] = "application/json";
