@@ -113,6 +113,11 @@ kii_register_thing(kii_t* kii,
         const char* thing_data);
 
 kii_error_code_t
+kii_thing_authentication(kii_t* kii,
+        const char* thing_id,
+        const char* password);
+
+kii_error_code_t
 kii_create_new_object(
         kii_t* kii,
         const kii_bucket_t* bucket,

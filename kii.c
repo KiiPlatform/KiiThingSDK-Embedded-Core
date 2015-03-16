@@ -290,6 +290,46 @@ kii_register_thing(
     return result;
 }
 
+    static void
+prv_set_auth_path(kii_t* kii)
+{
+    sprintf(kii->_http_request_path,
+            "api/oauth2/token");
+}
+
+    kii_error_code_t
+kii_thing_authentication(kii_t* kii,
+        const char* vendor_thing_id,
+        const char* password,
+        )
+{
+    kii_http_client_code_t result;
+    char body[256];
+
+    prv_set_auth_path(kii);
+    memset(body, 0x00, sizeof(body));
+    sprintf(body,
+            "{\"username\":\"VENDOR_THING_ID:%s\", \"password\": \"%s\"}",
+            veondor_thing_id,
+            password);
+
+    result = prv_http_request(
+            kii,
+            "POST",
+            kii->_http_request_path,
+            "application/json",
+            NULL,
+            NULL,
+            body
+            );
+
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
+}
+
+
     kii_error_code_t
 kii_create_new_object(
         kii_t* kii,
