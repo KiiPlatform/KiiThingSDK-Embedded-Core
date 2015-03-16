@@ -6,6 +6,7 @@
 #ifdef DEBUG
 #define M_REQUEST_LINE_CB_FAILED "failed to set request line\n"
 #define M_REQUEST_HEADER_CB_FAILED "failed to set request header\n"
+#define M_REQUEST_HEADER_CB_AUTH_HEADER "access token is too long\n"
 #define M_REQUEST_BODY_CB_FAILED "failed to set request body\n"
 
 #ifndef __FILE__
@@ -140,9 +141,12 @@ prv_http_request(
 
     if (access_token != NULL) {
         char bearer[] = "bearer ";
-        int token_len = strlen(access_token);
-        int bearer_len = token_len + strlen(bearer);
         char* bearer_buff[MAX_AUTH_BUFF_SIZE];
+
+        if (strlen(access_token) + strlen(bearer) >= MAX_AUTH_BUFF_SIZE) {
+            M_KII_LOG(M_REQUEST_HEADER_CB_AUTH_HEADER);
+            return KIIE_FAIL;
+        }
         memset(bearer_buff, 0x00, MAX_AUTH_BUFF_SIZE);
         sprintf(bearer_buff, "%s%s", bearer, access_token);
         result = kii->http_set_header_cb(
