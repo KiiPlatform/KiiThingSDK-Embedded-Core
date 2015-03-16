@@ -300,7 +300,7 @@ prv_set_auth_path(kii_t* kii)
     kii_error_code_t
 kii_thing_authentication(kii_t* kii,
         const char* vendor_thing_id,
-        const char* password,
+        const char* password
         )
 {
     kii_http_client_code_t result;
@@ -310,7 +310,7 @@ kii_thing_authentication(kii_t* kii,
     memset(body, 0x00, sizeof(body));
     sprintf(body,
             "{\"username\":\"VENDOR_THING_ID:%s\", \"password\": \"%s\"}",
-            veondor_thing_id,
+            vendor_thing_id,
             password);
 
     result = prv_http_request(
