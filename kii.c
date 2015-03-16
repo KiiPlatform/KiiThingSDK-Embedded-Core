@@ -58,7 +58,7 @@ kii_run(kii_t* kii)
                 return KIIE_FAIL;
             }
         default:
-            assert(0);
+            return KIIE_FAIL;
     }
 }
 
@@ -68,7 +68,7 @@ prv_content_length_str(
         char* buff,
         size_t buff_len)
 {
-    snprintf(buff, buff_len, "%zu", content_length);
+    snprintf(buff, buff_len, "%lu", content_length);
 }
 
     static void
