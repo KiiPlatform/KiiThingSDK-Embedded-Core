@@ -3,293 +3,732 @@
 #include <string.h>
 #include <assert.h>
 
-kii_state_t
+#ifdef DEBUG
+#define M_REQUEST_LINE_CB_FAILED "failed to set request line\n"
+#define M_REQUEST_HEADER_CB_FAILED "failed to set request header\n"
+#define M_REQUEST_BODY_CB_FAILED "failed to set request body\n"
+
+#ifndef __FILE__
+#define __FILE__ ("__FILE__ macro is not available")
+#endif
+
+#ifndef __LINE__
+#define __LINE__ (-1)
+#endif
+
+#define M_KII_LOG(x) \
+    if (kii->logger_cb != NULL) {\
+        kii->logger_cb("file:%s, line:%d ", __FILE__, __LINE__); \
+        kii->logger_cb(x); \
+    }
+#else
+#define M_KII_LOG(x)
+#endif
+
+const char DEFAULT_OBJECT_CONTENT_TYPE[] = "application/json";
+
+    kii_state_t
 kii_get_state(kii_t* kii)
 {
     return kii->_state;
 }
 
-kii_error_code_t
+    kii_error_code_t
 kii_run(kii_t* kii)
 {
-    kii_bool_t callbackResult;
+    kii_http_client_code_t cbr;
     switch(kii->_state) {
         case KII_STATE_IDLE:
             return KIIE_FAIL;
         case KII_STATE_READY:
-            kii->_sent_size = 0;
-            kii->_last_chunk = 0;
-            kii->_received_size = 0;
-            kii->_state = KII_STATE_CONNECT;
+            kii->_state = KII_STATE_EXECUTE;
             return KIIE_OK;
-        case KII_STATE_CONNECT:
-            callbackResult = kii->callback_connect_ptr(kii->app_context, kii->app_host);
-            if (callbackResult == KII_TRUE) {
-                kii->_state = KII_STATE_SEND;
+        case KII_STATE_EXECUTE:
+            cbr = kii->http_execute_cb(
+                    kii->http_context,
+                    &(kii->response_code),
+                    &(kii->response_body));
+            if (cbr == KII_HTTPC_OK) {
+                kii->_state = KII_STATE_IDLE;
+                return KIIE_OK;
+            } else if (cbr == KII_HTTPC_AGAIN) {
                 return KIIE_OK;
             } else {
                 kii->_state = KII_STATE_IDLE;
                 return KIIE_FAIL;
             }
-        case KII_STATE_SEND:
-            {
-                int remain;
-                int size = BUFF_SIZE;
-                remain = strlen(kii->buffer) - kii->_sent_size;
-                if (remain < BUFF_SIZE) {
-                    size = remain;
-                    kii->_last_chunk = 1;
-                }
-                callbackResult =
-                    kii->callback_send_ptr(
-                            kii->app_context,
-                            kii->buffer + kii->_sent_size,
-                            size);
-                if (callbackResult == KII_TRUE) {
-                    kii->_sent_size += size;
-                    if (kii->_last_chunk > 0) {
-                        kii->_state = KII_STATE_RECV;
-                    }
-                    return KIIE_OK;
-                } else {
-                    kii->_state = KII_STATE_IDLE;
-                    return KIIE_FAIL;
-                }
-            }
-        case KII_STATE_RECV:
-            {
-                int actualLength = 0;
-                char* buffPtr = kii->buffer + kii->_received_size;
-                if (kii->_received_size == 0) {
-                    memset(kii->buffer, 0x00, kii->buffer_size);
-                }
-                callbackResult = kii->callback_recv_ptr(
-                        kii->app_context,
-                        buffPtr, BUFF_SIZE,
-                        &actualLength);
-                if (callbackResult == KII_TRUE) {
-                    printf("recv buff:\n%s\n", kii->buffer);
-                    kii->_received_size += actualLength;
-                    if (actualLength < BUFF_SIZE) {
-                        kii->_state = KII_STATE_CLOSE;
-                    }
-                    return KIIE_OK;
-                } else {
-                    kii->_state = KII_STATE_IDLE;
-                    return KIIE_FAIL;
-                }
-            }
-        case KII_STATE_CLOSE:
-            callbackResult = kii->callback_close_ptr(kii->app_context);
-            kii->_state = KII_STATE_IDLE;
-            if (callbackResult == KII_TRUE) {
-                return KIIE_OK;
-            }
-            return KIIE_FAIL;
         default:
             assert(0);
     }
 }
 
-static void prv_print_request_line(kii_t* kii, char* method)
+    static void
+prv_content_length_str(
+        size_t content_length,
+        char* buff,
+        size_t buff_len)
 {
-    sprintf(kii->buffer, "%s %s HTTP/1.1\r\n", method, kii->request_url);
+    snprintf(buff, buff_len, "%zu", content_length);
 }
 
-static void prv_print_kii_headers(kii_t* kii)
+    static void
+prv_set_thing_register_path(kii_t* kii)
 {
-    strcat(kii->buffer, "x-kii-appid:");
-    strcat(kii->buffer, kii->app_id);
-    strcat(kii->buffer, "\r\n");
-    strcat(kii->buffer, "x-kii-appkey:");
-    strcat(kii->buffer, kii->app_key);
-    strcat(kii->buffer, "\r\n");
-}
-
-static size_t prv_calculate_content_length(const char* request_body)
-{
-    return strlen(request_body);
-}
-
-static void prv_print_content_length(kii_t* kii, size_t length)
-{
-    assert(length <= 99999999);
-    char slength[8];
-    sprintf(slength, "%zu", length);
-    strcat(kii->buffer, "content-length:");
-    strcat(kii->buffer, slength);
-    strcat(kii->buffer, "\r\n");
-}
-
-static void prv_print_content_type(kii_t* kii, char* content_type)
-{
-    strcat(kii->buffer, "content-type:");
-    strcat(kii->buffer, content_type);
-    strcat(kii->buffer, "\r\n");
-}
-
-static void prv_print_CRLF(kii_t* kii)
-{
-    strcat(kii->buffer, "\r\n");
-}
-
-static void prv_print_body(kii_t* kii, const char* request_body)
-{
-    strcat(kii->buffer, request_body);
-}
-
-static void prv_set_thing_register_url(kii_t* kii)
-{
-    sprintf(kii->request_url,
-            "https://%s/api/apps/%s/things",
-            kii->app_host,
+    sprintf(kii->_http_request_path,
+            "api/apps/%s/things",
             kii->app_id);
 }
 
-kii_error_code_t
-kii_register_thing(kii_t* kii,
-        const char* thing_data)
+    static kii_http_client_code_t
+prv_http_request(
+        kii_t* kii,
+        const char* method,
+        const char* resource_path,
+        const char* content_type,
+        const char* access_token,
+        const char* etag,
+        const char* body)
 {
-    prv_set_thing_register_url(kii);
-    prv_print_request_line(kii, "POST");
-    prv_print_kii_headers(kii);
-    prv_print_content_type(kii,
-            "application/vnd.kii.ThingRegistrationAndAuthorizationRequest+json");
-    size_t contentLength = prv_calculate_content_length(thing_data);
-    prv_print_content_length(kii, contentLength);
-    prv_print_CRLF(kii);
-    prv_print_body(kii, thing_data);
-    kii->_state = KII_STATE_READY;
+    kii_http_client_code_t result;
+    result = kii->http_set_request_line_cb(
+            kii->http_context,
+            method,
+            kii->app_host,
+            resource_path);
+    if (result != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+        return KIIE_FAIL;
+    }
 
+    result = kii->http_set_header_cb(
+            kii->http_context,
+            "x-kii-appid",
+            kii->app_id);
+    if (result != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    result = kii->http_set_header_cb(
+            kii->http_context,
+            "x-kii-appkey",
+            kii->app_key);
+    if (result != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    if (content_type != NULL) {
+        result = kii->http_set_header_cb(
+                kii->http_context,
+                "content-type",
+                content_type
+                );
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+            return KIIE_FAIL;
+        }
+    }
+
+    if (access_token != NULL) {
+        char bearer[] = "bearer ";
+        int token_len = strlen(access_token);
+        int bearer_len = token_len + strlen(bearer);
+        char* bearer_buff[bearer_len + 1];
+        memset(bearer_buff, 0x00, bearer_len + 1);
+        sprintf(bearer_buff, "%s%s", bearer, access_token);
+        result = kii->http_set_header_cb(
+                kii->http_context,
+                "authorization",
+                bearer_buff
+                );
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+            return KIIE_FAIL;
+        }
+    }
+
+    if (etag != NULL) {
+        result = kii->http_set_header_cb(
+                kii->http_context,
+                "etag",
+                etag 
+                );
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+            return KIIE_FAIL;
+        }
+    }
+
+    if (body != NULL) {
+        char content_length[8];
+        memset(content_length, 0x00, 8);
+        prv_content_length_str(strlen(body), content_length, 8);
+        result = kii->http_set_header_cb(
+                kii->http_context,
+                "content-length",
+                content_length
+                );
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+            return KIIE_FAIL;
+        }
+
+        kii->http_set_body_cb(
+                kii->http_context,
+                body);
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
+    } else {
+        kii->http_set_body_cb(
+                kii->http_context,
+                NULL);
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
+    }
     return KIIE_OK;
 }
 
-kii_error_code_t
-kii_create_new_object(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
-        const char* object_data)
+    static void
+prv_bucket_path(
+        kii_t* kii,
+        const kii_bucket_t* bucket,
+        char* path)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    switch(bucket->scope) {
+        case KII_SCOPE_APP:
+            sprintf(path,
+                    "api/apps/%s/buckets/%s",
+                    kii->app_id,
+                    bucket->bucket_name);
+            break;
+        case KII_SCOPE_USER:
+            sprintf(path,
+                    "api/apps/%s/users/%s/buckets/%s",
+                    kii->app_id,
+                    bucket->scope_id,
+                    bucket->bucket_name);
+            break;
+        case KII_SCOPE_GROUP:
+            sprintf(path,
+                    "api/apps/%s/groups/%s/buckets/%s",
+                    kii->app_id,
+                    bucket->scope_id,
+                    bucket->bucket_name);
+            break;
+        case KII_SCOPE_THING:
+            sprintf(path,
+                    "api/apps/%s/things/%s/buckets/%s",
+                    kii->app_id,
+                    bucket->scope_id,
+                    bucket->bucket_name);
+            break;
+    }
 }
 
-kii_error_code_t
-kii_create_new_object_with_id(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+    static void
+prv_topic_path(
+        kii_t* kii,
+        const kii_topic_t* topic,
+        char* path)
+{
+    switch(topic->scope) {
+        case KII_SCOPE_APP:
+            sprintf(path,
+                    "api/apps/%s/topic/%s",
+                    kii->app_id,
+                    topic->topic_name);
+            break;
+        case KII_SCOPE_USER:
+            sprintf(path,
+                    "api/apps/%s/users/%s/topic/%s",
+                    kii->app_id,
+                    topic->scope_id,
+                    topic->topic_name);
+            break;
+        case KII_SCOPE_GROUP:
+            sprintf(path,
+                    "api/apps/%s/groups/%s/topics/%s",
+                    kii->app_id,
+                    topic->scope_id,
+                    topic->topic_name);
+            break;
+        case KII_SCOPE_THING:
+            sprintf(path,
+                    "api/apps/%s/things/%s/topics/%s",
+                    kii->app_id,
+                    topic->scope_id,
+                    topic->topic_name);
+            break;
+    }
+}
+
+    kii_error_code_t
+kii_register_thing(
+        kii_t* kii,
+        const char* thing_data)
+{
+    kii_http_client_code_t result;
+    prv_set_thing_register_path(kii);
+    result = prv_http_request(
+            kii,
+            "POST",
+            kii->_http_request_path,
+            "application/vnd.kii.ThingRegistrationAndAuthorizationRequest+json",
+            NULL,
+            NULL,
+            thing_data
+            );
+
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
+}
+
+    static void
+prv_set_auth_path(kii_t* kii)
+{
+    sprintf(kii->_http_request_path,
+            "api/oauth2/token");
+}
+
+    kii_error_code_t
+kii_thing_authentication(kii_t* kii,
+        const char* vendor_thing_id,
+        const char* password,
+        )
+{
+    kii_http_client_code_t result;
+    char body[256];
+
+    prv_set_auth_path(kii);
+    memset(body, 0x00, sizeof(body));
+    sprintf(body,
+            "{\"username\":\"VENDOR_THING_ID:%s\", \"password\": \"%s\"}",
+            veondor_thing_id,
+            password);
+
+    result = prv_http_request(
+            kii,
+            "POST",
+            kii->_http_request_path,
+            "application/json",
+            NULL,
+            NULL,
+            body
+            );
+
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
+}
+
+
+    kii_error_code_t
+kii_create_new_object(
+        kii_t* kii,
+        const kii_bucket_t* bucket,
+        const char* object_data,
+        const char* object_content_type)
+{
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    strcat(kii->_http_request_path, "/objects");
+    if (object_content_type == NULL) {
+        object_content_type = DEFAULT_OBJECT_CONTENT_TYPE;
+    }
+    result = prv_http_request(
+            kii,
+            "POST",
+            kii->_http_request_path,
+            object_content_type,
+            access_token,
+            NULL,
+            object_data);
+
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
+}
+
+    kii_error_code_t
+kii_create_new_object_with_id(
+        kii_t* kii,
+        const kii_bucket_t* bucket,
         const char* object_id,
-        const char* object_data)
+        const char* object_data,
+        const char* object_content_type
+        )
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/objects/%s",
+            kii->_http_request_path,
+            object_id);
+    if (object_content_type == NULL) {
+        object_content_type = DEFAULT_OBJECT_CONTENT_TYPE;
+    }
+    result = prv_http_request(
+            kii,
+            "PUT",
+            kii->_http_request_path,
+            object_content_type,
+            access_token,
+            NULL,
+            object_data);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
-kii_error_code_t
-kii_patch_object(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+    kii_error_code_t
+kii_patch_object(
+        kii_t* kii,
+        const kii_bucket_t* bucket,
         const char* object_id,
         const char* patch_data,
         const char* opt_etag)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/objects/%s",
+            kii->_http_request_path,
+            object_id);
+    result = prv_http_request(
+            kii,
+            "PATCH",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            opt_etag,
+            patch_data);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
-kii_error_code_t
-kii_replace_object(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+    kii_error_code_t
+kii_replace_object(
+        kii_t* kii,
+        const kii_bucket_t* bucket,
         const char* object_id,
         const char* replace_data,
         const char* opt_etag)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/objects/%s",
+            kii->_http_request_path,
+            object_id);
+    result = prv_http_request(
+            kii,
+            "PUT",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            opt_etag,
+            replace_data);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
-kii_error_code_t
-kii_get_object(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+    kii_error_code_t
+kii_get_object(
+        kii_t* kii,
+        const kii_bucket_t* bucket,
         const char* object_id)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/objects/%s",
+            kii->_http_request_path,
+            object_id);
+    result = prv_http_request(
+            kii,
+            "GET",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
-kii_error_code_t
-kii_delete_object(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+    kii_error_code_t
+kii_delete_object(
+        kii_t* kii,
+        const kii_bucket_t* bucket,
         const char* object_id)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/objects/%s",
+            kii->_http_request_path,
+            object_id);
+    result = prv_http_request(
+            kii,
+            "DELETE",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
-kii_error_code_t
-kii_subscribe_bucket(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name)
+    kii_error_code_t
+kii_subscribe_bucket(
+        kii_t* kii,
+        const kii_bucket_t* bucket)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/filters/all/push/subscriptions/things",
+            kii->_http_request_path);
+    result = prv_http_request(
+            kii,
+            "POST",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
-kii_error_code_t
-kii_unsubscribe_bucket(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name)
+    kii_error_code_t
+kii_unsubscribe_bucket(
+        kii_t* kii,
+        const kii_bucket_t* bucket)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_bucket_path(kii, bucket, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/filters/all/push/subscriptions/things/%s",
+            kii->_http_request_path,
+            kii->author->author_id);
+    result = prv_http_request(
+            kii,
+            "DELETE",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
-kii_error_code_t
-kii_subscribe_topic(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* topic_name)
+    kii_error_code_t
+kii_create_topic(
+        kii_t* kii,
+        const kii_topic_t* topic)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_topic_path(kii, topic, kii->_http_request_path);
+    result = prv_http_request(
+            kii,
+            "PUT",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
-kii_error_code_t
-kii_unsubscribe_topic(kii_t* app,
-        const char* access_token,
-        const char* thing_id,
-        const char* topic_name)
+    kii_error_code_t
+kii_delete_topic(
+        kii_t* kii,
+        const kii_topic_t* topic)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_topic_path(kii, topic, kii->_http_request_path);
+    result = prv_http_request(
+            kii,
+            "DELETE",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
-kii_error_code_t
-kii_install_thing_push(kii_t* kii,
-        const char* access_token,
+    kii_error_code_t
+kii_subscribe_topic(
+        kii_t* kii,
+        const kii_topic_t* topic)
+{
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_topic_path(kii, topic, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/push/subscriptions/things",
+            kii->_http_request_path);
+    result = prv_http_request(
+            kii,
+            "POST",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
+}
+
+    kii_error_code_t
+kii_unsubscribe_topic(
+        kii_t* kii,
+        const kii_topic_t* topic)
+{
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_topic_path(kii, topic, kii->_http_request_path);
+    sprintf(kii->_http_request_path,
+            "%s/push/subscriptions/things/%s",
+            kii->_http_request_path,
+            kii->author->author_id);
+    result = prv_http_request(
+            kii,
+            "DELETE",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
+}
+
+    static void
+prv_set_installation_path(kii_t* kii)
+{
+    sprintf(kii->_http_request_path,
+            "api/apps/%s/installations",
+            kii->app_id);
+}
+
+    static void
+prv_set_mqtt_endpoint_path(kii_t* kii, const char* installation_id)
+{
+    sprintf(kii->_http_request_path,
+            "api/apps/%s/installations/%s/mqtt-endpoint",
+            kii->app_id,
+            installation_id);
+}
+    kii_error_code_t
+kii_install_thing_push(
+        kii_t* kii,
         kii_bool_t development)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char body[256];
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    char* c_development = development == KII_TRUE ? "true" : "false";
+    prv_set_installation_path(kii);
+
+    memset(body, 0x00, 256);
+    sprintf(body,
+            "{\"installationType\":\"MQTT\", \"development\":%s}",
+            c_development);
+    result = prv_http_request(
+            kii,
+            "POST",
+            kii->_http_request_path,
+            "application/vnd.kii.InstallationCreationRequest+json",
+            access_token,
+            NULL,
+            body);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 
-kii_error_code_t
-kii_get_mqtt_endpoint(kii_t* kii,
-        const char* access_token,
-        const char** installation_id)
+    kii_error_code_t
+kii_get_mqtt_endpoint(
+        kii_t* kii,
+        const char* installation_id)
 {
-    /* TODO: implement. */
-    return KIIE_FAIL;
+    kii_http_client_code_t result;
+    char* access_token = (kii->author != NULL) ?
+        (kii->author->access_token) : (NULL);
+    prv_set_mqtt_endpoint_path(kii, installation_id);
+    result = prv_http_request(
+            kii,
+            "GET",
+            kii->_http_request_path,
+            NULL,
+            access_token,
+            NULL,
+            NULL);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
 }
 

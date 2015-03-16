@@ -7,16 +7,43 @@ extern "C" {
 
 #include <stdio.h>
 
-#define BUFF_SIZE 256
 typedef enum kii_bool_t {
     KII_FALSE = 0,
     KII_TRUE
 } kii_bool_t;
 
-typedef kii_bool_t (*KII_CB_CONNECT_PTR)(void* app_context, const char* host);
-typedef kii_bool_t (*KII_CB_SEND_PTR)(void* app_context, const char* send_buff, int buff_length);
-typedef kii_bool_t (*KII_CB_RECV_PTR)(void* app_context, char* recv_buff, int length_to_read, int* out_actual_length);
-typedef kii_bool_t (*KII_CB_CLOSE_PTR)(void* app_context);
+typedef enum kii_http_client_code_t {
+    KII_HTTPC_OK = 0,
+    KII_HTTPC_FAIL,
+    KII_HTTPC_AGAIN
+} kii_http_client_code_t;
+
+typedef kii_http_client_code_t
+        (*KII_HTTPCB_SET_REQUEST_LINE_PTR)(
+                void* http_context,
+                const char* method,
+                const char* host,
+                const char* path);
+typedef kii_http_client_code_t
+        (*KII_HTTPCB_SET_HEADER_PTR)(
+                void* http_context,
+                const char* key,
+                const char* value);
+typedef kii_http_client_code_t
+        (*KII_HTTPCB_SET_BODY_PTR)(
+                void* http_context,
+                const char* body_data);
+typedef kii_http_client_code_t
+        (*KII_HTTPCB_EXECUTE)(
+                void* http_context,
+                int* response_code,
+                char** response_body);
+
+typedef void
+        (*KII_LOGGER)(
+                const char* format,
+                ...
+                );
 
 typedef enum kii_error_code_t {
     KIIE_OK = 0,
@@ -26,11 +53,15 @@ typedef enum kii_error_code_t {
 typedef enum kii_state_t {
     KII_STATE_IDLE = 0,
     KII_STATE_READY,
-    KII_STATE_CONNECT,
-    KII_STATE_SEND,
-    KII_STATE_RECV,
-    KII_STATE_CLOSE
+    KII_STATE_EXECUTE
 } kii_state_t;
+
+
+typedef struct kii_author_t
+{
+    char* author_id;
+    char* access_token;
+} kii_author_t;
 
 typedef struct kii_t
 {
@@ -39,21 +70,40 @@ typedef struct kii_t
     char* app_host;
     char* buffer;
     size_t buffer_size;
-    char request_url[256];
-    KII_CB_CONNECT_PTR callback_connect_ptr;
-    KII_CB_SEND_PTR callback_send_ptr;
-    KII_CB_RECV_PTR callback_recv_ptr;
-    KII_CB_CLOSE_PTR callback_close_ptr;
-    void* app_context;
+    int response_code;
+    char* response_body;
 
-    /* private properties */
-    /* TODO: hide from public headers */
+    kii_author_t* author;
+
+    void* http_context;
+    KII_HTTPCB_SET_REQUEST_LINE_PTR http_set_request_line_cb;
+    KII_HTTPCB_SET_HEADER_PTR http_set_header_cb;
+    KII_HTTPCB_SET_BODY_PTR http_set_body_cb;
+    KII_HTTPCB_EXECUTE http_execute_cb;
+    KII_LOGGER logger_cb;
+    char _http_request_path[256];
+
     kii_state_t _state;
-    int _last_chunk;
-    int _sent_size;
-    int _received_size;
-
 } kii_t;
+
+typedef enum kii_scope_type_t {
+    KII_SCOPE_APP,
+    KII_SCOPE_USER,
+    KII_SCOPE_GROUP,
+    KII_SCOPE_THING
+} kii_scope_type_t;
+
+typedef struct kii_bucket_t {
+    kii_scope_type_t scope;
+    char* scope_id;
+    char* bucket_name;
+} kii_bucket_t;
+
+typedef struct kii_topic_t {
+    kii_scope_type_t scope;
+    char* scope_id;
+    char* topic_name;
+} kii_topic_t;
 
 kii_state_t kii_get_state(kii_t* kii);
 kii_error_code_t kii_run(kii_t* kii);
@@ -63,85 +113,86 @@ kii_register_thing(kii_t* kii,
         const char* thing_data);
 
 kii_error_code_t
-kii_create_new_object(kii_t* kii,
-        const char* access_token,
+kii_thing_authentication(kii_t* kii,
         const char* thing_id,
-        const char* bucket_name,
-        const char* object_data);
+        const char* password);
 
 kii_error_code_t
-kii_create_new_object_with_id(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+kii_create_new_object(
+        kii_t* kii,
+        const kii_bucket_t* bucket,
+        const char* object_data,
+        const char* object_content_type
+        );
+
+kii_error_code_t
+kii_create_new_object_with_id(
+        kii_t* kii,
+        const kii_bucket_t* bucket,
         const char* object_id,
-        const char* object_data);
+        const char* object_data,
+        const char* object_content_type
+        );
 
 kii_error_code_t
-kii_patch_object(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+kii_patch_object(
+        kii_t* kii,
+        const kii_bucket_t* bucket,
         const char* object_id,
         const char* patch_data,
         const char* opt_etag);
 
 kii_error_code_t
-kii_replace_object(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+kii_replace_object(
+        kii_t* kii,
+        const kii_bucket_t* bucket,
         const char* object_id,
         const char* replace_data,
         const char* opt_etag);
 
 kii_error_code_t
-kii_get_object(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+kii_get_object(
+        kii_t* kii,
+        const kii_bucket_t* bucket,
         const char* object_id);
 
 kii_error_code_t
-kii_delete_object(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name,
+kii_delete_object(
+        kii_t* kii,
+        const kii_bucket_t* bucket,
         const char* object_id);
 
 kii_error_code_t
 kii_subscribe_bucket(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name);
+        const kii_bucket_t* bucket);
 
 kii_error_code_t
 kii_unsubscribe_bucket(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* bucket_name);
+        const kii_bucket_t* bucket);
+
+kii_error_code_t
+kii_create_topic(kii_t* kii,
+        const kii_topic_t* topic);
+
+kii_error_code_t
+kii_delete_topic(kii_t* kii,
+        const kii_topic_t* topic);
 
 kii_error_code_t
 kii_subscribe_topic(kii_t* kii,
-        const char* access_token,
-        const char* thing_id,
-        const char* topic_name);
+        const kii_topic_t* topic);
 
 kii_error_code_t
-kii_unsubscribe_topic(kii_t* app,
-        const char* access_token,
-        const char* thing_id,
-        const char* topic_name);
+kii_unsubscribe_topic(kii_t* kii,
+        const kii_topic_t* topic);
 
 kii_error_code_t
 kii_install_thing_push(kii_t* kii,
-        const char* access_token,
         kii_bool_t development);
 
 kii_error_code_t
 kii_get_mqtt_endpoint(kii_t* kii,
-        const char* access_token,
-        const char** installation_id);
+        const char* installation_id);
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,6 @@
 build:
-	gcc kii.c example.c -lssl -lcrypto
+	gcc -w -g kii.c example.c -lssl -lcrypto -DDEBUG
+	#gcc kii.c example.c -lssl -lcrypto
 
 clean:
 	rm a.out
