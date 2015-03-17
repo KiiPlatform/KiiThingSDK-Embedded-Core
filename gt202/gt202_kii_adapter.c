@@ -43,23 +43,6 @@ static kii_http_client_code_t prv_ssl_connect(void* app_context, const char* hos
             printf("GetERROR: Unable to resolve host name\r\n");
             return KII_HTTPC_FAIL;
         }
-#if 0
-        else
-        {
-            if(dnsRespInfo.dns_names[0] != 0)
-            {
-               printf("host: name=%s\r\n", dnsRespInfo.dns_names);
-            } 	    
-            printf("addrtype %d \r\n", A_CPU2LE32(dnsRespInfo.h_addrtype));
-            printf("length %d \r\n", A_CPU2LE32(dnsRespInfo.h_length));
-            for (int i = 0; i < dnsRespInfo.ipaddrs; ++i)
-            {
-                A_UINT32 addr = A_CPU2BE32(dnsRespInfo.ipaddrs_list[i]);
-                printf("addr[%d]:%d.%d.%d.%d \r\n", i, getByte(3, addr),
-                        getByte(2, addr), getByte(1, addr), getByte(0, addr));
-            }
-        }
-#endif
     }
 
 #if CONNECT_SSL
@@ -168,9 +151,15 @@ kii_http_client_code_t
 {
     context_t* ctx = (context_t*)http_context;
     char* reqBuff = ctx->buff;
-    strcpy(ctx->host, host);
-    // TODO: prevent overflow.
-    //sprintf(reqBuff, "%s https://%s/%s HTTP/1.1\r\n", method, host, path);
+    int hostLen = strlen(host);
+    if (hostLen < sizeof(ctx->host)) {
+        strcpy(ctx->host, host);
+    } else {
+        return KII_HTTPC_FAIL;
+    }
+    if (ctx->buff_size < 21 + strlen(method) + strlen(path) + hostLen) {
+        return KII_HTTPC_FAIL;
+    }
     sprintf(reqBuff, "%s /%s HTTP/1.1\r\nhost:%s\r\n", method, path, host);
 
     return KII_HTTPC_OK;
@@ -182,8 +171,11 @@ kii_http_client_code_t
         const char* key,
         const char* value)
 {
-    // TODO: prevent overflow.
-    char* reqBuff = ((context_t*)http_context)->buff;
+    context_t* ctx = (context_t*)http_context;
+    char* reqBuff = ctx->buff;
+    if (ctx->buff_size < strlen(reqBuff) + 4 + strlen(key) + strlen(value)) {
+        return KII_HTTPC_FAIL;
+    }
     strcat(reqBuff, key);
     strcat(reqBuff, ":");
     strcat(reqBuff, value);
@@ -196,8 +188,12 @@ kii_http_client_code_t
         void* http_context,
         const char* body_data)
 {
-    // TODO: prevent overflow.
-    char* reqBuff = ((context_t*)http_context)->buff;
+    context_t* ctx = (context_t*)http_context;
+    char* reqBuff = ctx->buff;
+    int body_len = (body_data != NULL) ? strlen(body_data) : 0;
+    if (ctx->buff_size < strlen(reqBuff) + 3 + body_len) {
+        return KII_HTTPC_FAIL;
+    }
     strcat(reqBuff, "\r\n");
     if (body_data != NULL) {
         strcat(reqBuff, body_data);
