@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include <stdio.h>
+#include "kii_libc_wrapper.h"
 
 typedef enum kii_bool_t {
     KII_FALSE = 0,
@@ -69,7 +69,7 @@ typedef struct kii_t
     char* app_key;
     char* app_host;
     char* buffer;
-    size_t buffer_size;
+    kii_size_t buffer_size;
     int response_code;
     char* response_body;
 
