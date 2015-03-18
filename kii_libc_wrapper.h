@@ -9,9 +9,9 @@ extern "C" {
 
 #ifdef DEBUG
 #include <assert.h>
-#define KII_ASSERT(e) assert(e)
+#define M_KII_ASSERT(e) assert(e)
 #else
-#define KII_ASSERT(e)
+#define M_KII_ASSERT(e)
 #endif
 
 void *kii_memset(void *buf, int ch, size_t n);
