@@ -1,5 +1,9 @@
 #include "kii.h"
 
+#include "kii_libc_wrapper.h"
+
+#include <assert.h>
+
 #ifdef DEBUG
 #define M_REQUEST_LINE_CB_FAILED "failed to set request line\n"
 #define M_REQUEST_HEADER_CB_FAILED "failed to set request header\n"
@@ -64,8 +68,7 @@ kii_run(kii_t* kii)
                 return KIIE_FAIL;
             }
         default:
-            KII_ASSERT(0);
-            return KIIE_FAIL;
+            assert(0);
     }
 }
 

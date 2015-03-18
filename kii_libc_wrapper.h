@@ -5,16 +5,7 @@
 extern "C" {
 #endif
 
-#include <stdio.h>
-
-typedef size_t kii_size_t;
-
-#ifdef DEBUG
-#define KII_ASSERT(e) kii_assert(e)
-void kii_assert(int expression);
-#else
-#define KII_ASSERT(e)
-#endif
+#include <stddef.h>
 
 void *kii_memset(void *buf, int ch, size_t n);
 size_t kii_strlen(const char *s);

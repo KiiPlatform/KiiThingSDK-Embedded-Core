@@ -3,14 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include <assert.h>
-
-#ifdef DEBUG
-void kii_assert(int expression)
-{
-    assert(expression);
-}
-#endif
 
 void *kii_memset(void *buf, int ch, size_t n)
 {
