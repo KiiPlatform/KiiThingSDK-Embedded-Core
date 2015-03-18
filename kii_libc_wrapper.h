@@ -7,6 +7,13 @@ extern "C" {
 
 #include <stddef.h>
 
+#ifdef DEBUG
+#include <assert.h>
+#define KII_ASSERT(e) assert(e)
+#else
+#define KII_ASSERT(e)
+#endif
+
 void *kii_memset(void *buf, int ch, size_t n);
 size_t kii_strlen(const char *s);
 char *kii_strcat(char *s1, const char *s2);
