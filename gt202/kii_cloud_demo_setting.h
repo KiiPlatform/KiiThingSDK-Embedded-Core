@@ -9,5 +9,6 @@
 #define BUCKET_NAME "myBucket"
 #define TOPIC_NAME "myTopic"
 #define OBJECT_NAME "my_object"
+#define INSTALLATION_ID "fja58hhba7xoj4mv11ytxpl92"
 
 #endif

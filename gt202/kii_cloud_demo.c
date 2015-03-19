@@ -508,7 +508,7 @@ static int get_endpoint(kii_t* kii)
 
     err = kii_get_mqtt_endpoint(
             kii,
-            "fja58hhba7xoj4mv11ytxpl92");
+            INSTALLATION_ID);
     printf("request:\n%s\n", kii->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
