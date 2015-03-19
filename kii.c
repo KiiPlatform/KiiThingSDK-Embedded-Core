@@ -1,7 +1,6 @@
 #include "kii.h"
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
+
+#include "kii_libc_wrapper.h"
 
 #ifdef DEBUG
 #define M_REQUEST_LINE_CB_FAILED "failed to set request line\n"
@@ -67,7 +66,8 @@ kii_run(kii_t* kii)
                 return KIIE_FAIL;
             }
         default:
-            assert(0);
+            M_KII_ASSERT(0);
+            return KIIE_FAIL;
     }
 }
 
@@ -77,13 +77,13 @@ prv_content_length_str(
         char* buff,
         size_t buff_len)
 {
-    sprintf(buff, "%lu", ((unsigned long)content_length));
+    kii_sprintf(buff, "%lu", ((unsigned long)content_length));
 }
 
     static void
 prv_set_thing_register_path(kii_t* kii)
 {
-    sprintf(kii->_http_request_path,
+    kii_sprintf(kii->_http_request_path,
             "api/apps/%s/things",
             kii->app_id);
 }
@@ -143,12 +143,12 @@ prv_http_request(
         char bearer[] = "bearer ";
         char bearer_buff[MAX_AUTH_BUFF_SIZE];
 
-        if (strlen(access_token) + strlen(bearer) >= MAX_AUTH_BUFF_SIZE) {
+        if (kii_strlen(access_token) + kii_strlen(bearer) >= MAX_AUTH_BUFF_SIZE) {
             M_KII_LOG(M_REQUEST_HEADER_CB_AUTH_HEADER);
             return KIIE_FAIL;
         }
-        memset(bearer_buff, 0x00, MAX_AUTH_BUFF_SIZE);
-        sprintf(bearer_buff, "%s%s", bearer, access_token);
+        kii_memset(bearer_buff, 0x00, MAX_AUTH_BUFF_SIZE);
+        kii_sprintf(bearer_buff, "%s%s", bearer, access_token);
         result = kii->http_set_header_cb(
                 kii->http_context,
                 "authorization",
@@ -174,8 +174,8 @@ prv_http_request(
 
     if (body != NULL) {
         char content_length[8];
-        memset(content_length, 0x00, 8);
-        prv_content_length_str(strlen(body), content_length, 8);
+        kii_memset(content_length, 0x00, 8);
+        prv_content_length_str(kii_strlen(body), content_length, 8);
         result = kii->http_set_header_cb(
                 kii->http_context,
                 "content-length",
@@ -213,27 +213,27 @@ prv_bucket_path(
 {
     switch(bucket->scope) {
         case KII_SCOPE_APP:
-            sprintf(path,
+            kii_sprintf(path,
                     "api/apps/%s/buckets/%s",
                     kii->app_id,
                     bucket->bucket_name);
             break;
         case KII_SCOPE_USER:
-            sprintf(path,
+            kii_sprintf(path,
                     "api/apps/%s/users/%s/buckets/%s",
                     kii->app_id,
                     bucket->scope_id,
                     bucket->bucket_name);
             break;
         case KII_SCOPE_GROUP:
-            sprintf(path,
+            kii_sprintf(path,
                     "api/apps/%s/groups/%s/buckets/%s",
                     kii->app_id,
                     bucket->scope_id,
                     bucket->bucket_name);
             break;
         case KII_SCOPE_THING:
-            sprintf(path,
+            kii_sprintf(path,
                     "api/apps/%s/things/%s/buckets/%s",
                     kii->app_id,
                     bucket->scope_id,
@@ -250,27 +250,27 @@ prv_topic_path(
 {
     switch(topic->scope) {
         case KII_SCOPE_APP:
-            sprintf(path,
+            kii_sprintf(path,
                     "api/apps/%s/topic/%s",
                     kii->app_id,
                     topic->topic_name);
             break;
         case KII_SCOPE_USER:
-            sprintf(path,
+            kii_sprintf(path,
                     "api/apps/%s/users/%s/topic/%s",
                     kii->app_id,
                     topic->scope_id,
                     topic->topic_name);
             break;
         case KII_SCOPE_GROUP:
-            sprintf(path,
+            kii_sprintf(path,
                     "api/apps/%s/groups/%s/topics/%s",
                     kii->app_id,
                     topic->scope_id,
                     topic->topic_name);
             break;
         case KII_SCOPE_THING:
-            sprintf(path,
+            kii_sprintf(path,
                     "api/apps/%s/things/%s/topics/%s",
                     kii->app_id,
                     topic->scope_id,
@@ -305,7 +305,7 @@ kii_register_thing(
     static void
 prv_set_auth_path(kii_t* kii)
 {
-    sprintf(kii->_http_request_path,
+    kii_sprintf(kii->_http_request_path,
             "api/oauth2/token");
 }
 
@@ -319,8 +319,8 @@ kii_thing_authentication(kii_t* kii,
     char body[256];
 
     prv_set_auth_path(kii);
-    memset(body, 0x00, sizeof(body));
-    sprintf(body,
+    kii_memset(body, 0x00, sizeof(body));
+    kii_sprintf(body,
             "{\"username\":\"VENDOR_THING_ID:%s\", \"password\": \"%s\"}",
             vendor_thing_id,
             password);
@@ -354,7 +354,7 @@ kii_create_new_object(
         (kii->author->access_token) : (NULL);
 
     prv_bucket_path(kii, bucket, kii->_http_request_path);
-    strcat(kii->_http_request_path, "/objects");
+    kii_strcat(kii->_http_request_path, "/objects");
     if (object_content_type == NULL) {
         object_content_type = DEFAULT_OBJECT_CONTENT_TYPE;
     }
@@ -386,7 +386,7 @@ kii_create_new_object_with_id(
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
-    sprintf(kii->_http_request_path,
+    kii_sprintf(kii->_http_request_path,
             "%s/objects/%s",
             kii->_http_request_path,
             object_id);
@@ -419,7 +419,7 @@ kii_patch_object(
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
-    sprintf(kii->_http_request_path,
+    kii_sprintf(kii->_http_request_path,
             "%s/objects/%s",
             kii->_http_request_path,
             object_id);
@@ -449,7 +449,7 @@ kii_replace_object(
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
-    sprintf(kii->_http_request_path,
+    kii_sprintf(kii->_http_request_path,
             "%s/objects/%s",
             kii->_http_request_path,
             object_id);
@@ -477,7 +477,7 @@ kii_get_object(
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
-    sprintf(kii->_http_request_path,
+    kii_sprintf(kii->_http_request_path,
             "%s/objects/%s",
             kii->_http_request_path,
             object_id);
@@ -505,7 +505,7 @@ kii_delete_object(
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
-    sprintf(kii->_http_request_path,
+    kii_sprintf(kii->_http_request_path,
             "%s/objects/%s",
             kii->_http_request_path,
             object_id);
@@ -532,7 +532,7 @@ kii_subscribe_bucket(
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
-    sprintf(kii->_http_request_path,
+    kii_sprintf(kii->_http_request_path,
             "%s/filters/all/push/subscriptions/things",
             kii->_http_request_path);
     result = prv_http_request(
@@ -558,7 +558,7 @@ kii_unsubscribe_bucket(
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_bucket_path(kii, bucket, kii->_http_request_path);
-    sprintf(kii->_http_request_path,
+    kii_sprintf(kii->_http_request_path,
             "%s/filters/all/push/subscriptions/things/%s",
             kii->_http_request_path,
             kii->author->author_id);
@@ -631,7 +631,7 @@ kii_subscribe_topic(
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_topic_path(kii, topic, kii->_http_request_path);
-    sprintf(kii->_http_request_path,
+    kii_sprintf(kii->_http_request_path,
             "%s/push/subscriptions/things",
             kii->_http_request_path);
     result = prv_http_request(
@@ -657,7 +657,7 @@ kii_unsubscribe_topic(
     char* access_token = (kii->author != NULL) ?
         (kii->author->access_token) : (NULL);
     prv_topic_path(kii, topic, kii->_http_request_path);
-    sprintf(kii->_http_request_path,
+    kii_sprintf(kii->_http_request_path,
             "%s/push/subscriptions/things/%s",
             kii->_http_request_path,
             kii->author->author_id);
@@ -678,7 +678,7 @@ kii_unsubscribe_topic(
     static void
 prv_set_installation_path(kii_t* kii)
 {
-    sprintf(kii->_http_request_path,
+    kii_sprintf(kii->_http_request_path,
             "api/apps/%s/installations",
             kii->app_id);
 }
@@ -686,7 +686,7 @@ prv_set_installation_path(kii_t* kii)
     static void
 prv_set_mqtt_endpoint_path(kii_t* kii, const char* installation_id)
 {
-    sprintf(kii->_http_request_path,
+    kii_sprintf(kii->_http_request_path,
             "api/apps/%s/installations/%s/mqtt-endpoint",
             kii->app_id,
             installation_id);
@@ -703,8 +703,8 @@ kii_install_thing_push(
     char* c_development = development == KII_TRUE ? "true" : "false";
     prv_set_installation_path(kii);
 
-    memset(body, 0x00, 256);
-    sprintf(body,
+    kii_memset(body, 0x00, 256);
+    kii_sprintf(body,
             "{\"installationType\":\"MQTT\", \"development\":%s}",
             c_development);
     result = prv_http_request(

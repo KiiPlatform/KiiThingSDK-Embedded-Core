@@ -5,7 +5,7 @@ endif
 
 LIBS = -lssl -lcrypto
 SOURCES = $(wildcard *.c)
-SOURCES += ../kii.c
+SOURCES += ../kii.c ../kii_libc_wrapper.c
 TARGET = exampleapp
 
 INCLUDE = ../kii.h

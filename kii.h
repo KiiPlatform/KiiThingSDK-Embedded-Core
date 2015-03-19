@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include <stdio.h>
+#include <stddef.h>
 
 typedef enum kii_bool_t {
     KII_FALSE = 0,
