@@ -6,6 +6,8 @@
 #error
 #endif
 
+extern kii_http_client_code_t prv_close(void* app_context);
+
     kii_http_client_code_t
 prv_recv(
         void* app_context,
@@ -44,6 +46,7 @@ prv_recv(
         printf("failed to receive:\n");
         // TOOD: could be 0 on success?
         *out_actual_length = 0;
+        prv_close(app_context);
         return KII_HTTPC_FAIL;
     }
 }

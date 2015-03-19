@@ -4,7 +4,7 @@
 
 #define BUFF_SIZE 256
 
-kii_http_client_code_t prv_recv(
+extern kii_http_client_code_t prv_recv(
         void* app_context,
         char* recv_buff,
         int length_to_read,
@@ -117,11 +117,12 @@ static kii_http_client_code_t prv_send(void* app_context, const char* send_buff,
         return KII_HTTPC_OK;
     } else {
         printf("failed to send\n");
+        prv_close(app_context);
         return KII_HTTPC_FAIL;
     }
 }
 
-static kii_http_client_code_t prv_close(void* app_context)
+kii_http_client_code_t prv_close(void* app_context)
 {
     context_t* ctx = (context_t*)app_context;
 #if CONNECT_SSL
