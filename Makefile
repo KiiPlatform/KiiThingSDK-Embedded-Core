@@ -9,7 +9,7 @@ TARGET = libkiie.so
 
 LINUX_EX = linux/exampleapp
 
-all: clean $(TARGET) $(LINUX_EX)
+all: clean $(TARGET) $(LINUX_EX) doc
 
 $(TARGET):
 	gcc $(CFLAGS) $(SOURCES) $(LIBS) -o $@
@@ -22,4 +22,7 @@ clean:
 	rm $(TARGET)
 	$(MAKE) -C linux clean
 
-.PHONY: all clean
+doc:
+	doxygen
+
+.PHONY: all clean doc
