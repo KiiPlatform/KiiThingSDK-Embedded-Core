@@ -1,6 +1,6 @@
-#include <kii_cloud_demo.h>
+#include "kii_cloud_demo.h"
 
-#include <gt202_kii_adapter.h>
+#include "gt202_kii_adapter.h"
 
 #define APP_ID "84fff36e"
 #define APP_KEY "e45fcc2d31d6aca675af639bc5f04a26"
