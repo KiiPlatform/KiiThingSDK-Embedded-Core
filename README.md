@@ -8,14 +8,13 @@ Kii Thing SDK designed for resource limited environment.
 ## How to use
 
 ### Build examples
-```shell
-make
-```
+
+    make
+
 #### Run linux example
-```shell
-cd linux
-./exampleapp --register
-```
+
+    cd linux
+    ./exampleapp --register
 
 ### Implement callback functions
 Looking into kii.h, there are following callback functions needs implementation.
