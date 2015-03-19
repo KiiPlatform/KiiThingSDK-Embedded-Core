@@ -14,7 +14,6 @@
 #include <openssl/crypto.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#include <openssl/rand.h>
 
 #include <getopt.h>
 
@@ -100,12 +99,6 @@ static kii_http_client_code_t prv_ssl_connect(void* app_context, const char* hos
     if (ret == 0){
         printf("failed to set fd.\n");
         return KII_HTTPC_FAIL;
-    }
-
-    RAND_poll();
-    while ( RAND_status() == 0 ){
-        unsigned short rand_ret = rand() % 65536;
-        RAND_seed(&rand_ret, sizeof(rand_ret));
     }
 
     ret = SSL_connect(ssl);
