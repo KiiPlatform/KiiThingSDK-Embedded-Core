@@ -526,6 +526,8 @@ static int get_endpoint(kii_t* kii)
     return 0;
 }
 
+#define CMD_INDEX 1
+
 int kii_main(int argc, char *argv[])
 {
     int ret = A_ERROR;
@@ -535,7 +537,7 @@ int kii_main(int argc, char *argv[])
     kii_error_code_t err;
     char *buff = NULL;
 
-    if (argc < 3)
+    if (argc < CMD_INDEX + 1)
     {
         return A_ERROR;
     }
@@ -546,105 +548,105 @@ int kii_main(int argc, char *argv[])
 
     init(kii, ctx, buff, 4096);
 
-    if(ATH_STRCMP(argv[2], "register") == 0)
+    if(ATH_STRCMP(argv[CMD_INDEX], "register") == 0)
     {
         if (register_thing(kii) == 0)
         {
             ret = A_OK;
         }
     }
-    else if(ATH_STRCMP(argv[2], "new-object") == 0)
+    else if(ATH_STRCMP(argv[CMD_INDEX], "new-object") == 0)
     {
         if (create_new_object(kii) == 0)
         {
             ret = A_OK;
         }
     }
-    else if(ATH_STRCMP(argv[2], "new-object-with-id") == 0)
+    else if(ATH_STRCMP(argv[CMD_INDEX], "new-object-with-id") == 0)
     {
         if (create_new_object_with_id(kii, OBJECT_NAME) == 0)
         {
             ret = A_OK;
         }
     }
-    else if(ATH_STRCMP(argv[2], "patch-object") == 0)
+    else if(ATH_STRCMP(argv[CMD_INDEX], "patch-object") == 0)
     {
         if (patch_object(kii, OBJECT_NAME) == 0)
         {
             ret = A_OK;
         }
     }
-    else if(ATH_STRCMP(argv[2], "replace-object") == 0)
+    else if(ATH_STRCMP(argv[CMD_INDEX], "replace-object") == 0)
     {
         if (replace_object(kii, OBJECT_NAME) == 0)
         {
             ret = A_OK;
         }
     }
-    else if(ATH_STRCMP(argv[2], "get-object") == 0)
+    else if(ATH_STRCMP(argv[CMD_INDEX], "get-object") == 0)
     {
         if (get_object(kii, OBJECT_NAME) == 0)
         {
             ret = A_OK;
         }
     }
-    else if(ATH_STRCMP(argv[2], "delete-object") == 0)
+    else if(ATH_STRCMP(argv[CMD_INDEX], "delete-object") == 0)
     {
         if (delete_object(kii, OBJECT_NAME) == 0)
         {
             ret = A_OK;
         }
     }
-    else if(ATH_STRCMP(argv[2], "subscribe-bucket") == 0)
+    else if(ATH_STRCMP(argv[CMD_INDEX], "subscribe-bucket") == 0)
     {
         if (subscribe_bucket(kii, BUCKET_NAME) == 0)
         {
             ret = A_OK;
         }
     }
-    else if(ATH_STRCMP(argv[2], "unsubscribe-bucket") == 0)
+    else if(ATH_STRCMP(argv[CMD_INDEX], "unsubscribe-bucket") == 0)
     {
         if (unsubscribe_bucket(kii, BUCKET_NAME) == 0)
         {
             ret = A_OK;
         }
     }
-    else if(ATH_STRCMP(argv[2], "create-topic") == 0)
+    else if(ATH_STRCMP(argv[CMD_INDEX], "create-topic") == 0)
     {
         if (create_topic(kii) == 0)
         {
             ret = A_OK;
         }
     }
-    else if(ATH_STRCMP(argv[2], "delete-topic") == 0)
+    else if(ATH_STRCMP(argv[CMD_INDEX], "delete-topic") == 0)
     {
         if (delete_topic(kii) == 0)
         {
             ret = A_OK;
         }
     }
-    else if(ATH_STRCMP(argv[2], "subscribe-topic") == 0)
+    else if(ATH_STRCMP(argv[CMD_INDEX], "subscribe-topic") == 0)
     {
         if (subscribe_topic(kii) == 0)
         {
             ret = A_OK;
         }
     }
-    else if(ATH_STRCMP(argv[2], "unsubscribe-topic") == 0)
+    else if(ATH_STRCMP(argv[CMD_INDEX], "unsubscribe-topic") == 0)
     {
         if (unsubscribe_topic(kii) == 0)
         {
             ret = A_OK;
         }
     }
-    else if(ATH_STRCMP(argv[2], "install-push") == 0)
+    else if(ATH_STRCMP(argv[CMD_INDEX], "install-push") == 0)
     {
         if (install_push(kii) == 0)
         {
             ret = A_OK;
         }
     }
-    else if(ATH_STRCMP(argv[2], "get-endpoint") == 0)
+    else if(ATH_STRCMP(argv[CMD_INDEX], "get-endpoint") == 0)
     {
         if (get_endpoint(kii) == 0)
         {
