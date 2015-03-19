@@ -1,6 +1,6 @@
 #include "gt202_kii_adapter.h"
 
-#include "prv_kii_ssl_setting.h"
+#include "prv_kii_setting.h"
 
 #if ZERO_COPY
 #error
