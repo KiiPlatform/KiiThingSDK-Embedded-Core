@@ -7,7 +7,7 @@
 #endif
 
     kii_http_client_code_t
-prv_ssl_recv(
+prv_recv(
         void* app_context,
         char* recv_buff,
         int length_to_read,

@@ -5,13 +5,13 @@
 
 #include <main.h>
 
-typedef enum prv_ssl_state {
-    PRV_SSL_STATE_IDLE,
-    PRV_SSL_STATE_CONNECT,
-    PRV_SSL_STATE_SEND,
-    PRV_SSL_STATE_RECV,
-    PRV_SSL_STATE_CLOSE,
-} prv_ssl_state_t;
+typedef enum prv_state {
+    PRV_STATE_IDLE,
+    PRV_STATE_CONNECT,
+    PRV_STATE_SEND,
+    PRV_STATE_RECV,
+    PRV_STATE_CLOSE,
+} prv_state_t;
 
 typedef struct context
 {
@@ -21,7 +21,7 @@ typedef struct context
     char* buff;
     size_t buff_size;
     char host[256];
-    prv_ssl_state_t state;
+    prv_state_t state;
     int last_chunk;
     int sent_size;
     int received_size;

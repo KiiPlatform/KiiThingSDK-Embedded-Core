@@ -4,13 +4,13 @@
 
 #define BUFF_SIZE 256
 
-kii_http_client_code_t prv_ssl_recv(
+kii_http_client_code_t prv_recv(
         void* app_context,
         char* recv_buff,
         int length_to_read,
         int* out_actual_length);
 
-static kii_http_client_code_t prv_ssl_connect(void* app_context, const char* host)
+static kii_http_client_code_t prv_connect(void* app_context, const char* host)
 {
     int ret;
     DNC_CFG_CMD dnsCfg;
@@ -99,7 +99,7 @@ static kii_http_client_code_t prv_ssl_connect(void* app_context, const char* hos
     return KII_HTTPC_OK;
 }
 
-static kii_http_client_code_t prv_ssl_send(void* app_context, const char* send_buff, int buff_length)
+static kii_http_client_code_t prv_send(void* app_context, const char* send_buff, int buff_length)
 {
     context_t* ctx = (context_t*)app_context;
     char* buff = CUSTOM_ALLOC(buff_length);
@@ -121,7 +121,7 @@ static kii_http_client_code_t prv_ssl_send(void* app_context, const char* send_b
     }
 }
 
-static kii_http_client_code_t prv_ssl_close(void* app_context)
+static kii_http_client_code_t prv_close(void* app_context)
 {
     context_t* ctx = (context_t*)app_context;
 #if CONNECT_SSL
@@ -210,22 +210,22 @@ kii_http_client_code_t
     context_t* ctx = (context_t*)http_context;
     kii_http_client_code_t res;
     switch (ctx->state) {
-        case PRV_SSL_STATE_IDLE:
-            ctx->state = PRV_SSL_STATE_CONNECT;
+        case PRV_STATE_IDLE:
+            ctx->state = PRV_STATE_CONNECT;
             return KII_HTTPC_AGAIN;
-        case PRV_SSL_STATE_CONNECT:
-            res = prv_ssl_connect(ctx, ctx->host);
+        case PRV_STATE_CONNECT:
+            res = prv_connect(ctx, ctx->host);
             if (res == KII_HTTPC_OK) {
-                ctx->state = PRV_SSL_STATE_SEND;
+                ctx->state = PRV_STATE_SEND;
                 return KII_HTTPC_AGAIN;
             } else if (res == KII_HTTPC_AGAIN) {
                 return KII_HTTPC_AGAIN;
             } else {
-                prv_ssl_close(ctx);
-                ctx->state = PRV_SSL_STATE_IDLE;
+                prv_close(ctx);
+                ctx->state = PRV_STATE_IDLE;
                 return KII_HTTPC_FAIL;
             }
-        case PRV_SSL_STATE_SEND:
+        case PRV_STATE_SEND:
         {
             int size = BUFF_SIZE;
             int remain = strlen(ctx->buff) - ctx->sent_size;
@@ -234,49 +234,49 @@ kii_http_client_code_t
                 ctx->last_chunk = 1;
             }
             char* sendBuff = ctx->buff + ctx->sent_size;
-            res = prv_ssl_send(
+            res = prv_send(
                     ctx,
                     sendBuff,
                     size);
             if (res == KII_HTTPC_OK) {
                 ctx->sent_size += size;
                 if (ctx->last_chunk > 0) {
-                    ctx->state = PRV_SSL_STATE_RECV;
+                    ctx->state = PRV_STATE_RECV;
                 }
                 return KII_HTTPC_AGAIN;
             } else if(res == KII_HTTPC_AGAIN) {
                 return KII_HTTPC_AGAIN;
             } else {
-                prv_ssl_close(ctx);
-                ctx->state = PRV_SSL_STATE_IDLE;
+                prv_close(ctx);
+                ctx->state = PRV_STATE_IDLE;
                 return KII_HTTPC_FAIL;
             }
         }
-        case PRV_SSL_STATE_RECV:
+        case PRV_STATE_RECV:
         {
             int actualLength = 0;
             char* buffPtr = ctx->buff + ctx->received_size;
             if (ctx->received_size == 0) {
                 memset(ctx->buff, 0x00, ctx->buff_size);
             }
-            res = prv_ssl_recv(ctx, buffPtr, BUFF_SIZE, &actualLength);
+            res = prv_recv(ctx, buffPtr, BUFF_SIZE, &actualLength);
             if (res == KII_HTTPC_OK) {
                 ctx->received_size += actualLength;
                 if (actualLength < BUFF_SIZE) {
-                    ctx->state = PRV_SSL_STATE_CLOSE;
+                    ctx->state = PRV_STATE_CLOSE;
                 }
                 return KII_HTTPC_AGAIN;
             } else if (res == KII_HTTPC_AGAIN) {
                 return KII_HTTPC_AGAIN;
             } else {
-                prv_ssl_close(ctx);
-                ctx->state = PRV_SSL_STATE_IDLE;
+                prv_close(ctx);
+                ctx->state = PRV_STATE_IDLE;
                 return KII_HTTPC_FAIL;
             }
         }
-        case PRV_SSL_STATE_CLOSE:
+        case PRV_STATE_CLOSE:
         {
-            res = prv_ssl_close(ctx);
+            res = prv_close(ctx);
             if (res == KII_HTTPC_OK) {
                 /* parse status code */
                 char* statusPtr = strstr(ctx->buff, "HTTP/1.1 ");
@@ -296,12 +296,12 @@ kii_http_client_code_t
                     bodyPtr += 4;
                 }
                 *response_body = bodyPtr;
-                ctx->state = PRV_SSL_STATE_IDLE;
+                ctx->state = PRV_STATE_IDLE;
                 return KII_HTTPC_OK;
             } else if (res == KII_HTTPC_AGAIN) {
                 return KII_HTTPC_AGAIN;
             } else {
-                ctx->state = PRV_SSL_STATE_IDLE;
+                ctx->state = PRV_STATE_IDLE;
                 return KII_HTTPC_FAIL;
             }
         }
