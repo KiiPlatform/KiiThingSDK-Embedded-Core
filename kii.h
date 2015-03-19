@@ -127,7 +127,7 @@ typedef struct kii_author_t
     char* access_token;
 } kii_author_t;
 
-/** Object manages context of api execution. */
+/** object manages context of api execution. */
 typedef struct kii_t
 {
     /** Kii Cloud application id */
@@ -225,39 +225,84 @@ kii_error_code_t kii_run(kii_t* kii);
 
 /** prepare request of regiser thing.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to register thing in Kii Cloud.
+ * execute <kii_run> to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] thing_data JSON object represents thing to be registered.<br>
- * for details of format, please refer to
+ * for details of format, please refer to<br>
  * http://documentation.kii.com/rest/apps-collection/application/thing-collection/#method-thingsResourceType-POST
  */
 kii_error_code_t
 kii_register_thing(kii_t* kii,
         const char* thing_data);
 
+/** prepare request of thing authentication.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] vendor_thing_id thing id given by vendor on registration.
+ * @param [in] password password of thing given by vendor on registration.
+ */
 kii_error_code_t
 kii_thing_authentication(kii_t* kii,
-        const char* thing_id,
+        const char* vendor_thing_id,
         const char* password);
 
+/** prepare request of create object.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] bucket to which object belongs.
+ * @param [in] object_data key-value of object data in JSON.
+ * @param [in] opt_object_content_type content type of object.<br>
+ * if NULL is given, "application/json" is used.
+ */
 kii_error_code_t
 kii_create_new_object(
         kii_t* kii,
         const kii_bucket_t* bucket,
         const char* object_data,
-        const char* object_content_type
+        const char* opt_object_content_type
         );
 
+/** prepare request of create object with id.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] bucket to which object belongs.
+ * @param [in] object_id id of the object.
+ * @param [in] object_data key-value of object data in JSON.
+ * @param [in] opt_object_content_type content type of object.<br>
+ * if NULL is given, "application/json" is used.
+ */
 kii_error_code_t
 kii_create_new_object_with_id(
         kii_t* kii,
         const kii_bucket_t* bucket,
         const char* object_id,
         const char* object_data,
-        const char* object_content_type
+        const char* opt_object_content_type
         );
 
+/** prepare request of patch object.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] bucket to which object belongs.
+ * @param [in] object_id id of the object.
+ * @param [in] patch_data key-value of patch data in JSON.<br>
+ * key-value pair which is not contained this patch
+ * is not updated after execution.
+ * @param [in] opt_etag etag of the object. if this value is specified,
+ * if-match header is sent to Kii Cloud. in a result,
+ * patch request only success when the version of the object in client and
+ * server matches.<br>
+ * If NULL is given, no version check is executed and patch is forcibly applied.
+ */
 kii_error_code_t
 kii_patch_object(
         kii_t* kii,
@@ -266,6 +311,22 @@ kii_patch_object(
         const char* patch_data,
         const char* opt_etag);
 
+/** prepare request of replace object.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] bucket to which object belongs.
+ * @param [in] object_id id of the object.
+ * @param [in] replace_data key-value of replacement data in JSON.<br>
+ * key-value pair which is not containd this data is deleted after execution.
+ * @param [in] opt_etag etag of the object. if this value is specified,
+ * if-match header is sent to Kii Cloud. in a result,
+ * replace request only success when the version of the object in client and
+ * server matches.<br>
+ * If NULL is given,
+ * no version check is executed and replace is forcibly applied.
+ */
 kii_error_code_t
 kii_replace_object(
         kii_t* kii,
@@ -274,46 +335,132 @@ kii_replace_object(
         const char* replace_data,
         const char* opt_etag);
 
+/** prepare request of get object.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] bucket to which object belongs.
+ * @param [in] object_id id of the object.
+ */
 kii_error_code_t
 kii_get_object(
         kii_t* kii,
         const kii_bucket_t* bucket,
         const char* object_id);
 
+/** prepare request of delete object.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] bucket object to be created.
+ * @param [in] object_id id of the object.
+ */
 kii_error_code_t
 kii_delete_object(
         kii_t* kii,
         const kii_bucket_t* bucket,
         const char* object_id);
 
+/** prepare request of subscribe bucket.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * after the execution of request succeeded, you can receive push notification
+ * when event happens in the bucket.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] bucket to be subscribed.
+ */
 kii_error_code_t
 kii_subscribe_bucket(kii_t* kii,
         const kii_bucket_t* bucket);
 
+/** prepare request of subscribe bucket.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] bucket to be unsubscribed.
+ */
 kii_error_code_t
 kii_unsubscribe_bucket(kii_t* kii,
         const kii_bucket_t* bucket);
 
+/** prepare request of create topic.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * after execution of the request succeeded, you can subscribe topic to receive
+ * message sent to the topic.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] topic to be created.
+ */
 kii_error_code_t
 kii_create_topic(kii_t* kii,
         const kii_topic_t* topic);
 
+/** prepare request of delete topic.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] topic to be deleted.
+ */
 kii_error_code_t
 kii_delete_topic(kii_t* kii,
         const kii_topic_t* topic);
 
+/** prepare request of subscribe topic.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * after the execution of request succeeded, you can receive push notification
+ * when the message is sent to the topic.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] topic to be subscribed.
+ */
 kii_error_code_t
 kii_subscribe_topic(kii_t* kii,
         const kii_topic_t* topic);
 
+/** prepare request of unsubscribe topic.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] topic to be unsubscribed.
+ */
 kii_error_code_t
 kii_unsubscribe_topic(kii_t* kii,
         const kii_topic_t* topic);
 
+/** prepare request of install push for thing.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * application get installationRegistrationID field in the response body to
+ * obtain MQTT endpoint.
+ * for details of response, please refer to<br>
+ * http://documentation.kii.com/rest/apps-collection/application/installations/
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] topic to be unsubscribed.
+ */
 kii_error_code_t
 kii_install_thing_push(kii_t* kii,
         kii_bool_t development);
 
+/** prepare request of get MQTT endpoint.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute <kii_run> to send the request to Kii Cloud.
+ * application get the information of MQTT endpoint from the response body
+ * to connect and receive push notification sent from Kii Cloud
+ * for details of response, please refer to<br>
+ * http://documentation.kii.com/rest/#notification_management-manage_the_user_thing_device_installation-get_the_mqtt_endpoint_information
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] topic to be unsubscribed.
+ */
 kii_error_code_t
 kii_get_mqtt_endpoint(kii_t* kii,
         const char* installation_id);
