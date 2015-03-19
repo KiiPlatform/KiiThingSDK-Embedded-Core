@@ -10,6 +10,8 @@ extern kii_http_client_code_t prv_recv(
         int length_to_read,
         int* out_actual_length);
 
+kii_http_client_code_t prv_close(void* app_context);
+
 static kii_http_client_code_t prv_connect(void* app_context, const char* host)
 {
     int ret;

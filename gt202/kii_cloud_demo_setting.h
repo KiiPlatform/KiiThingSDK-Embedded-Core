@@ -1,5 +1,5 @@
-#ifndef _kii_cloud_demo
-#define _kii_cloud_demo
+#ifndef _kii_cloud_demo_setting
+#define _kii_cloud_demo_setting
 
 #define APP_ID "84fff36e"
 #define APP_KEY "e45fcc2d31d6aca675af639bc5f04a26"

@@ -1,4 +1,5 @@
 #include "kii_cloud_demo.h"
+#include "kii_cloud_demo_setting.h"
 
 #include "gt202_kii_adapter.h"
 

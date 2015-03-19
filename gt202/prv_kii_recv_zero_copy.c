@@ -6,7 +6,7 @@
 #error
 #endif
 
-extern kii_http_client_code_t prv_close(void* app_context)
+extern kii_http_client_code_t prv_close(void* app_context);
 
     kii_http_client_code_t
 prv_recv(
