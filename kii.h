@@ -37,7 +37,7 @@ typedef enum kii_http_client_code_t {
  * @param [in] path resource path following to host in uri.
  */
 typedef kii_http_client_code_t
-        (*KII_HTTPCB_SET_REQUEST_LINE_PTR)(
+        (*KII_HTTPCB_SET_REQUEST_LINE)(
                 void* http_context,
                 const char* method,
                 const char* host,
@@ -53,7 +53,7 @@ typedef kii_http_client_code_t
  * @param [in] value value of the header field.
  */
 typedef kii_http_client_code_t
-        (*KII_HTTPCB_SET_HEADER_PTR)(
+        (*KII_HTTPCB_SET_HEADER)(
                 void* http_context,
                 const char* key,
                 const char* value);
@@ -68,7 +68,7 @@ typedef kii_http_client_code_t
  * @param [in] body_data request body data.
  */
 typedef kii_http_client_code_t
-        (*KII_HTTPCB_SET_BODY_PTR)(
+        (*KII_HTTPCB_SET_BODY)(
                 void* http_context,
                 const char* body_data);
 
@@ -77,7 +77,7 @@ typedef kii_http_client_code_t
  * in the target environment.<br>
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
  * KII_HTTPC_AGAIN can be retuned from this callback.<br>
- * This option may be useful if you execute <kii_run> in function which
+ * This option may be useful if you execute kii_run() in function which
  * takes care of other events.
  * @param [out] response_code HTTP response code
  * @param [out] response_body pointer refers the HTTP response body 
@@ -109,9 +109,9 @@ typedef enum kii_error_code_t {
 typedef enum kii_state_t {
     /** SDK is idle. */
     KII_STATE_IDLE = 0,
-    /** SDK is ready to execute <kii_run> */
+    /** SDK is ready to execute kii_run() */
     KII_STATE_READY,
-    /** SDK is executing request. <kii_run> should be called to finish
+    /** SDK is executing request. kii_run() should be called to finish
      * operation
      */
     KII_STATE_EXECUTE
@@ -149,11 +149,11 @@ typedef struct kii_t
     /** size of buffer */
     size_t buffer_size;
     /** HTTP response code.
-     * value is set by implementation of <KII_HTTPCB_EXECUTE>
+     * value is set by implementation of KII_HTTPCB_EXECUTE
      */
     int response_code;
     /** HTTP response body 
-     * value is set by implementation of <KII_HTTPCB_EXECUTE>
+     * value is set by implementation of KII_HTTPCB_EXECUTE
      */
     char* response_body;
     /** author of the api.
@@ -168,15 +168,15 @@ typedef struct kii_t
     /** request line callback function pointer
      * Should be set before execute apis.
      */
-    KII_HTTPCB_SET_REQUEST_LINE_PTR http_set_request_line_cb;
+    KII_HTTPCB_SET_REQUEST_LINE http_set_request_line_cb;
     /** request header callback function pointer
      * Should be set before execute apis.
      */
-    KII_HTTPCB_SET_HEADER_PTR http_set_header_cb;
+    KII_HTTPCB_SET_HEADER http_set_header_cb;
     /** request body callback function pointer
      * Should be set before execute apis.
      */
-    KII_HTTPCB_SET_BODY_PTR http_set_body_cb;
+    KII_HTTPCB_SET_BODY http_set_body_cb;
     /** execute HTTP request function pointer
      * Should be set before execute apis.
      */
@@ -225,7 +225,7 @@ kii_error_code_t kii_run(kii_t* kii);
 
 /** prepare request of regiser thing.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] thing_data JSON object represents thing to be registered.<br>
@@ -238,7 +238,7 @@ kii_register_thing(kii_t* kii,
 
 /** prepare request of thing authentication.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] vendor_thing_id thing id given by vendor on registration.
@@ -251,7 +251,7 @@ kii_thing_authentication(kii_t* kii,
 
 /** prepare request of create object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -269,7 +269,7 @@ kii_create_new_object(
 
 /** prepare request of create object with id.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -289,7 +289,7 @@ kii_create_new_object_with_id(
 
 /** prepare request of patch object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -313,7 +313,7 @@ kii_patch_object(
 
 /** prepare request of replace object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -337,7 +337,7 @@ kii_replace_object(
 
 /** prepare request of get object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -351,7 +351,7 @@ kii_get_object(
 
 /** prepare request of delete object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket object to be created.
@@ -365,7 +365,7 @@ kii_delete_object(
 
 /** prepare request of subscribe bucket.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * after the execution of request succeeded, you can receive push notification
  * when event happens in the bucket.
  * @return result of preparation.
@@ -378,7 +378,7 @@ kii_subscribe_bucket(kii_t* kii,
 
 /** prepare request of subscribe bucket.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to be unsubscribed.
@@ -389,7 +389,7 @@ kii_unsubscribe_bucket(kii_t* kii,
 
 /** prepare request of create topic.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * after execution of the request succeeded, you can subscribe topic to receive
  * message sent to the topic.
  * @return result of preparation.
@@ -402,7 +402,7 @@ kii_create_topic(kii_t* kii,
 
 /** prepare request of delete topic.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] topic to be deleted.
@@ -413,7 +413,7 @@ kii_delete_topic(kii_t* kii,
 
 /** prepare request of subscribe topic.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * after the execution of request succeeded, you can receive push notification
  * when the message is sent to the topic.
  * @return result of preparation.
@@ -426,7 +426,7 @@ kii_subscribe_topic(kii_t* kii,
 
 /** prepare request of unsubscribe topic.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] topic to be unsubscribed.
@@ -437,14 +437,15 @@ kii_unsubscribe_topic(kii_t* kii,
 
 /** prepare request of install push for thing.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * application get installationRegistrationID field in the response body to
  * obtain MQTT endpoint.
  * for details of response, please refer to<br>
  * http://documentation.kii.com/rest/apps-collection/application/installations/
  * @return result of preparation.
  * @param [in] kii SDK object.
- * @param [in] topic to be unsubscribed.
+ * @param [in] development flag indicate whether the installation is
+ * development of production.
  */
 kii_error_code_t
 kii_install_thing_push(kii_t* kii,
@@ -452,14 +453,15 @@ kii_install_thing_push(kii_t* kii,
 
 /** prepare request of get MQTT endpoint.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute <kii_run> to send the request to Kii Cloud.
+ * execute kii_run() to send the request to Kii Cloud.
  * application get the information of MQTT endpoint from the response body
  * to connect and receive push notification sent from Kii Cloud
  * for details of response, please refer to<br>
  * http://documentation.kii.com/rest/#notification_management-manage_the_user_thing_device_installation-get_the_mqtt_endpoint_information
  * @return result of preparation.
  * @param [in] kii SDK object.
- * @param [in] topic to be unsubscribed.
+ * @param [in] installation_id obtained from response body of
+ * kii_install_thing_push()
  */
 kii_error_code_t
 kii_get_mqtt_endpoint(kii_t* kii,
