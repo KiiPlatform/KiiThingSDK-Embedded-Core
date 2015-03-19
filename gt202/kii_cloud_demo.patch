@@ -1,0 +1,20 @@
+diff --git a/custom/Command_Lists.c b/custom/Command_Lists.c
+index 6743e59..492f6e4 100644
+--- a/custom/Command_Lists.c
++++ b/custom/Command_Lists.c
+@@ -29,6 +29,7 @@
+ #include "throughput.h"
+ #include "atheros_stack_offload.h"
+ #include "shell.h"
++#include "kii_cloud_demo.h"
+
+ #if ENABLE_STACK_OFFLOAD
+ #if ENABLE_HTTPS_SERVER || ENABLE_HTTPS_CLIENT
+@@ -83,6 +84,7 @@ const SHELL_COMMAND_STRUCT Shell_commands[] = {
+ #endif
+ #endif
+ #endif
++   { "kii", kii_main},
+    { "?",         Shell_command_list },
+    { NULL,        NULL }
+ };
