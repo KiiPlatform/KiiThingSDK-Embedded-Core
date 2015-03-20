@@ -428,12 +428,11 @@ static int thing_authentication(kii_t* kii)
 {
     kii_state_t state;
     kii_error_code_t err;
-    pid_t pid;
-    char id[1024];
 
-    pid = getpid();
-    sprintf(id, "%d", pid);
-    err = kii_thing_authentication(kii, id, "1234");
+    err = kii_thing_authentication(
+            kii,
+            EX_AUTH_VENDOR_ID,
+            EX_AUTH_VENDOR_PASS);
     printf("request:\n%s\n", kii->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
