@@ -999,6 +999,7 @@ int main(int argc, char** argv)
             printf("to configure parameters, edit example.h\n\n");
             printf("commands: \n");
             printf("--register\n register new thing.\n");
+            printf("--authentication\n get access token.\n");
             printf("--new-object\n create new object.\n");
             printf("--new-object-with-id\n create new object with id.\n");
             printf("--patch-object\n patch object.\n");
