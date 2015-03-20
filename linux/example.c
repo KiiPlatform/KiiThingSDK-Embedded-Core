@@ -342,11 +342,11 @@ void parse_response(char* resp_body)
 
 void init(kii_t* kii, char* buff, context_t* ctx) {
     memset(kii, 0x00, sizeof(kii_t));
-    kii->app_id = "9ab34d8b";
-    kii->app_key = "7a950d78956ed39f3b0815f0f001b43b";
-    kii->app_host = "api-jp.kii.com";
+    kii->app_id = (char*)EX_APP_ID;
+    kii->app_key = (char*)EX_APP_KEY;
+    kii->app_host = (char*)EX_APP_HOST;
     kii->buffer = buff;
-    kii->buffer_size = 4096;
+    kii->buffer_size = EX_BUFFER_SIZE;
 
     kii->http_context = ctx;
     kii->http_set_request_line_cb = request_line_cb;
@@ -358,7 +358,7 @@ void init(kii_t* kii, char* buff, context_t* ctx) {
     memset(ctx, 0x00, sizeof(context_t));
     /* share the request and response buffer.*/
     ctx->buff = buff;
-    ctx->buff_size = 4096;
+    ctx->buff_size = EX_BUFFER_SIZE;
 }
 
 static void set_author(kii_t* kii, kii_author_t* author)
@@ -869,7 +869,7 @@ int main(int argc, char** argv)
 {
     context_t ctx;
     kii_t kii;
-    char buff[4096];
+    char buff[EX_BUFFER_SIZE];
 
     int optval;
 
