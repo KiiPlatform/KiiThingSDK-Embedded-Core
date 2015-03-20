@@ -1,0 +1,18 @@
+--- Command_Lists.c.bak	2015-03-20 17:40:18.288258800 +0900
++++ Command_Lists.c	2015-03-20 17:40:26.074704200 +0900
+@@ -29,6 +29,7 @@
+ #include "throughput.h"
+ #include "atheros_stack_offload.h"
+ #include "shell.h"
++#include "kii_cloud_demo.h"
+ 
+ #if ENABLE_STACK_OFFLOAD
+ #if ENABLE_HTTPS_SERVER || ENABLE_HTTPS_CLIENT
+@@ -83,6 +84,7 @@
+ #endif
+ #endif
+ #endif
++   { "kii", kii_main},
+    { "?",         Shell_command_list },     
+    { NULL,        NULL } 
+ };

@@ -1,0 +1,102 @@
+# Demo application of KiiThingSDK Embedded for GT202
+
+This is a demo application for KiiThingSDK Embedded for GT202.
+
+### Preparation
+
+This demo application is based on Throghput Demo. So you need to
+install some softwares including Throghput Demo. If you already have
+GT202, you can get installation manual form Arrow UEC. Please contact
+Arrow UEC.
+
+To build this demo application, you need IAR Embedded workbench for
+ARM. IAR home page is
+[here](https://www.iar.com/jp/iar-embedded-workbench/ARM). Some
+information IAR Embedded workbench for ARM can be got from the
+installation manual from Arrow UEC..
+
+We also assume that host borad of GT202 is FRDM-K22F.
+
+### Build
+
+If you have installed some softwares according to installation manual
+from Arrow UEC, you can find a folder at
+C:\Freescale\Freescale\_MQX\_4\_1\demo\throughput\_demo\custom
+
+The build steps are followings:
+
+  1. Copy all .c and .h files in this directory except
+  prv_kii_recv_copy.c to
+  C:\Freescale\Freescale\_MQX\_4\_1\demo\throughput\_demo\custom.
+  1. Open IAR workbench for ARM. 
+  1. In IAR workbench for ARM, select [File] -> [Open] -> [Workspace] and
+  select C:\Freescale\Freescale\_MQX\_4\_1\gt202kits\_frdmk22f.eww.
+  1. Select throghput_demo/Source/custom and add files copied at 1.
+  1. Apply kii_cloud_demo.patch to Command\_Lists.c.
+
+At 1, if you want to use non ZERO_COPY version of MQX, you should copy
+prv_kii_recv_copy.c instaed of prv_kii_recv_zero_copy.c. ZERO_COPY is
+MQX feature.
+
+At 5, Copy kii_cloud_demo.patch to
+C:\Freescale\Freescale\_MQX\_4\_1\demo\throughput\_demo\custom, And
+execute following command.
+
+```sh
+patch -p0 -u < kii_cloud_demo.patch
+```
+
+After that, you can build and download demo demo application binary
+with IAR workbench for ARM mannter.
+
+### Execution of demo application
+
+#### Connecting to access point.
+
+After downloading the demo application binary to FRDM-K22F + GT202,
+You can access the demo application with terminal program like
+[TeraTerm](http://sourceforge.jp/projects/ttssh2/). Setting of
+terminal program can be found in installation manual from Arrow UEC.
+
+First of all, We need to connect to access point of your network. You
+can connect access point and get ip address with following procedure.
+
+```sh
+shell> wmiconfig --p <passphrase>
+shell> wmiconfig --wpa <ver> <ucipher> <mcipher>
+shell> wmiconfig --connect <ssid>
+shell> wmiconfig --ipdhcp
+```
+
+#### Commands of demo application.
+
+After getting ip address, you can use this demo application.
+This demo application can be executed with following mannter.
+
+```sh
+shell> kii COMMAND
+```
+You must replace COMMAND to one of followings:
+
+  * register
+  * new-object
+  * new-object-with-id
+  * patch-object
+  * replace-object
+  * get-object
+  * delete-object
+  * subscribe-bucket
+  * unsubscribe-bucket
+  * create-topic
+  * delete-topic
+  * subscribe-topic
+  * unsubscribe-topic
+  * install-push
+  * get-endpoint
+  * authentication
+
+This COMMANDs is one-to-one correspondence to KiiThingSDK-Embedded API.
+
+### Limitations
+
+* This demo application use HTTP. Current GT202 can not use HTTPS.
