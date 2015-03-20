@@ -97,6 +97,30 @@ END_FUNC:
     return ret;
 }
 
+static int thing_authentication(kii_t* kii)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+
+    err = kii_thing_authentication(kii, AUTH_VENDOR_ID, AUTH_VENDOR_PASS);
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+
+    return 0;
+}
+
 static int create_new_object(kii_t* kii)
 {
     kii_state_t state;
@@ -551,6 +575,13 @@ int kii_main(int argc, char *argv[])
     if(ATH_STRCMP(argv[CMD_INDEX], "register") == 0)
     {
         if (register_thing(kii) == 0)
+        {
+            ret = A_OK;
+        }
+    }
+    else if(ATH_STRCMP(argv[CMD_INDEX], "authentication") == 0)
+    {
+        if (thing_authentication(kii) == 0)
         {
             ret = A_OK;
         }

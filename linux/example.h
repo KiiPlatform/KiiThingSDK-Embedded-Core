@@ -5,6 +5,9 @@
 extern 'C' {
 #endif
 
+const char EX_AUTH_VENDOR_ID[] = "4649";
+const char EX_AUTH_VENDOR_PASS[] = "1234";
+
 const char EX_APP_ID[] = "9ab34d8b";
 const char EX_APP_KEY[] = "7a950d78956ed39f3b0815f0f001b43b";
 const char EX_APP_HOST[] = "api-jp.kii.com";
