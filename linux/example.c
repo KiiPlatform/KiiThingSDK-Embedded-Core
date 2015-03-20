@@ -227,6 +227,9 @@ kii_http_client_code_t
     printf("client state: %d\n", ctx->state);
     switch (ctx->state) {
         case PRV_SSL_STATE_IDLE:
+            ctx->sent_size = 0;
+            ctx->last_chunk = 0;
+            ctx->received_size = 0;
             ctx->state = PRV_SSL_STATE_CONNECT;
             return KII_HTTPC_AGAIN;
         case PRV_SSL_STATE_CONNECT:
