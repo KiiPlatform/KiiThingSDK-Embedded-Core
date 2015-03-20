@@ -71,8 +71,8 @@ static int register_thing(kii_t* kii)
     /* Prepare Thing Data */
     memset(thingData, 0x00, 1024);
     sprintf(thingData,
-            "{\"_vendorThingID\":\"%s\", \"_password\":\"%s\"}",
-            VENDOR_ID, VENDOR_PASS);
+            "{\"_vendorThingID\":\"%d\", \"_password\":\"1234\"}",
+            time(NULL));
     /* Register Thing */
     err = kii_register_thing(kii, thingData);
     printf("request:\n%s\n", kii->buffer);
@@ -102,7 +102,7 @@ static int thing_authentication(kii_t* kii)
     kii_state_t state;
     kii_error_code_t err;
 
-    err = kii_thing_authentication(kii, VENDOR_ID, VENDOR_PASS);
+    err = kii_thing_authentication(kii, AUTH_VENDOR_ID, AUTH_VENDOR_PASS);
     printf("request:\n%s\n", kii->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
