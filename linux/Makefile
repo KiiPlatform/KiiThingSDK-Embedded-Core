@@ -10,7 +10,7 @@ TARGET = exampleapp
 
 INCLUDE = ../kii.h
 
-all: $(TARGET)
+all: clean $(TARGET)
 
 $(TARGET):
 	gcc -include $(INCLUDE) $(CFLAGS) $(SOURCES) $(LIBS) -o $@
