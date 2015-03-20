@@ -424,6 +424,33 @@ static int register_thing(kii_t* kii)
     return 0;
 }
 
+static int thing_authentication(kii_t* kii)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+    pid_t pid;
+    char id[1024];
+
+    pid = getpid();
+    sprintf(id, "%d", pid);
+    err = kii_thing_authentication(kii, id, "1234");
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+    return 0;
+}
+
 static int create_new_object(kii_t* kii)
 {
     kii_state_t state;
@@ -894,6 +921,7 @@ int main(int argc, char** argv)
             {"unsubscribe-topic", no_argument, NULL, 12},
             {"install-push", no_argument, NULL, 13},
             {"get-endpoint", no_argument, NULL, 14},
+            {"authentication", no_argument, NULL,  15},
             {"help", no_argument, NULL, 1000},
             {0, 0, 0, 0}
         };
@@ -963,6 +991,10 @@ int main(int argc, char** argv)
         case 14:
             printf("get endpoint\n");
             get_endpoint(&kii);
+            break;
+        case 15:
+            printf("authentication\n");
+            thing_authentication(&kii);
             break;
         case 1000:
             printf("to configure parameters, edit example.h\n\n");
