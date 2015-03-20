@@ -33,6 +33,11 @@
 */
 #define MAX_AUTH_BUFF_SIZE 128
 
+typedef enum prv_need_or_not {
+    NO_NEED = 0,
+    NEED = 1
+} prv_need_or_not_t;
+
 const char DEFAULT_OBJECT_CONTENT_TYPE[] = "application/json";
 
     kii_state_t
@@ -96,6 +101,7 @@ prv_http_request(
         const char* content_type,
         const char* access_token,
         const char* etag,
+        prv_need_or_not_t needIfNoneMatch,
         const char* body)
 {
     kii_http_client_code_t result;
@@ -165,6 +171,16 @@ prv_http_request(
                 kii->http_context,
                 "if-match",
                 etag 
+                );
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+            return KIIE_FAIL;
+        }
+    } else if (needIfNoneMatch == NEED) {
+        result = kii->http_set_header_cb(
+                kii->http_context,
+                "if-none-match",
+                "*" 
                 );
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
@@ -293,6 +309,7 @@ kii_register_thing(
             "application/vnd.kii.ThingRegistrationAndAuthorizationRequest+json",
             NULL,
             NULL,
+            NO_NEED,
             thing_data
             );
 
@@ -332,6 +349,7 @@ kii_thing_authentication(kii_t* kii,
             "application/json",
             NULL,
             NULL,
+            NO_NEED,
             body
             );
 
@@ -365,6 +383,7 @@ kii_create_new_object(
             object_content_type,
             access_token,
             NULL,
+            NO_NEED,
             object_data);
 
     if (result == KIIE_OK) {
@@ -400,6 +419,7 @@ kii_create_new_object_with_id(
             object_content_type,
             access_token,
             NULL,
+            NEED,
             object_data);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
@@ -430,6 +450,7 @@ kii_patch_object(
             NULL,
             access_token,
             opt_etag,
+            (opt_etag != NULL) ? NO_NEED : NEED,
             patch_data);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
@@ -460,6 +481,7 @@ kii_replace_object(
             NULL,
             access_token,
             opt_etag,
+            NO_NEED,
             replace_data);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
@@ -488,6 +510,7 @@ kii_get_object(
             NULL,
             access_token,
             NULL,
+            NO_NEED,
             NULL);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
@@ -516,6 +539,7 @@ kii_delete_object(
             NULL,
             access_token,
             NULL,
+            NO_NEED,
             NULL);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
@@ -542,6 +566,7 @@ kii_subscribe_bucket(
             NULL,
             access_token,
             NULL,
+            NO_NEED,
             NULL);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
@@ -569,6 +594,7 @@ kii_unsubscribe_bucket(
             NULL,
             access_token,
             NULL,
+            NO_NEED,
             NULL);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
@@ -592,6 +618,7 @@ kii_create_topic(
             NULL,
             access_token,
             NULL,
+            NO_NEED,
             NULL);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
@@ -615,6 +642,7 @@ kii_delete_topic(
             NULL,
             access_token,
             NULL,
+            NO_NEED,
             NULL);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
@@ -641,6 +669,7 @@ kii_subscribe_topic(
             NULL,
             access_token,
             NULL,
+            NO_NEED,
             NULL);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
@@ -668,6 +697,7 @@ kii_unsubscribe_topic(
             NULL,
             access_token,
             NULL,
+            NO_NEED,
             NULL);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
@@ -714,6 +744,7 @@ kii_install_thing_push(
             "application/vnd.kii.InstallationCreationRequest+json",
             access_token,
             NULL,
+            NO_NEED,
             body);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
@@ -737,6 +768,7 @@ kii_get_mqtt_endpoint(
             NULL,
             access_token,
             NULL,
+            NO_NEED,
             NULL);
     if (result == KIIE_OK) {
         kii->_state = KII_STATE_READY;
