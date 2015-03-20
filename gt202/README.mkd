@@ -1,117 +1,102 @@
-# Sample of KiiThingSDK Embedded for GT202
+# Demo application of KiiThingSDK Embedded for GT202
 
-GT202上でKiiThingSDKを実行するサンプルコードです。
+This is a demo application for KiiThingSDK Embedded for GT202.
 
-## 使用方法
+### Preparation
 
-### 準備
+This demo application is based on Throghput Demo. So you need to
+install some softwares including Throghput Demo. If you already have
+GT202, you can get installation manual form Arrow UEC. Please contact
+Arrow UEC.
 
-始めに"GT202KITS デモソフトウェア操作手順書\_20141126.pdf"の2.3.2までを行いGT202をPCから操作するためのターミナルを立ち上げられるようにしてください。
+To build this demo application, you need IAR Embedded workbench for
+ARM. IAR home page is
+[here](https://www.iar.com/jp/iar-embedded-workbench/ARM). Some
+information IAR Embedded workbench for ARM can be got from the
+installation manual from Arrow UEC..
 
-次に"GT202KITS 開発環境セットアップ手順書\_20141126.pdf"の内容に従いスループットデモをビルド＆実行できる環境を整えてください。(4.2のWiFiDirectに関しては関係ないので不要です。)
+We also assume that host borad of GT202 is FRDM-K22F.
 
-### サンプルコードのビルド
+### Build
 
-準備がPDF資料通りに完了していれば"C:\Freescale\Freescale\_MQX\_4\_1\demo\throughput\_demo\custom"が作成されています。
-そのcustomフォルダにKiiThingSDK-Embedded直下とgt202下のヘッダ、ソースファイルをコピーしてください。
+If you have installed some softwares according to installation manual
+from Arrow UEC, you can find a folder at
+C:\Freescale\Freescale\_MQX\_4\_1\demo\throughput\_demo\custom
 
-IAR Embedded Workbench IDEでスループットデモのプロジェクト(gt202kits\_frdmk22f.eww)を開きコピーしたファイルをプロジェクトへ追加してください。
-ただし、prv\_kii\_recv\_copy.cとprv\_kii\_recv\_zero\_copy.cはご使用されるmqxの定義するZERO\_COPYマクロ定数に従いどちらか一方だけを追加する必要があるので注意してください。
-現在のPDF資料に従って形成される環境ではZERO\_COPYは1に設定されるのでprv\_kii\_recv\_zero\_copy.cだけを追加してください。
+The build steps are followings:
 
-同梱のパッチ(kii\_cloud\_demo.patch)を使用してCommand\_Lists.cを修正してください。
+  1. Copy all .c and .h files in this directory except
+  prv_kii_recv_copy.c to
+  C:\Freescale\Freescale\_MQX\_4\_1\demo\throughput\_demo\custom.
+  1. Open IAR workbench for ARM. 
+  1. In IAR workbench for ARM, select [File] -> [Open] -> [Workspace] and
+  select C:\Freescale\Freescale\_MQX\_4\_1\gt202kits\_frdmk22f.eww.
+  1. Select throghput_demo/Source/custom and add files copied at 1.
+  1. Apply kii_cloud_demo.patch to Command\_Lists.c.
 
-kii\_cloud\_demo\_setting.h内に対向サーバの設定などを記したマクロ定数が存在します。
-実行環境に即して修正してください。
+At 1, if you want to use non ZERO_COPY version of MQX, you should copy
+prv_kii_recv_copy.c instaed of prv_kii_recv_zero_copy.c. ZERO_COPY is
+MQX feature.
 
-"プロジェクト"->"メイク"などでビルドしてエラーが無ければビルド成功となります。
+At 5, Copy kii_cloud_demo.patch to
+C:\Freescale\Freescale\_MQX\_4\_1\demo\throughput\_demo\custom, And
+execute following command.
 
-### サンプルコードの実行
-
-#### GT202上での起動とネットワーク設定
-
-"プロジェクト"->"ダウンロードしてデバッグ"を行うと接続されているGT202へバイナリが送られ実行が開始されます。(main関数でブレークした状態になるので"実行"などでコンティニューを行ってください。)
-ターミナル上に"shell>"と入力プロンプトが現れるので以下を参考にネットワークへの接続設定を行ってください。
- * アクセスポイントの設定
+```sh
+patch -p0 -u < kii_cloud_demo.patch
 ```
+
+After that, you can build and download demo demo application binary
+with IAR workbench for ARM mannter.
+
+### Execution of demo application
+
+#### Connecting to access point.
+
+After downloading the demo application binary to FRDM-K22F + GT202,
+You can access the demo application with terminal program like
+[TeraTerm](http://sourceforge.jp/projects/ttssh2/). Setting of
+terminal program can be found in installation manual from Arrow UEC.
+
+First of all, We need to connect to access point of your network. You
+can connect access point and get ip address with following procedure.
+
+```sh
 shell> wmiconfig --p <passphrase>
 shell> wmiconfig --wpa <ver> <ucipher> <mcipher>
 shell> wmiconfig --connect <ssid>
-```
-ターミナル上に"Connected"、"4 way handshake success"と表示されれば成功です。
- * IPの取得
-```
 shell> wmiconfig --ipdhcp
 ```
-IP、Mask、Gatewayが表示されれば成功です。
 
-#### GT202上での実行
+#### Commands of demo application.
 
-基本的に"shell> kii \<command\>"で各サンプルは実行され、送受信した内容と結果のダンプが行われます。
-commandには以下があります。
+After getting ip address, you can use this demo application.
+This demo application can be executed with following mannter.
 
- * register
+```sh
+shell> kii COMMAND
+```
+You must replace COMMAND to one of followings:
 
-_vendorThingIDにUNIX時間の現在時刻(秒)、_passwordに"1234"を設定して作成されるthing_dataを指定しkii_thing_register APIを呼び出します。
+  * register
+  * new-object
+  * new-object-with-id
+  * patch-object
+  * replace-object
+  * get-object
+  * delete-object
+  * subscribe-bucket
+  * unsubscribe-bucket
+  * create-topic
+  * delete-topic
+  * subscribe-topic
+  * unsubscribe-topic
+  * install-push
+  * get-endpoint
+  * authentication
 
- * new-object
+This COMMANDs is one-to-one correspondence to KiiThingSDK-Embedded API.
 
-object_dataに"{}"、object_content_typeにNULLを指定しkii_create_new_object APIを呼び出します。
+### Limitations
 
- * new-object-with-id
-
-object_idにOBJECT_NAMEマクロ定数値、object_dataに"{}"、object_content_typeにNULLを指定しkii_create_new_object_with_id APIを呼び出します。
-
- * patch-object
-
-object_idにOBJECT_NAMEマクロ定数値、object_dataに"{}"、opt_etagにNULLを指定しkii_patch_object APIを呼び出します。
-
- * replace-object
-
-object_idにOBJECT_NAMEマクロ定数値、object_dataに"{}"、opt_etagにNULLを指定しkii_replace_object APIを呼び出します。
-
- * get-object
-
-object_idにOBJECT_NAMEマクロ定数値を指定しkii_get_object APIを呼び出します。
-
- * delete-object
-
-object_idにOBJECT_NAMEマクロ定数値を指定しkii_delete_object APIを呼び出します。
-
- * subscribe-bucket
-
-BUCKET_NAMEマクロ定義値で定義されるバケツを指定しkii_subscribe_bukcet APIを呼び出します。
-
- * unsubscribe-bucket
-
-BUCKET_NAMEマクロ定義値で定義されるバケツを指定しkii_unsubscribe_bukcet APIを呼び出します。
-
- * create-topic
-
-TOPIC_NAMEマクロ定義値で定義されるトピックを指定しkii_create_topic APIを呼び出します。
-
- * delete-topic
-
-TOPIC_NAMEマクロ定義値で定義されるトピックを指定しkii_delete_topic APIを呼び出します。
-
- * subscribe-topic
-
-TOPIC_NAMEマクロ定義値で定義されるトピックを指定しkii_subscribe_topic APIを呼び出します。
-
- * unsubscribe-topic
-
-TOPIC_NAMEマクロ定義値で定義されるトピックを指定しkii_unsubscribe_topic APIを呼び出します。
-
- * install-push
-
-developmentにKII_FALSEを指定しkii_install_thing_push APIを呼び出します。
-
- * get-endpoint
-
-installation_idにINSTALLATION_IDマクロ定数値を指定しkii_get_mqtt_endpoint APIを呼び出します。
-
-### 制限事項
-
-現在のバージョンではhttpでの通信にしか対応していません。
-故にKiiThingSDK対向サーバ側でhttpでの通信に対応していない場合は通信できません。
-将来のアップデートでSSL通信周りの問題が解消されればhttpsでの通信に切り替えます。
+* This demo application use HTTP. Current GT202 can not use HTTPS.
