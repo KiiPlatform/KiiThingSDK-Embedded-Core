@@ -1,6 +1,9 @@
 #ifndef _kii_cloud_demo_setting
 #define _kii_cloud_demo_setting
 
+#define VENDOR_ID "1426830900"
+#define VENDOR_PASS "1234"
+
 #define APP_ID "84fff36e"
 #define APP_KEY "e45fcc2d31d6aca675af639bc5f04a26"
 #define APP_HOST "api-development-jp.internal.kii.com"
