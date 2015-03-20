@@ -894,6 +894,7 @@ int main(int argc, char** argv)
             {"unsubscribe-topic", no_argument, NULL, 12},
             {"install-push", no_argument, NULL, 13},
             {"get-endpoint", no_argument, NULL, 14},
+            {"help", no_argument, NULL, 1000},
             {0, 0, 0, 0}
         };
 
@@ -963,6 +964,26 @@ int main(int argc, char** argv)
             printf("get endpoint\n");
             get_endpoint(&kii);
             break;
+        case 1000:
+            printf("to configure parameters, edit example.h\n\n");
+            printf("commands: \n");
+            printf("--register\n register new thing.\n");
+            printf("--new-object\n create new object.\n");
+            printf("--new-object-with-id\n create new object with id.\n");
+            printf("--patch-object\n patch object.\n");
+            printf("--replace-object\n replace object.\n");
+            printf("--get-object\n get object.\n");
+            printf("--delete-object\n delete object.\n");
+            printf("--subscribe-bucket\n subscribe bucket.\n");
+            printf("--unsubscribe-bucket\n unsubscribe bucket.\n");
+            printf("--create-topic\n create topic.\n");
+            printf("--delete-topic\n delete topic.\n");
+            printf("--subscribe-topic\n subscribe to topic.\n");
+            printf("--unsubscribe-topic\n unsubscribe to topic.\n");
+            printf("--install-push\n install push.\n");
+            printf("--get-endpoint\n get endpoint of MQTT.\n");
+            break;
+            
         case '?':
             break;
         default:
