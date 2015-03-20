@@ -424,6 +424,32 @@ static int register_thing(kii_t* kii)
     return 0;
 }
 
+static int thing_authentication(kii_t* kii)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+
+    err = kii_thing_authentication(
+            kii,
+            EX_AUTH_VENDOR_ID,
+            EX_AUTH_VENDOR_PASS);
+    printf("request:\n%s\n", kii->buffer);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        err = kii_run(kii);
+        state = kii_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+    return 0;
+}
+
 static int create_new_object(kii_t* kii)
 {
     kii_state_t state;
@@ -894,6 +920,7 @@ int main(int argc, char** argv)
             {"unsubscribe-topic", no_argument, NULL, 12},
             {"install-push", no_argument, NULL, 13},
             {"get-endpoint", no_argument, NULL, 14},
+            {"authentication", no_argument, NULL,  15},
             {"help", no_argument, NULL, 1000},
             {0, 0, 0, 0}
         };
@@ -964,10 +991,15 @@ int main(int argc, char** argv)
             printf("get endpoint\n");
             get_endpoint(&kii);
             break;
+        case 15:
+            printf("authentication\n");
+            thing_authentication(&kii);
+            break;
         case 1000:
             printf("to configure parameters, edit example.h\n\n");
             printf("commands: \n");
             printf("--register\n register new thing.\n");
+            printf("--authentication\n get access token.\n");
             printf("--new-object\n create new object.\n");
             printf("--new-object-with-id\n create new object with id.\n");
             printf("--patch-object\n patch object.\n");
