@@ -214,6 +214,9 @@ kii_http_client_code_t
     kii_http_client_code_t res;
     switch (ctx->state) {
         case PRV_STATE_IDLE:
+            ctx->sent_size = 0;
+            ctx->last_chunk = 0;
+            ctx->received_size = 0;
             ctx->state = PRV_STATE_CONNECT;
             return KII_HTTPC_AGAIN;
         case PRV_STATE_CONNECT:
