@@ -163,7 +163,7 @@ prv_http_request(
     if (etag != NULL) {
         result = kii->http_set_header_cb(
                 kii->http_context,
-                "etag",
+                "if-match",
                 etag 
                 );
         if (result != KII_HTTPC_OK) {
