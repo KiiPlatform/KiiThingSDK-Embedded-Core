@@ -1,9 +1,9 @@
 #ifndef _gt202_kii_adapter
 #define _gt202_kii_adapter
 
-#include <kii.h>
+#include "kii.h"
 
-#include <main.h>
+#include "main.h"
 
 typedef enum prv_state {
     PRV_STATE_IDLE,
