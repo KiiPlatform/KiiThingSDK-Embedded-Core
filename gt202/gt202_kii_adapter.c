@@ -45,6 +45,7 @@ static kii_http_client_code_t prv_connect(void* app_context, const char* host)
             printf("GetERROR: Unable to resolve host name\r\n");
             return KII_HTTPC_FAIL;
         }
+        dnsRespInfo.ipaddrs_list[0] = A_BE2CPU32(dnsRespInfo.ipaddrs_list[0]);
     }
 
 #if CONNECT_SSL
@@ -63,7 +64,7 @@ static kii_http_client_code_t prv_connect(void* app_context, const char* host)
 
     memset(&hostAddr, 0x00, sizeof(hostAddr));
     hostAddr.sin_family = ATH_AF_INET;
-    hostAddr.sin_addr = A_BE2CPU32(dnsRespInfo.ipaddrs_list[0]);
+    hostAddr.sin_addr = dnsRespInfo.ipaddrs_list[0];
 #if CONNECT_SSL
     hostAddr.sin_port = 443;
 #else
