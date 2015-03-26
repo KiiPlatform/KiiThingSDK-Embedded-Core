@@ -66,11 +66,8 @@ kii_run(kii_t* kii)
                 return KIIE_FAIL;
             }
         default:
-<<<<<<< HEAD
-=======
             M_KII_ASSERT(0);
->>>>>>> d5e643ea10d81ed4a299f9be797ef92cceac7a11
-            return KIIE_FAIL;
+
     }
 }
 
