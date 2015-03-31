@@ -550,6 +550,28 @@ static int get_endpoint(kii_t* kii)
     return 0;
 }
 
+static void show_help()
+{
+      printf("commands: \n");
+      printf(" help\n\t show this help.\n");
+      printf(" register\n\t register new thing.\n");
+      printf(" authentication\n\t get access token.\n");
+      printf(" new-object\n\t create new object.\n");
+      printf(" new-object-with-id\n\t create new object with id.\n");
+      printf(" patch-object\n\t patch object.\n");
+      printf(" replace-object\n\t replace object.\n");
+      printf(" get-object\n\t get object.\n");
+      printf(" delete-object\n\t delete object.\n");
+      printf(" subscribe-bucket\n\t subscribe bucket.\n");
+      printf(" unsubscribe-bucket\n\t unsubscribe bucket.\n");
+      printf(" create-topic\n\t create topic.\n");
+      printf(" delete-topic\n\t delete topic.\n");
+      printf(" subscribe-topic\n\t subscribe to topic.\n");
+      printf(" unsubscribe-topic\n\t unsubscribe to topic.\n");
+      printf(" install-push\n\t install push.\n");
+      printf(" get-endpoint\n\t get endpoint of MQTT.\n");
+}
+
 #define CMD_INDEX 1
 
 int kii_main(int argc, char *argv[])
@@ -563,7 +585,8 @@ int kii_main(int argc, char *argv[])
 
     if (argc < CMD_INDEX + 1)
     {
-        return A_ERROR;
+        show_help();
+        return A_OK;
     }
 
     kii = malloc(sizeof(kii_t));
@@ -683,6 +706,11 @@ int kii_main(int argc, char *argv[])
         {
             ret = A_OK;
         }
+    }
+    else if(ATH_STRCMP(argv[CMD_INDEX], "help") == 0)
+    {
+        show_help();
+        ret = A_OK;
     }
 
     free(kii);
