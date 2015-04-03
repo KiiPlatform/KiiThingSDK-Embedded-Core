@@ -58,9 +58,9 @@ static const http_funcs responseFuncs = {
 };
 
 // your network name also called SSID
-char ssid[] = "WL02";
+char ssid[] = "__YOUR_SSID__";
 // your network password
-char password[] = "synclorewl02";
+char password[] = "__WIFI_PASSCODE__";
 // your network key Index number (needed only for WEP)
 int keyIndex = 0;
 
