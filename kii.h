@@ -26,6 +26,20 @@ typedef enum kii_http_client_code_t {
     KII_HTTPC_AGAIN
 } kii_http_client_code_t;
 
+typedef struct kii_http_context_t
+{
+    /** application specific context object.
+     * used by HTTP callback implementations.
+     */
+    void* app_context;
+    /** buffer used to communicate with KiiCloud.
+     *  application allocate memory before calling apis.
+     */
+    char* buffer;
+    /** size of buffer */
+    size_t buffer_size;
+} kii_http_context_t;
+
 /** callback for preparing HTTP request line.
  * application implement this callback with the HTTP client
  * in the target environment.
@@ -38,7 +52,7 @@ typedef enum kii_http_client_code_t {
  */
 typedef kii_http_client_code_t
         (*KII_HTTPCB_SET_REQUEST_LINE)(
-                void* http_context,
+                kii_http_context_t* http_context,
                 const char* method,
                 const char* host,
                 const char* path);
@@ -54,7 +68,7 @@ typedef kii_http_client_code_t
  */
 typedef kii_http_client_code_t
         (*KII_HTTPCB_SET_HEADER)(
-                void* http_context,
+                kii_http_context_t* http_context,
                 const char* key,
                 const char* value);
 
@@ -69,7 +83,7 @@ typedef kii_http_client_code_t
  */
 typedef kii_http_client_code_t
         (*KII_HTTPCB_SET_BODY)(
-                void* http_context,
+                kii_http_context_t* http_context,
                 const char* body_data);
 
 /** callback for execution of HTTP request.
@@ -84,7 +98,7 @@ typedef kii_http_client_code_t
  */
 typedef kii_http_client_code_t
         (*KII_HTTPCB_EXECUTE)(
-                void* http_context,
+                kii_http_context_t* http_context,
                 int* response_code,
                 char** response_body);
 
@@ -142,12 +156,6 @@ typedef struct kii_t
      *  Site SG : "api-sg.kii.com"
      */
     char* app_host;
-    /** buffer used to communicate with KiiCloud.
-     *  application allocate memory before calling apis.
-     */
-    char* buffer;
-    /** size of buffer */
-    size_t buffer_size;
     /** HTTP response code.
      * value is set by implementation of KII_HTTPCB_EXECUTE
      */
@@ -164,7 +172,7 @@ typedef struct kii_t
     /** application's context object used by HTTP callback implementations.
      * Should be allocated and set before execute apis.
      */
-    void* http_context;
+    kii_http_context_t* http_context;
     /** request line callback function pointer
      * Should be set before execute apis.
      */

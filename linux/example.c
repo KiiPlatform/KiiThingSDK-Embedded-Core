@@ -32,8 +32,6 @@ typedef struct context_t
     SSL *ssl;
     SSL_CTX *ssl_ctx;
     int sock;
-    char* buff;
-    size_t buff_size;
     char host[256];
     prv_ssl_state_t state;
     int last_chunk;
@@ -41,13 +39,14 @@ typedef struct context_t
     int received_size;
 } context_t;
 
-static kii_http_client_code_t prv_ssl_connect(void* app_context, const char* host)
+static kii_http_client_code_t prv_ssl_connect(kii_http_context_t* http_context,
+        const char* host)
 {
     int sock, ret;
     struct hostent *servhost;
     struct sockaddr_in server;
     struct servent *service;
-    context_t* ctx = (context_t*)app_context;
+    context_t* ctx = (context_t*)(http_context->app_context);
     SSL *ssl;
     SSL_CTX *ssl_ctx;
 
@@ -115,9 +114,10 @@ static kii_http_client_code_t prv_ssl_connect(void* app_context, const char* hos
     return KII_HTTPC_OK;
 }
 
-static kii_http_client_code_t prv_ssl_send(void* app_context, const char* send_buff, int buff_length)
+static kii_http_client_code_t prv_ssl_send(kii_http_context_t* http_context,
+        const char* send_buff, int buff_length)
 {
-    context_t* ctx = (context_t*)app_context;
+    context_t* ctx = (context_t*)http_context->app_context;
     int ret = SSL_write(ctx->ssl, send_buff, buff_length);
     if (ret > 0) {
         return KII_HTTPC_OK;
@@ -127,9 +127,10 @@ static kii_http_client_code_t prv_ssl_send(void* app_context, const char* send_b
     }
 }
 
-static kii_http_client_code_t prv_ssl_recv(void* app_context, char* recv_buff, int length_to_read, int* out_actual_length)
+static kii_http_client_code_t prv_ssl_recv(kii_http_context_t* http_context,
+        char* recv_buff, int length_to_read, int* out_actual_length)
 {
-    context_t* ctx = (context_t*)app_context;
+    context_t* ctx = (context_t*)http_context->app_context;
     int ret = SSL_read(ctx->ssl, recv_buff, length_to_read);
     if (ret > 0) {
         *out_actual_length = ret;
@@ -143,9 +144,9 @@ static kii_http_client_code_t prv_ssl_recv(void* app_context, char* recv_buff, i
 }
 
 
-static kii_http_client_code_t prv_ssl_close(void* app_context)
+static kii_http_client_code_t prv_ssl_close(kii_http_context_t* http_context)
 {
-    context_t* ctx = (context_t*)app_context;
+    context_t* ctx = (context_t*)http_context->app_context;
     int ret = SSL_shutdown(ctx->ssl);
     if (ret != 1) {
         int sslErr = SSL_get_error(ctx->ssl, ret);
@@ -172,14 +173,18 @@ static kii_http_client_code_t prv_ssl_close(void* app_context)
 /* HTTP Callback functions */
 kii_http_client_code_t
     request_line_cb(
-        void* http_context,
+        kii_http_context_t* http_context,
         const char* method,
         const char* host,
         const char* path)
 {
-    context_t* ctx = (context_t*)http_context;
-    char* reqBuff = ctx->buff;
+    char* reqBuff;
+    context_t* ctx;
+
+    ctx = (context_t*)http_context->app_context;
     strncpy(ctx->host, host, strlen(host));
+
+    reqBuff = http_context->buffer;
     /* TODO: prevent overflow. */
     sprintf(reqBuff, "%s https://%s/%s HTTP/1.1\r\n", method, host, path);
 
@@ -188,12 +193,12 @@ kii_http_client_code_t
 
 kii_http_client_code_t
     header_cb(
-        void* http_context,
+        kii_http_context_t* http_context,
         const char* key,
         const char* value)
 {
     /* TODO: prevent overflow. */
-    char* reqBuff = ((context_t*)http_context)->buff;
+    char* reqBuff = http_context->buffer;
     strcat(reqBuff, key);
     strcat(reqBuff, ":");
     strcat(reqBuff, value);
@@ -203,11 +208,11 @@ kii_http_client_code_t
 
 kii_http_client_code_t
     body_cb(
-        void* http_context,
+        kii_http_context_t* http_context,
         const char* body_data)
 {
     /* TODO: prevent overflow. */
-    char* reqBuff = ((context_t*)http_context)->buff;
+    char* reqBuff = http_context->buffer;
     strcat(reqBuff, "\r\n");
     if (body_data != NULL) {
         strcat(reqBuff, body_data);
@@ -217,13 +222,14 @@ kii_http_client_code_t
 
 kii_http_client_code_t
     execute_cb(
-        void* http_context,
+        kii_http_context_t* http_context,
         int* response_code,
         char** response_body)
 {
-    context_t* ctx = (context_t*)http_context;
+    context_t* ctx;
     kii_http_client_code_t res;
 
+    ctx = (context_t*)http_context->app_context;
     printf("client state: %d\n", ctx->state);
     switch (ctx->state) {
         case PRV_SSL_STATE_IDLE:
@@ -233,7 +239,7 @@ kii_http_client_code_t
             ctx->state = PRV_SSL_STATE_CONNECT;
             return KII_HTTPC_AGAIN;
         case PRV_SSL_STATE_CONNECT:
-            res = prv_ssl_connect(ctx, ctx->host);
+            res = prv_ssl_connect(http_context, ctx->host);
             if (res == KII_HTTPC_OK) {
                 ctx->state = PRV_SSL_STATE_SEND;
                 return KII_HTTPC_AGAIN;
@@ -247,14 +253,14 @@ kii_http_client_code_t
         {
             char* sendBuff = NULL;
             int size = BUFF_SIZE;
-            int remain = strlen(ctx->buff) - ctx->sent_size;
+            int remain = strlen(http_context->buffer) - ctx->sent_size;
             if (remain < size) {
                 size = remain;
                 ctx->last_chunk = 1;
             }
-            sendBuff = ctx->buff + ctx->sent_size;
+            sendBuff = http_context->buffer + ctx->sent_size;
             res = prv_ssl_send(
-                    ctx,
+                    http_context,
                     sendBuff,
                     size);
             if (res == KII_HTTPC_OK) {
@@ -273,11 +279,11 @@ kii_http_client_code_t
         case PRV_SSL_STATE_RECV:
         {
             int actualLength = 0;
-            char* buffPtr = ctx->buff + ctx->received_size;
+            char* buffPtr = http_context->buffer + ctx->received_size;
             if (ctx->received_size == 0) {
-                memset(ctx->buff, 0x00, ctx->buff_size);
+                memset(http_context->buffer, 0x00, http_context->buffer_size);
             }
-            res = prv_ssl_recv(ctx, buffPtr, BUFF_SIZE, &actualLength);
+            res = prv_ssl_recv(http_context, buffPtr, BUFF_SIZE, &actualLength);
             if (res == KII_HTTPC_OK) {
                 ctx->received_size += actualLength;
                 if (actualLength < BUFF_SIZE) {
@@ -293,10 +299,10 @@ kii_http_client_code_t
         }
         case PRV_SSL_STATE_CLOSE:
         {
-            res = prv_ssl_close(ctx);
+            res = prv_ssl_close(http_context);
             if (res == KII_HTTPC_OK) {
                 /* parse status code */
-                char* statusPtr = strstr(ctx->buff, "HTTP/1.1 ");
+                char* statusPtr = strstr(http_context->buffer, "HTTP/1.1 ");
                 int numCode = 0;
                 char* bodyPtr = NULL;
                 if (statusPtr != NULL) {
@@ -308,7 +314,7 @@ kii_http_client_code_t
                     *response_code = numCode;
                 }
                 /* set body pointer */
-                bodyPtr = strstr(ctx->buff, "\r\n\r\n");
+                bodyPtr = strstr(http_context->buffer, "\r\n\r\n");
                 if (bodyPtr != NULL) {
                     bodyPtr += 4;
                 }
@@ -340,25 +346,24 @@ void parse_response(char* resp_body)
     /* TODO: implement */
 }
 
-void init(kii_t* kii, char* buff, context_t* ctx) {
+void init(kii_t* kii, char* buff, context_t* ctx, kii_http_context_t* http_ctx) {
     memset(kii, 0x00, sizeof(kii_t));
     kii->app_id = (char*)EX_APP_ID;
     kii->app_key = (char*)EX_APP_KEY;
     kii->app_host = (char*)EX_APP_HOST;
-    kii->buffer = buff;
-    kii->buffer_size = EX_BUFFER_SIZE;
 
-    kii->http_context = ctx;
+    memset(ctx, 0x00, sizeof(context_t));
+    kii->http_context = http_ctx;
+    http_ctx->app_context = ctx;
+    http_ctx->buffer = buff;
+    http_ctx->buffer_size = EX_BUFFER_SIZE;
+
     kii->http_set_request_line_cb = request_line_cb;
     kii->http_set_header_cb = header_cb;
     kii->http_set_body_cb = body_cb;
     kii->http_execute_cb = execute_cb;
     kii->logger_cb = logger_cb;
 
-    memset(ctx, 0x00, sizeof(context_t));
-    /* share the request and response buffer.*/
-    ctx->buff = buff;
-    ctx->buff_size = EX_BUFFER_SIZE;
 }
 
 static void set_author(kii_t* kii, kii_author_t* author)
@@ -386,7 +391,7 @@ static void init_topic(kii_topic_t* topic) {
 static void print_response(kii_t* kii)
 {
     printf("========response========\n");
-    printf("%s\n", kii->buffer);
+    printf("%s\n", kii->http_context->buffer);
     printf("========response========\n");
     printf("response_code: %d\n", kii->response_code);
     printf("response_body:\n%s\n", kii->response_body);
@@ -407,7 +412,7 @@ static int register_thing(kii_t* kii)
             pid);
     /* Register Thing */
     err = kii_register_thing(kii, thingData);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -433,7 +438,7 @@ static int thing_authentication(kii_t* kii)
             kii,
             EX_AUTH_VENDOR_ID,
             EX_AUTH_VENDOR_PASS);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -466,7 +471,7 @@ static int create_new_object(kii_t* kii)
             &bucket,
             EX_OBJECT_DATA,
             NULL);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -500,7 +505,7 @@ static int create_new_object_with_id(kii_t* kii, const char* id)
             id,
             EX_OBJECT_DATA,
             NULL);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -534,7 +539,7 @@ static int patch_object(kii_t* kii, const char* id)
             id,
             EX_OBJECT_DATA,
             NULL);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -568,7 +573,7 @@ static int replace_object(kii_t* kii, const char* id)
             id,
             EX_OBJECT_DATA,
             NULL);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -600,7 +605,7 @@ static int get_object(kii_t* kii, const char* id)
             kii,
             &bucket,
             id);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -632,7 +637,7 @@ static int delete_object(kii_t* kii, const char* id)
             kii,
             &bucket,
             id);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -663,7 +668,7 @@ static int subscribe_bucket(kii_t* kii, const char* bucket_name)
     err = kii_subscribe_bucket(
             kii,
             &bucket);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -694,7 +699,7 @@ static int unsubscribe_bucket(kii_t* kii, const char* bucket_name)
     err = kii_unsubscribe_bucket(
             kii,
             &bucket);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -725,7 +730,7 @@ static int create_topic(kii_t* kii)
     err = kii_create_topic(
             kii,
             &topic);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -756,7 +761,7 @@ static int delete_topic(kii_t* kii)
     err = kii_delete_topic(
             kii,
             &topic);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -787,7 +792,7 @@ static int subscribe_topic(kii_t* kii)
     err = kii_subscribe_topic(
             kii,
             &topic);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -818,7 +823,7 @@ static int unsubscribe_topic(kii_t* kii)
     err = kii_unsubscribe_topic(
             kii,
             &topic);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -846,7 +851,7 @@ static int install_push(kii_t* kii)
     err = kii_install_thing_push(
             kii,
             KII_FALSE);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -874,7 +879,7 @@ static int get_endpoint(kii_t* kii)
     err = kii_get_mqtt_endpoint(
             kii,
             EX_MQTT_ENDPOINT);
-    printf("request:\n%s\n", kii->buffer);
+    printf("request:\n%s\n", kii->http_context->buffer);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -895,12 +900,13 @@ int main(int argc, char** argv)
 {
     context_t ctx;
     kii_t kii;
+    kii_http_context_t http_ctx;
     char buff[EX_BUFFER_SIZE];
 
     int optval;
 
     /* Initialization */
-    init(&kii, buff, &ctx);
+    init(&kii, buff, &ctx, &http_ctx);
 
     while (1) {
         int option_index = 0;
