@@ -136,9 +136,9 @@ typedef enum kii_state_t {
 typedef struct kii_author_t
 {
     /** ID of the author */
-    char* author_id;
+    char author_id[128];
     /** access token of the author */
-    char* access_token;
+    char access_token[128];
 } kii_author_t;
 
 /** object manages context of api execution. */
@@ -167,12 +167,12 @@ typedef struct kii_t
     /** author of the api.
      * set author object before execute api requires authorization.
      */
-    kii_author_t* author;
+    kii_author_t author;
 
     /** application's context object used by HTTP callback implementations.
      * Should be allocated and set before execute apis.
      */
-    kii_http_context_t* http_context;
+    kii_http_context_t http_context;
     /** request line callback function pointer
      * Should be set before execute apis.
      */
