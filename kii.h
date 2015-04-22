@@ -115,6 +115,9 @@ typedef void
                 const char* format,
                 ...
                 );
+
+typedef void (*KII_PUSH_RECEIVED_CB)(char* message, size_t message_length);
+
 /** error code returned by SDK apis. */
 typedef enum kii_error_code_t {
     KIIE_OK = 0,
@@ -221,6 +224,9 @@ typedef struct kii_t
      * Should be set before execute apis.
      */
     KII_DELAY_MS delay_ms_cb;
+
+    /** Push callback function */
+    KII_PUSH_RECEIVED_CB push_received_cb;
 
     char _http_request_path[256];
 
