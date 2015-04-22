@@ -9,6 +9,7 @@ extern "C" {
 
 typedef struct kii_socket_context_t {
     void* app_context;
+    int socket;
 } kii_socket_context_t;
 
 typedef enum kii_socket_code_t {
