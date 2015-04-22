@@ -21,6 +21,10 @@ typedef kii_task_code_t
      unsigned int stk_size,
      unsigned int priority);
 
+typedef void
+(*KII_DELAY_MS)
+    (unsigned int msec);
+
 #ifdef _cplusplus
 }
 #endif

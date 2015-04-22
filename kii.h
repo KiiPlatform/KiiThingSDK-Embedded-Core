@@ -217,6 +217,11 @@ typedef struct kii_t
      */
     KII_TASK_CREATE task_create_cb;
 
+    /** sleep callback function pointer
+     * Should be set before execute apis.
+     */
+    KII_DELAY_MS delay_ms_cb;
+
     char _http_request_path[256];
 
     kii_state_t _state;
