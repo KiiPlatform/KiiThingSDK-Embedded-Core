@@ -229,6 +229,7 @@ typedef struct kii_t
     KII_PUSH_RECEIVED_CB push_received_cb;
 
     char _http_request_path[256];
+    kii_bool_t _mqtt_endpoint_ready;
 
     kii_state_t _state;
 } kii_t;
