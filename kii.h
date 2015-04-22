@@ -6,6 +6,8 @@ extern "C" {
 #endif
 
 #include <stddef.h>
+#include "kii_socket_callback.h"
+#include "kii_task_callback.h"
 
 /** bool type definition */
 typedef enum kii_bool_t {
@@ -169,9 +171,7 @@ typedef struct kii_t
      */
     kii_author_t author;
 
-    /** application's context object used by HTTP callback implementations.
-     * Should be allocated and set before execute apis.
-     */
+    /** application's context object used by HTTP callback implementations. */
     kii_http_context_t http_context;
     /** request line callback function pointer
      * Should be set before execute apis.
@@ -189,8 +189,34 @@ typedef struct kii_t
      * Should be set before execute apis.
      */
     KII_HTTPCB_EXECUTE http_execute_cb;
+
     /** logging callback function pointer */
     KII_LOGGER logger_cb;
+
+    /** application's context object used by socket callback implementations */
+    kii_socket_context_t socket_context;
+    /** socket connect callback function pointer
+     * Should be set before execute apis.
+     */
+    KII_SOCKET_CONNECT_CB socket_connect_cb;
+    /** socket send callback function pointer
+     * Should be set before execute apis.
+     */
+    KII_SOCKET_SEND_CB socket_send_cb;
+    /** socket recv callback function pointer
+     * Should be set before execute apis.
+     */
+    KII_SOCKET_RECV_CB socket_recv_cb;
+    /** socket close callback function pointer
+     * Should be set before execute apis.
+     */
+    KII_SOCKET_CLOSE_CB socket_close_cb;
+
+    /** task create callback function pointer
+     * Should be set before execute apis.
+     */
+    KII_TASK_CREATE task_create_cb;
+
     char _http_request_path[256];
 
     kii_state_t _state;

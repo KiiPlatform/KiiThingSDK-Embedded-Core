@@ -346,14 +346,15 @@ void parse_response(char* resp_body)
     /* TODO: implement */
 }
 
-void init(kii_t* kii, char* buff, context_t* ctx, kii_http_context_t* http_ctx) {
+void init(kii_t* kii, char* buff, context_t* ctx) {
+    kii_http_context_t* http_ctx;
     memset(kii, 0x00, sizeof(kii_t));
     kii->app_id = (char*)EX_APP_ID;
     kii->app_key = (char*)EX_APP_KEY;
     kii->app_host = (char*)EX_APP_HOST;
 
     memset(ctx, 0x00, sizeof(context_t));
-    kii->http_context = http_ctx;
+    http_ctx = &kii->http_context;
     http_ctx->app_context = ctx;
     http_ctx->buffer = buff;
     http_ctx->buffer_size = EX_BUFFER_SIZE;
@@ -369,9 +370,9 @@ void init(kii_t* kii, char* buff, context_t* ctx, kii_http_context_t* http_ctx) 
 static void set_author(kii_t* kii, kii_author_t* author)
 {
     memset(author, 0x00, sizeof(kii_author_t));
-    author->author_id = (char*)EX_THING_ID;
-    author->access_token = (char*)EX_ACCESS_TOKEN;
-    kii->author = author;
+    strncpy(author->author_id, (char*)EX_THING_ID, 128);
+    strncpy(author->access_token, (char*)EX_ACCESS_TOKEN, 128);
+    kii->author = *author;
 }
 
 static void init_bucket(kii_bucket_t* bucket) {
@@ -388,10 +389,17 @@ static void init_topic(kii_topic_t* topic) {
     topic->topic_name = (char*)EX_TOPIC_NAME;
 }
 
+static void print_request(kii_t* kii)
+{
+    printf("========request========\n");
+    printf("%s\n", kii->http_context.buffer);
+    printf("========request========\n");
+}
+
 static void print_response(kii_t* kii)
 {
     printf("========response========\n");
-    printf("%s\n", kii->http_context->buffer);
+    printf("%s\n", kii->http_context.buffer);
     printf("========response========\n");
     printf("response_code: %d\n", kii->response_code);
     printf("response_body:\n%s\n", kii->response_body);
@@ -412,7 +420,7 @@ static int register_thing(kii_t* kii)
             pid);
     /* Register Thing */
     err = kii_register_thing(kii, thingData);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -438,7 +446,7 @@ static int thing_authentication(kii_t* kii)
             kii,
             EX_AUTH_VENDOR_ID,
             EX_AUTH_VENDOR_PASS);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -471,7 +479,7 @@ static int create_new_object(kii_t* kii)
             &bucket,
             EX_OBJECT_DATA,
             NULL);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -505,7 +513,7 @@ static int create_new_object_with_id(kii_t* kii, const char* id)
             id,
             EX_OBJECT_DATA,
             NULL);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -539,7 +547,7 @@ static int patch_object(kii_t* kii, const char* id)
             id,
             EX_OBJECT_DATA,
             NULL);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -573,7 +581,7 @@ static int replace_object(kii_t* kii, const char* id)
             id,
             EX_OBJECT_DATA,
             NULL);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -605,7 +613,7 @@ static int get_object(kii_t* kii, const char* id)
             kii,
             &bucket,
             id);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -637,7 +645,7 @@ static int delete_object(kii_t* kii, const char* id)
             kii,
             &bucket,
             id);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -668,7 +676,7 @@ static int subscribe_bucket(kii_t* kii, const char* bucket_name)
     err = kii_subscribe_bucket(
             kii,
             &bucket);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -699,7 +707,7 @@ static int unsubscribe_bucket(kii_t* kii, const char* bucket_name)
     err = kii_unsubscribe_bucket(
             kii,
             &bucket);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -730,7 +738,7 @@ static int create_topic(kii_t* kii)
     err = kii_create_topic(
             kii,
             &topic);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -761,7 +769,7 @@ static int delete_topic(kii_t* kii)
     err = kii_delete_topic(
             kii,
             &topic);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -792,7 +800,7 @@ static int subscribe_topic(kii_t* kii)
     err = kii_subscribe_topic(
             kii,
             &topic);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -823,7 +831,7 @@ static int unsubscribe_topic(kii_t* kii)
     err = kii_unsubscribe_topic(
             kii,
             &topic);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -851,7 +859,7 @@ static int install_push(kii_t* kii)
     err = kii_install_thing_push(
             kii,
             KII_FALSE);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -879,7 +887,7 @@ static int get_endpoint(kii_t* kii)
     err = kii_get_mqtt_endpoint(
             kii,
             EX_MQTT_ENDPOINT);
-    printf("request:\n%s\n", kii->http_context->buffer);
+    print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
@@ -900,13 +908,12 @@ int main(int argc, char** argv)
 {
     context_t ctx;
     kii_t kii;
-    kii_http_context_t http_ctx;
     char buff[EX_BUFFER_SIZE];
 
     int optval;
 
     /* Initialization */
-    init(&kii, buff, &ctx, &http_ctx);
+    init(&kii, buff, &ctx);
 
     while (1) {
         int option_index = 0;

@@ -713,9 +713,10 @@ kii_install_thing_push(
     kii_error_code_t result;
     char body[256];
     char* access_token;
+    char* c_development;
     M_ACCESS_TOKEN(access_token, kii->author.access_token);
 
-    char* c_development = development == KII_TRUE ? "true" : "false";
+    c_development = ((development == KII_TRUE) ? ("true") : ("false"));
     prv_set_installation_path(kii);
 
     kii_memset(body, 0x00, 256);
