@@ -232,7 +232,7 @@ typedef struct kii_t
     int _mqtt_endpoint_ready;
 
     char* mqtt_buffer;
-    size_t* mqtt_buffer_size;
+    size_t mqtt_buffer_size;
 
     kii_state_t _state;
 } kii_t;
