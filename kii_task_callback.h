@@ -10,7 +10,7 @@ typedef enum kii_task_code_t {
     KII_TASKC_FAIL
 } kii_task_code_t;
 
-typedef void (*KII_TASK_ENTRY)(void* value);
+typedef void* (*KII_TASK_ENTRY)(void* value);
 
 typedef kii_task_code_t
 (*KII_TASK_CREATE)
