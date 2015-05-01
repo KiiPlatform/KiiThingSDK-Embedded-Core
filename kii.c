@@ -1,6 +1,8 @@
 #include "kii.h"
-
 #include "kii_libc_wrapper.h"
+#include <string.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 #ifdef DEBUG
 #define M_REQUEST_LINE_CB_FAILED "failed to set request line\n"
@@ -759,5 +761,164 @@ kii_get_mqtt_endpoint(
         kii->_state = KII_STATE_READY;
     }
     return result;
+}
+
+    kii_error_code_t
+kii_api_call(
+        kii_t* kii,
+        const char* http_method,
+        const char* resource_path,
+        const char* http_body,
+        const char* content_type,
+        char* header,
+        ...)
+{
+    va_list ap;
+    char *str;
+    char key[128];
+    char value[128];
+    char *ptr;
+    char *access_token = NULL;
+    kii_error_code_t ret = KIIE_FAIL;
+    kii_http_client_code_t result;
+
+    va_start(ap, header);
+    memset(key, 0x00, sizeof(key));
+    memset(value, 0x00, sizeof(value));
+
+    result = kii->http_set_request_line_cb(
+            &(kii->http_context),
+            http_method,
+            kii->app_host,
+            resource_path);
+    if (result != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    /* set app id */
+    result = kii->http_set_header_cb(
+            &(kii->http_context),
+            "x-kii-appid",
+            kii->app_id);
+    if (result != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+        goto exit;
+    }
+
+    /* set app key */
+    result = kii->http_set_header_cb(
+            &(kii->http_context),
+            "x-kii-appkey",
+            kii->app_key);
+    if (result != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+        goto exit;
+    }
+
+    /* set content-type */
+    if (content_type != NULL) {
+        result = kii->http_set_header_cb(
+                &(kii->http_context),
+                "content-type",
+                content_type
+                );
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+            goto exit;
+        }
+    }
+    
+    /* set access token if there are. */
+    M_ACCESS_TOKEN(access_token, kii->author.access_token);
+    if (access_token != NULL) {
+        result = kii->http_set_header_cb(
+                &(kii->http_context),
+                key,
+                value);
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+            goto exit;
+        }
+    }
+
+    /* set additional header */
+    if (header != NULL) {
+        str = header;
+        ptr = strstr(str, ":");
+        if (ptr == NULL) {
+            goto exit;
+        }
+        strncpy(key, str, ptr - str);
+        strncpy(value, ptr + 1, sizeof(value));
+        printf("key: %s\n", key);
+        printf("value: %s\n", value);
+        result = kii->http_set_header_cb(
+                &(kii->http_context),
+                key,
+                value);
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+            goto exit;
+        }
+        /* set additional headers */
+        while(1) {
+            str = va_arg(ap, char*);
+            if (str == NULL)
+                break;
+            ptr = strstr(str, ":");
+            if (ptr == NULL) {
+                goto exit;
+            }
+            strncpy(key, str, ptr - str);
+            strncpy(value, ptr + 1, sizeof(value));
+            printf("key: %s\n", key);
+            printf("value: %s\n", value);
+            result = kii->http_set_header_cb(
+                    &(kii->http_context),
+                    key,
+                    value);
+            if (result != KII_HTTPC_OK) {
+                M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+                goto exit;
+            }
+        }
+    }
+
+    /* set body */
+    if (http_body != NULL) {
+        char content_length[8];
+        kii_memset(content_length, 0x00, 8);
+        prv_content_length_str(kii_strlen(http_body), content_length, 8);
+        result = kii->http_set_header_cb(
+                &(kii->http_context),
+                "content-length",
+                content_length
+                );
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+            goto exit;
+        }
+
+        kii->http_set_body_cb(
+                &(kii->http_context),
+                http_body);
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            goto exit;
+        }
+    } else {
+        kii->http_set_body_cb(
+                &(kii->http_context),
+                NULL);
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            goto exit;
+        }
+    }
+    kii->_state = KII_STATE_READY;
+exit:
+    va_end(ap);
+    return ret;
 }
 

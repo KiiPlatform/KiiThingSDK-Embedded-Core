@@ -516,6 +516,16 @@ kii_error_code_t
 kii_get_mqtt_endpoint(kii_t* kii,
         const char* installation_id);
 
+kii_error_code_t
+kii_api_call(
+        kii_t* kii,
+        const char* http_method,
+        const char* resource_path,
+        const char* http_body,
+        const char* content_type,
+        char* header,
+        ...);
+
 #ifdef __cplusplus
 }
 #endif

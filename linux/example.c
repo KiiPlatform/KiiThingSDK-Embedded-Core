@@ -934,6 +934,7 @@ int main(int argc, char** argv)
             {"install-push", no_argument, NULL, 13},
             {"get-endpoint", no_argument, NULL, 14},
             {"authentication", no_argument, NULL,  15},
+            {"api", no_argument, NULL,  16},
             {"help", no_argument, NULL, 1000},
             {0, 0, 0, 0}
         };
@@ -1007,6 +1008,12 @@ int main(int argc, char** argv)
         case 15:
             printf("authentication\n");
             thing_authentication(&kii);
+            break;
+        case 16:
+            printf("api\n");
+            kii_api_call(&kii, "GET", "hoge/fuga", "body", "text/plain",
+                    "x-kii-http-header1:value", "x-kii-http-header2:value2", NULL);
+            print_request(&kii);
             break;
         case 1000:
             printf("to configure parameters, edit example.h\n\n");
