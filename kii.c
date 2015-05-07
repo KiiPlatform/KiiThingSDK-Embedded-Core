@@ -831,10 +831,12 @@ kii_api_call(
     
     /* set access token if there are. */
     M_ACCESS_TOKEN(access_token, kii->author.access_token);
+    memset(value, 0x00, sizeof(value));
+    kii_sprintf(value, "%s%s", "bearer ", access_token);
     if (access_token != NULL) {
         result = kii->http_set_header_cb(
                 &(kii->http_context),
-                key,
+                "authorization",
                 value);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
@@ -868,7 +870,7 @@ kii_api_call(
                 break;
             ptr = strstr(str, ":");
             if (ptr == NULL) {
-                goto exit;
+               break;
             }
             strncpy(key, str, ptr - str);
             strncpy(value, ptr + 1, sizeof(value));
@@ -917,6 +919,7 @@ kii_api_call(
         }
     }
     kii->_state = KII_STATE_READY;
+    ret = KIIE_OK;
 exit:
     va_end(ap);
     return ret;
