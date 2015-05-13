@@ -30,4 +30,4 @@ int kii_sprintf(char *str, const char *format, ...)
 
     return res;
 }
-
+/* vim:set ts=4 sts=4 sw=4 et fenc=UTF-8 ff=dos: */
