@@ -40,6 +40,8 @@ typedef struct kii_http_context_t
     char* buffer;
     /** size of buffer */
     size_t buffer_size;
+	/** total size of data to be sent*/
+	size_t total_send_size;
 } kii_http_context_t;
 
 /** callback for preparing HTTP request line.
@@ -522,6 +524,7 @@ kii_api_call(
         const char* http_method,
         const char* resource_path,
         const char* http_body,
+        size_t body_size,
         const char* content_type,
         char* header,
         ...);
