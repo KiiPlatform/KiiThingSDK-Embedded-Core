@@ -20,3 +20,4 @@ typedef struct kii_mqtt_endpoint_t {
 #endif
 
 #endif /* _KII_MQTT */
+/* vim:set ts=4 sts=4 sw=4 et fenc=UTF-8 ff=dos: */
