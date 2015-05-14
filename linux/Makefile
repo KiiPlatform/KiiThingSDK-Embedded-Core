@@ -5,10 +5,10 @@ endif
 
 LIBS = -lssl -lcrypto
 SOURCES = $(wildcard *.c)
-SOURCES += ../kii.c ../kii_libc_wrapper.c
+SOURCES += $(wildcard ../*.c)
 TARGET = exampleapp
 
-INCLUDE = ../kii.h
+INCLUDE = ../kii_core.h
 
 all: clean $(TARGET)
 

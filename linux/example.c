@@ -1,4 +1,4 @@
-#include "../kii.h"
+#include "../kii_core.h"
 #include "example.h"
 #include <stdio.h>
 #include <string.h>
@@ -346,9 +346,9 @@ void parse_response(char* resp_body)
     /* TODO: implement */
 }
 
-void init(kii_t* kii, char* buff, context_t* ctx) {
+void init(kii_core_t* kii, char* buff, context_t* ctx) {
     kii_http_context_t* http_ctx;
-    memset(kii, 0x00, sizeof(kii_t));
+    memset(kii, 0x00, sizeof(kii_core_t));
     kii->app_id = (char*)EX_APP_ID;
     kii->app_key = (char*)EX_APP_KEY;
     kii->app_host = (char*)EX_APP_HOST;
@@ -367,7 +367,7 @@ void init(kii_t* kii, char* buff, context_t* ctx) {
 
 }
 
-static void set_author(kii_t* kii, kii_author_t* author)
+static void set_author(kii_core_t* kii, kii_author_t* author)
 {
     memset(author, 0x00, sizeof(kii_author_t));
     strncpy(author->author_id, (char*)EX_THING_ID, 128);
@@ -389,14 +389,14 @@ static void init_topic(kii_topic_t* topic) {
     topic->topic_name = (char*)EX_TOPIC_NAME;
 }
 
-static void print_request(kii_t* kii)
+static void print_request(kii_core_t* kii)
 {
     printf("========request========\n");
     printf("%s\n", kii->http_context.buffer);
     printf("========request========\n");
 }
 
-static void print_response(kii_t* kii)
+static void print_response(kii_core_t* kii)
 {
     printf("========response========\n");
     printf("%s\n", kii->http_context.buffer);
@@ -405,7 +405,7 @@ static void print_response(kii_t* kii)
     printf("response_body:\n%s\n", kii->response_body);
 }
 
-static int register_thing(kii_t* kii)
+static int register_thing(kii_core_t* kii)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -419,15 +419,15 @@ static int register_thing(kii_t* kii)
             "{\"_vendorThingID\":\"%d\", \"_password\":\"1234\"}",
             pid);
     /* Register Thing */
-    err = kii_register_thing(kii, thingData);
+    err = kii_core_register_thing(kii, thingData);
     print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
         return 1;
     }
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -437,12 +437,12 @@ static int register_thing(kii_t* kii)
     return 0;
 }
 
-static int thing_authentication(kii_t* kii)
+static int thing_authentication(kii_core_t* kii)
 {
     kii_state_t state;
     kii_error_code_t err;
 
-    err = kii_thing_authentication(
+    err = kii_core_thing_authentication(
             kii,
             EX_AUTH_VENDOR_ID,
             EX_AUTH_VENDOR_PASS);
@@ -452,8 +452,8 @@ static int thing_authentication(kii_t* kii)
         return 1;
     }
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -463,7 +463,7 @@ static int thing_authentication(kii_t* kii)
     return 0;
 }
 
-static int create_new_object(kii_t* kii)
+static int create_new_object(kii_core_t* kii)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -474,7 +474,7 @@ static int create_new_object(kii_t* kii)
     init_bucket(&bucket);
     set_author(kii, &author);
 
-    err = kii_create_new_object(
+    err = kii_core_create_new_object(
             kii,
             &bucket,
             EX_OBJECT_DATA,
@@ -485,8 +485,8 @@ static int create_new_object(kii_t* kii)
         return 1;
     }    
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -496,7 +496,7 @@ static int create_new_object(kii_t* kii)
     return 0;
 }
 
-static int create_new_object_with_id(kii_t* kii, const char* id)
+static int create_new_object_with_id(kii_core_t* kii, const char* id)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -507,7 +507,7 @@ static int create_new_object_with_id(kii_t* kii, const char* id)
     init_bucket(&bucket);
     set_author(kii, &author);
 
-    err = kii_create_new_object_with_id(
+    err = kii_core_create_new_object_with_id(
             kii,
             &bucket,
             id,
@@ -519,8 +519,8 @@ static int create_new_object_with_id(kii_t* kii, const char* id)
         return 1;
     }    
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -530,7 +530,7 @@ static int create_new_object_with_id(kii_t* kii, const char* id)
     return 0;
 }
 
-static int patch_object(kii_t* kii, const char* id)
+static int patch_object(kii_core_t* kii, const char* id)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -541,7 +541,7 @@ static int patch_object(kii_t* kii, const char* id)
     init_bucket(&bucket);
     set_author(kii, &author);
 
-    err = kii_patch_object(
+    err = kii_core_patch_object(
             kii,
             &bucket,
             id,
@@ -553,8 +553,8 @@ static int patch_object(kii_t* kii, const char* id)
         return 1;
     }    
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -564,7 +564,7 @@ static int patch_object(kii_t* kii, const char* id)
     return 0;
 }
 
-static int replace_object(kii_t* kii, const char* id)
+static int replace_object(kii_core_t* kii, const char* id)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -575,7 +575,7 @@ static int replace_object(kii_t* kii, const char* id)
     init_bucket(&bucket);
     set_author(kii, &author);
 
-    err = kii_replace_object(
+    err = kii_core_replace_object(
             kii,
             &bucket,
             id,
@@ -587,8 +587,8 @@ static int replace_object(kii_t* kii, const char* id)
         return 1;
     }    
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -598,7 +598,7 @@ static int replace_object(kii_t* kii, const char* id)
     return 0;
 }
 
-static int get_object(kii_t* kii, const char* id)
+static int get_object(kii_core_t* kii, const char* id)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -609,7 +609,7 @@ static int get_object(kii_t* kii, const char* id)
     init_bucket(&bucket);
     set_author(kii, &author);
 
-    err = kii_get_object(
+    err = kii_core_get_object(
             kii,
             &bucket,
             id);
@@ -619,8 +619,8 @@ static int get_object(kii_t* kii, const char* id)
         return 1;
     }
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -630,7 +630,7 @@ static int get_object(kii_t* kii, const char* id)
     return 0;
 }
 
-static int delete_object(kii_t* kii, const char* id)
+static int delete_object(kii_core_t* kii, const char* id)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -641,7 +641,7 @@ static int delete_object(kii_t* kii, const char* id)
     init_bucket(&bucket);
     set_author(kii, &author);
 
-    err = kii_delete_object(
+    err = kii_core_delete_object(
             kii,
             &bucket,
             id);
@@ -651,8 +651,8 @@ static int delete_object(kii_t* kii, const char* id)
         return 1;
     }
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -662,7 +662,7 @@ static int delete_object(kii_t* kii, const char* id)
     return 0;
 }
 
-static int subscribe_bucket(kii_t* kii, const char* bucket_name)
+static int subscribe_bucket(kii_core_t* kii, const char* bucket_name)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -673,7 +673,7 @@ static int subscribe_bucket(kii_t* kii, const char* bucket_name)
     init_bucket(&bucket);
     set_author(kii, &author);
 
-    err = kii_subscribe_bucket(
+    err = kii_core_subscribe_bucket(
             kii,
             &bucket);
     print_request(kii);
@@ -682,8 +682,8 @@ static int subscribe_bucket(kii_t* kii, const char* bucket_name)
         return 1;
     }
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -693,7 +693,7 @@ static int subscribe_bucket(kii_t* kii, const char* bucket_name)
     return 0;
 }
 
-static int unsubscribe_bucket(kii_t* kii, const char* bucket_name)
+static int unsubscribe_bucket(kii_core_t* kii, const char* bucket_name)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -704,7 +704,7 @@ static int unsubscribe_bucket(kii_t* kii, const char* bucket_name)
     init_bucket(&bucket);
     set_author(kii, &author);
 
-    err = kii_unsubscribe_bucket(
+    err = kii_core_unsubscribe_bucket(
             kii,
             &bucket);
     print_request(kii);
@@ -713,8 +713,8 @@ static int unsubscribe_bucket(kii_t* kii, const char* bucket_name)
         return 1;
     }
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -724,7 +724,7 @@ static int unsubscribe_bucket(kii_t* kii, const char* bucket_name)
     return 0;
 }
 
-static int create_topic(kii_t* kii)
+static int create_topic(kii_core_t* kii)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -735,7 +735,7 @@ static int create_topic(kii_t* kii)
     init_topic(&topic);
     set_author(kii, &author);
 
-    err = kii_create_topic(
+    err = kii_core_create_topic(
             kii,
             &topic);
     print_request(kii);
@@ -744,8 +744,8 @@ static int create_topic(kii_t* kii)
         return 1;
     }
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -755,7 +755,7 @@ static int create_topic(kii_t* kii)
     return 0;
 }
 
-static int delete_topic(kii_t* kii)
+static int delete_topic(kii_core_t* kii)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -766,7 +766,7 @@ static int delete_topic(kii_t* kii)
     init_topic(&topic);
     set_author(kii, &author);
 
-    err = kii_delete_topic(
+    err = kii_core_delete_topic(
             kii,
             &topic);
     print_request(kii);
@@ -775,8 +775,8 @@ static int delete_topic(kii_t* kii)
         return 1;
     }
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -786,7 +786,7 @@ static int delete_topic(kii_t* kii)
     return 0;
 }
 
-static int subscribe_topic(kii_t* kii)
+static int subscribe_topic(kii_core_t* kii)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -797,7 +797,7 @@ static int subscribe_topic(kii_t* kii)
     init_topic(&topic);
     set_author(kii, &author);
 
-    err = kii_subscribe_topic(
+    err = kii_core_subscribe_topic(
             kii,
             &topic);
     print_request(kii);
@@ -806,8 +806,8 @@ static int subscribe_topic(kii_t* kii)
         return 1;
     }
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -817,7 +817,7 @@ static int subscribe_topic(kii_t* kii)
     return 0;
 }
 
-static int unsubscribe_topic(kii_t* kii)
+static int unsubscribe_topic(kii_core_t* kii)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -828,7 +828,7 @@ static int unsubscribe_topic(kii_t* kii)
     init_topic(&topic);
     set_author(kii, &author);
 
-    err = kii_unsubscribe_topic(
+    err = kii_core_unsubscribe_topic(
             kii,
             &topic);
     print_request(kii);
@@ -837,8 +837,8 @@ static int unsubscribe_topic(kii_t* kii)
         return 1;
     }
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -848,7 +848,7 @@ static int unsubscribe_topic(kii_t* kii)
     return 0;
 }
 
-static int install_push(kii_t* kii)
+static int install_push(kii_core_t* kii)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -856,7 +856,7 @@ static int install_push(kii_t* kii)
     kii_author_t author;
     set_author(kii, &author);
 
-    err = kii_install_thing_push(
+    err = kii_core_install_thing_push(
             kii,
             KII_FALSE);
     print_request(kii);
@@ -865,8 +865,8 @@ static int install_push(kii_t* kii)
         return 1;
     }
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -876,7 +876,7 @@ static int install_push(kii_t* kii)
     return 0;
 }
 
-static int get_endpoint(kii_t* kii)
+static int get_endpoint(kii_core_t* kii)
 {
     kii_state_t state;
     kii_error_code_t err;
@@ -884,7 +884,7 @@ static int get_endpoint(kii_t* kii)
     kii_author_t author;
     set_author(kii, &author);
 
-    err = kii_get_mqtt_endpoint(
+    err = kii_core_get_mqtt_endpoint(
             kii,
             EX_MQTT_ENDPOINT);
     print_request(kii);
@@ -893,8 +893,8 @@ static int get_endpoint(kii_t* kii)
         return 1;
     }
     do {
-        err = kii_run(kii);
-        state = kii_get_state(kii);
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
     } while (state != KII_STATE_IDLE);
     if (err != KIIE_OK) {
         return 1;
@@ -907,7 +907,7 @@ static int get_endpoint(kii_t* kii)
 int main(int argc, char** argv)
 {
     context_t ctx;
-    kii_t kii;
+    kii_core_t kii;
     char buff[EX_BUFFER_SIZE];
 
     int optval;
@@ -1011,7 +1011,7 @@ int main(int argc, char** argv)
             break;
         case 16:
             printf("api\n");
-            kii_api_call(&kii, "GET", "hoge/fuga", "body", 4, "text/plain",
+            kii_core_api_call(&kii, "GET", "hoge/fuga", "body", 4, "text/plain",
                     "x-kii-http-header1:value", "x-kii-http-header2:value2", NULL);
             print_request(&kii);
             break;

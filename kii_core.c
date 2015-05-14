@@ -1,4 +1,4 @@
-#include "kii.h"
+#include "kii_core.h"
 #include "kii_libc_wrapper.h"
 #include <string.h>
 #include <stdarg.h>
@@ -41,13 +41,13 @@
 const char DEFAULT_OBJECT_CONTENT_TYPE[] = "application/json";
 
     kii_state_t
-kii_get_state(kii_t* kii)
+kii_core_get_state(kii_core_t* kii)
 {
     return kii->_state;
 }
 
     kii_error_code_t
-kii_run(kii_t* kii)
+kii_core_run(kii_core_t* kii)
 {
     kii_http_client_code_t cbr;
     switch(kii->_state) {
@@ -86,7 +86,7 @@ prv_content_length_str(
 }
 
     static void
-prv_set_thing_register_path(kii_t* kii)
+prv_set_thing_register_path(kii_core_t* kii)
 {
     kii_sprintf(kii->_http_request_path,
             "api/apps/%s/things",
@@ -95,7 +95,7 @@ prv_set_thing_register_path(kii_t* kii)
 
     static kii_error_code_t 
 prv_http_request(
-        kii_t* kii,
+        kii_core_t* kii,
         const char* method,
         const char* resource_path,
         const char* content_type,
@@ -213,7 +213,7 @@ prv_http_request(
 
     static void
 prv_bucket_path(
-        kii_t* kii,
+        kii_core_t* kii,
         const kii_bucket_t* bucket,
         char* path)
 {
@@ -250,7 +250,7 @@ prv_bucket_path(
 
     static void
 prv_topic_path(
-        kii_t* kii,
+        kii_core_t* kii,
         const kii_topic_t* topic,
         char* path)
 {
@@ -286,8 +286,8 @@ prv_topic_path(
 }
 
     kii_error_code_t
-kii_register_thing(
-        kii_t* kii,
+kii_core_register_thing(
+        kii_core_t* kii,
         const char* thing_data)
 {
     kii_error_code_t result;
@@ -309,14 +309,14 @@ kii_register_thing(
 }
 
     static void
-prv_set_auth_path(kii_t* kii)
+prv_set_auth_path(kii_core_t* kii)
 {
     kii_sprintf(kii->_http_request_path,
             "api/oauth2/token");
 }
 
     kii_error_code_t
-kii_thing_authentication(kii_t* kii,
+kii_core_thing_authentication(kii_core_t* kii,
         const char* vendor_thing_id,
         const char* password
         )
@@ -349,8 +349,8 @@ kii_thing_authentication(kii_t* kii,
 
 
     kii_error_code_t
-kii_create_new_object(
-        kii_t* kii,
+kii_core_create_new_object(
+        kii_core_t* kii,
         const kii_bucket_t* bucket,
         const char* object_data,
         const char* object_content_type)
@@ -380,8 +380,8 @@ kii_create_new_object(
 }
 
     kii_error_code_t
-kii_create_new_object_with_id(
-        kii_t* kii,
+kii_core_create_new_object_with_id(
+        kii_core_t* kii,
         const kii_bucket_t* bucket,
         const char* object_id,
         const char* object_data,
@@ -415,8 +415,8 @@ kii_create_new_object_with_id(
 }
 
     kii_error_code_t
-kii_patch_object(
-        kii_t* kii,
+kii_core_patch_object(
+        kii_core_t* kii,
         const kii_bucket_t* bucket,
         const char* object_id,
         const char* patch_data,
@@ -446,8 +446,8 @@ kii_patch_object(
 }
 
     kii_error_code_t
-kii_replace_object(
-        kii_t* kii,
+kii_core_replace_object(
+        kii_core_t* kii,
         const kii_bucket_t* bucket,
         const char* object_id,
         const char* replace_data,
@@ -477,8 +477,8 @@ kii_replace_object(
 }
 
     kii_error_code_t
-kii_get_object(
-        kii_t* kii,
+kii_core_get_object(
+        kii_core_t* kii,
         const kii_bucket_t* bucket,
         const char* object_id)
 {
@@ -506,8 +506,8 @@ kii_get_object(
 }
 
     kii_error_code_t
-kii_delete_object(
-        kii_t* kii,
+kii_core_delete_object(
+        kii_core_t* kii,
         const kii_bucket_t* bucket,
         const char* object_id)
 {
@@ -535,8 +535,8 @@ kii_delete_object(
 }
 
     kii_error_code_t
-kii_subscribe_bucket(
-        kii_t* kii,
+kii_core_subscribe_bucket(
+        kii_core_t* kii,
         const kii_bucket_t* bucket)
 {
     kii_error_code_t result;
@@ -562,8 +562,8 @@ kii_subscribe_bucket(
 }
 
     kii_error_code_t
-kii_unsubscribe_bucket(
-        kii_t* kii,
+kii_core_unsubscribe_bucket(
+        kii_core_t* kii,
         const kii_bucket_t* bucket)
 {
     kii_error_code_t result;
@@ -590,8 +590,8 @@ kii_unsubscribe_bucket(
 }
 
     kii_error_code_t
-kii_create_topic(
-        kii_t* kii,
+kii_core_create_topic(
+        kii_core_t* kii,
         const kii_topic_t* topic)
 {
     kii_error_code_t result;
@@ -614,8 +614,8 @@ kii_create_topic(
 }
 
     kii_error_code_t
-kii_delete_topic(
-        kii_t* kii,
+kii_core_delete_topic(
+        kii_core_t* kii,
         const kii_topic_t* topic)
 {
     kii_error_code_t result;
@@ -638,8 +638,8 @@ kii_delete_topic(
 }
 
     kii_error_code_t
-kii_subscribe_topic(
-        kii_t* kii,
+kii_core_subscribe_topic(
+        kii_core_t* kii,
         const kii_topic_t* topic)
 {
     kii_error_code_t result;
@@ -665,8 +665,8 @@ kii_subscribe_topic(
 }
 
     kii_error_code_t
-kii_unsubscribe_topic(
-        kii_t* kii,
+kii_core_unsubscribe_topic(
+        kii_core_t* kii,
         const kii_topic_t* topic)
 {
     kii_error_code_t result;
@@ -693,7 +693,7 @@ kii_unsubscribe_topic(
 }
 
     static void
-prv_set_installation_path(kii_t* kii)
+prv_set_installation_path(kii_core_t* kii)
 {
     kii_sprintf(kii->_http_request_path,
             "api/apps/%s/installations",
@@ -701,7 +701,7 @@ prv_set_installation_path(kii_t* kii)
 }
 
     static void
-prv_set_mqtt_endpoint_path(kii_t* kii, const char* installation_id)
+prv_set_mqtt_endpoint_path(kii_core_t* kii, const char* installation_id)
 {
     kii_sprintf(kii->_http_request_path,
             "api/apps/%s/installations/%s/mqtt-endpoint",
@@ -709,8 +709,8 @@ prv_set_mqtt_endpoint_path(kii_t* kii, const char* installation_id)
             installation_id);
 }
     kii_error_code_t
-kii_install_thing_push(
-        kii_t* kii,
+kii_core_install_thing_push(
+        kii_core_t* kii,
         kii_bool_t development)
 {
     kii_error_code_t result;
@@ -741,8 +741,8 @@ kii_install_thing_push(
 }
 
     kii_error_code_t
-kii_get_mqtt_endpoint(
-        kii_t* kii,
+kii_core_get_mqtt_endpoint(
+        kii_core_t* kii,
         const char* installation_id)
 {
     kii_error_code_t result;
@@ -765,8 +765,8 @@ kii_get_mqtt_endpoint(
 }
 
     kii_error_code_t
-kii_api_call(
-        kii_t* kii,
+kii_core_api_call(
+        kii_core_t* kii,
         const char* http_method,
         const char* resource_path,
         const char* http_body,

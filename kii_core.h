@@ -109,7 +109,7 @@ typedef kii_http_client_code_t
 /** callback for logging.
  * SDK uses this function for logging.
  * If you want to enable logging,
- * set pointer of this function in kii_t#logger_cb.
+ * set pointer of this function in kii_core_t#logger_cb.
  * Logging is only enabled in DEBUG build.
  */
 typedef void
@@ -149,7 +149,7 @@ typedef struct kii_author_t
 } kii_author_t;
 
 /** object manages context of api execution. */
-typedef struct kii_t
+typedef struct kii_core_t
 {
     /** Kii Cloud application id */
     char* app_id;
@@ -237,7 +237,7 @@ typedef struct kii_t
     size_t mqtt_buffer_size;
 
     kii_state_t _state;
-} kii_t;
+} kii_core_t;
 
 
 /** represents scope of bucket/ topic. */
@@ -265,14 +265,14 @@ typedef struct kii_topic_t {
 /** obtain current state of SDK.
  * @return state of SDK.
  */
-kii_state_t kii_get_state(kii_t* kii);
+kii_state_t kii_core_get_state(kii_core_t* kii);
 
 /** execute HTTP request.
  * application calls this method again
  * until the state becomes KII_STATE_IDLE,
  * @return result of execution.
  */
-kii_error_code_t kii_run(kii_t* kii);
+kii_error_code_t kii_core_run(kii_core_t* kii);
 
 /** prepare request of regiser thing.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
@@ -284,7 +284,7 @@ kii_error_code_t kii_run(kii_t* kii);
  * http://documentation.kii.com/rest/apps-collection/application/thing-collection/#method-thingsResourceType-POST
  */
 kii_error_code_t
-kii_register_thing(kii_t* kii,
+kii_core_register_thing(kii_core_t* kii,
         const char* thing_data);
 
 /** prepare request of thing authentication.
@@ -296,7 +296,7 @@ kii_register_thing(kii_t* kii,
  * @param [in] password password of thing given by vendor on registration.
  */
 kii_error_code_t
-kii_thing_authentication(kii_t* kii,
+kii_core_thing_authentication(kii_core_t* kii,
         const char* vendor_thing_id,
         const char* password);
 
@@ -311,8 +311,8 @@ kii_thing_authentication(kii_t* kii,
  * if NULL is given, "application/json" is used.
  */
 kii_error_code_t
-kii_create_new_object(
-        kii_t* kii,
+kii_core_create_new_object(
+        kii_core_t* kii,
         const kii_bucket_t* bucket,
         const char* object_data,
         const char* opt_object_content_type
@@ -330,8 +330,8 @@ kii_create_new_object(
  * if NULL is given, "application/json" is used.
  */
 kii_error_code_t
-kii_create_new_object_with_id(
-        kii_t* kii,
+kii_core_create_new_object_with_id(
+        kii_core_t* kii,
         const kii_bucket_t* bucket,
         const char* object_id,
         const char* object_data,
@@ -355,8 +355,8 @@ kii_create_new_object_with_id(
  * If NULL is given, no version check is executed and patch is forcibly applied.
  */
 kii_error_code_t
-kii_patch_object(
-        kii_t* kii,
+kii_core_patch_object(
+        kii_core_t* kii,
         const kii_bucket_t* bucket,
         const char* object_id,
         const char* patch_data,
@@ -379,8 +379,8 @@ kii_patch_object(
  * no version check is executed and replace is forcibly applied.
  */
 kii_error_code_t
-kii_replace_object(
-        kii_t* kii,
+kii_core_replace_object(
+        kii_core_t* kii,
         const kii_bucket_t* bucket,
         const char* object_id,
         const char* replace_data,
@@ -395,8 +395,8 @@ kii_replace_object(
  * @param [in] object_id id of the object.
  */
 kii_error_code_t
-kii_get_object(
-        kii_t* kii,
+kii_core_get_object(
+        kii_core_t* kii,
         const kii_bucket_t* bucket,
         const char* object_id);
 
@@ -409,8 +409,8 @@ kii_get_object(
  * @param [in] object_id id of the object.
  */
 kii_error_code_t
-kii_delete_object(
-        kii_t* kii,
+kii_core_delete_object(
+        kii_core_t* kii,
         const kii_bucket_t* bucket,
         const char* object_id);
 
@@ -424,7 +424,7 @@ kii_delete_object(
  * @param [in] bucket to be subscribed.
  */
 kii_error_code_t
-kii_subscribe_bucket(kii_t* kii,
+kii_core_subscribe_bucket(kii_core_t* kii,
         const kii_bucket_t* bucket);
 
 /** prepare request of subscribe bucket.
@@ -435,7 +435,7 @@ kii_subscribe_bucket(kii_t* kii,
  * @param [in] bucket to be unsubscribed.
  */
 kii_error_code_t
-kii_unsubscribe_bucket(kii_t* kii,
+kii_core_unsubscribe_bucket(kii_core_t* kii,
         const kii_bucket_t* bucket);
 
 /** prepare request of create topic.
@@ -448,7 +448,7 @@ kii_unsubscribe_bucket(kii_t* kii,
  * @param [in] topic to be created.
  */
 kii_error_code_t
-kii_create_topic(kii_t* kii,
+kii_core_create_topic(kii_core_t* kii,
         const kii_topic_t* topic);
 
 /** prepare request of delete topic.
@@ -459,7 +459,7 @@ kii_create_topic(kii_t* kii,
  * @param [in] topic to be deleted.
  */
 kii_error_code_t
-kii_delete_topic(kii_t* kii,
+kii_core_delete_topic(kii_core_t* kii,
         const kii_topic_t* topic);
 
 /** prepare request of subscribe topic.
@@ -472,7 +472,7 @@ kii_delete_topic(kii_t* kii,
  * @param [in] topic to be subscribed.
  */
 kii_error_code_t
-kii_subscribe_topic(kii_t* kii,
+kii_core_subscribe_topic(kii_core_t* kii,
         const kii_topic_t* topic);
 
 /** prepare request of unsubscribe topic.
@@ -483,7 +483,7 @@ kii_subscribe_topic(kii_t* kii,
  * @param [in] topic to be unsubscribed.
  */
 kii_error_code_t
-kii_unsubscribe_topic(kii_t* kii,
+kii_core_unsubscribe_topic(kii_core_t* kii,
         const kii_topic_t* topic);
 
 /** prepare request of install push for thing.
@@ -499,7 +499,7 @@ kii_unsubscribe_topic(kii_t* kii,
  * development of production.
  */
 kii_error_code_t
-kii_install_thing_push(kii_t* kii,
+kii_core_install_thing_push(kii_core_t* kii,
         kii_bool_t development);
 
 /** prepare request of get MQTT endpoint.
@@ -515,12 +515,12 @@ kii_install_thing_push(kii_t* kii,
  * kii_install_thing_push()
  */
 kii_error_code_t
-kii_get_mqtt_endpoint(kii_t* kii,
+kii_core_get_mqtt_endpoint(kii_core_t* kii,
         const char* installation_id);
 
 kii_error_code_t
-kii_api_call(
-        kii_t* kii,
+kii_core_api_call(
+        kii_core_t* kii,
         const char* http_method,
         const char* resource_path,
         const char* http_body,
