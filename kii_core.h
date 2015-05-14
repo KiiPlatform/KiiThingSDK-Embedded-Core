@@ -7,7 +7,6 @@ extern "C" {
 
 #include <stddef.h>
 #include "kii_socket_callback.h"
-#include "kii_task_callback.h"
 
 /** bool type definition */
 typedef enum kii_bool_t {
@@ -198,43 +197,7 @@ typedef struct kii_core_t
     /** logging callback function pointer */
     KII_LOGGER logger_cb;
 
-    /** application's context object used by socket callback implementations */
-    kii_socket_context_t socket_context;
-    /** socket connect callback function pointer
-     * Should be set before execute apis.
-     */
-    KII_SOCKET_CONNECT_CB socket_connect_cb;
-    /** socket send callback function pointer
-     * Should be set before execute apis.
-     */
-    KII_SOCKET_SEND_CB socket_send_cb;
-    /** socket recv callback function pointer
-     * Should be set before execute apis.
-     */
-    KII_SOCKET_RECV_CB socket_recv_cb;
-    /** socket close callback function pointer
-     * Should be set before execute apis.
-     */
-    KII_SOCKET_CLOSE_CB socket_close_cb;
-
-    /** task create callback function pointer
-     * Should be set before execute apis.
-     */
-    KII_TASK_CREATE task_create_cb;
-
-    /** sleep callback function pointer
-     * Should be set before execute apis.
-     */
-    KII_DELAY_MS delay_ms_cb;
-
-    /** Push callback function */
-    KII_PUSH_RECEIVED_CB push_received_cb;
-
     char _http_request_path[256];
-    int _mqtt_endpoint_ready;
-
-    char* mqtt_buffer;
-    size_t mqtt_buffer_size;
 
     kii_state_t _state;
 } kii_core_t;
