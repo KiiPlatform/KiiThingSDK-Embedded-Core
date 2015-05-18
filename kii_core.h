@@ -41,6 +41,17 @@ typedef struct kii_http_context_t
     size_t buffer_size;
 	/** total size of data to be sent*/
 	size_t total_send_size;
+
+    /** socket context used by the http client */
+    kii_socket_context_t socket_context;
+    /** socket close function callback */
+    KII_SOCKET_CONNECT_CB connect_cb;
+    /** socket send function callback */
+    KII_SOCKET_SEND_CB send_cb;
+    /** socket recv function callback */
+    KII_SOCKET_RECV_CB recv_cb;
+    /** socket close function callback */
+    KII_SOCKET_CLOSE_CB close_cb;
 } kii_http_context_t;
 
 /** callback for preparing HTTP request line.
