@@ -32,7 +32,7 @@ typedef kii_socket_code_t
     (*KII_SOCKET_CLOSE_CB)(kii_socket_context_t* socket_context);
 
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 }
 #endif
 
