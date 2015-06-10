@@ -128,8 +128,6 @@ typedef void
                 ...
                 );
 
-typedef void (*KII_PUSH_RECEIVED_CB)(char* message, size_t message_length);
-
 /** error code returned by SDK apis. */
 typedef enum kii_error_code_t {
     KIIE_OK = 0,
