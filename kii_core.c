@@ -909,8 +909,10 @@ kii_core_api_call(
             M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
             goto exit;
 	} else {
+            int body_end = strlen(kii->http_context.buffer) + body_size;
 		kii->http_context.total_send_size +=body_size;
 		memcpy(kii->http_context.buffer + strlen(kii->http_context.buffer), http_body, body_size);
+                kii->http_context.buffer[body_end] = '\0';
 	}
     } else {
         kii->http_set_body_cb(
