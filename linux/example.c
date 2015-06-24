@@ -1011,7 +1011,7 @@ int main(int argc, char** argv)
             break;
         case 16:
             printf("api\n");
-            kii_core_api_call(&kii, "GET", "hoge/fuga", "body", 4, "text/plain",
+            kii_core_api_call(&kii, "GET", "hoge/fuga", "body", "text/plain",
                     "x-kii-http-header1:value", "x-kii-http-header2:value2", NULL);
             print_request(&kii);
             break;
