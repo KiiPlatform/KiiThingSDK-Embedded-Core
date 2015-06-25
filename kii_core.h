@@ -94,6 +94,7 @@ typedef kii_http_client_code_t
  * do not return KII_HTTPC_AGAIN from this callback.
  * @param [in] http_context context object defined by application.
  * @param [in] body_data request body data.
+ * This data is null-terminated byte string.
  */
 typedef kii_http_client_code_t
         (*KII_HTTPCB_SET_BODY)(
@@ -254,6 +255,7 @@ kii_error_code_t kii_core_run(kii_core_t* kii);
  * @param [in] thing_data JSON object represents thing to be registered.<br>
  * for details of format, please refer to<br>
  * http://documentation.kii.com/rest/apps-collection/application/thing-collection/#method-thingsResourceType-POST
+ * <br>This must be null terminated.
  */
 kii_error_code_t
 kii_core_register_thing(kii_core_t* kii,
@@ -279,6 +281,7 @@ kii_core_thing_authentication(kii_core_t* kii,
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
  * @param [in] object_data key-value of object data in JSON.
+ * This must be null-terminated byte string.
  * @param [in] opt_object_content_type content type of object.<br>
  * if NULL is given, "application/json" is used.
  */
@@ -298,6 +301,7 @@ kii_core_create_new_object(
  * @param [in] bucket to which object belongs.
  * @param [in] object_id id of the object.
  * @param [in] object_data key-value of object data in JSON.
+ * This must be null-terminated byte string.
  * @param [in] opt_object_content_type content type of object.<br>
  * if NULL is given, "application/json" is used.
  */
@@ -320,6 +324,7 @@ kii_core_create_new_object_with_id(
  * @param [in] patch_data key-value of patch data in JSON.<br>
  * key-value pair which is not contained this patch
  * is not updated after execution.
+ * <br>This must be null-terminated byte string.
  * @param [in] opt_etag etag of the object. if this value is specified,
  * if-match header is sent to Kii Cloud. in a result,
  * patch request only success when the version of the object in client and
@@ -343,6 +348,7 @@ kii_core_patch_object(
  * @param [in] object_id id of the object.
  * @param [in] replace_data key-value of replacement data in JSON.<br>
  * key-value pair which is not containd this data is deleted after execution.
+ * <br>This must be null-terminated byte string.
  * @param [in] opt_etag etag of the object. if this value is specified,
  * if-match header is sent to Kii Cloud. in a result,
  * replace request only success when the version of the object in client and
@@ -490,13 +496,23 @@ kii_error_code_t
 kii_core_get_mqtt_endpoint(kii_core_t* kii,
         const char* installation_id);
 
+/** call other REST API by http request.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] http_method method of http request.
+ * @param [in] resource_path resource path of http request.
+ * @param [in] http_body body data of http request.
+ * This must be null-terminated byte string.
+ * @param [in] content_type content type of http_body.
+ * @param [in] header append headers of http request.
+ * one header value like "{key}:{value}".
+ */
 kii_error_code_t
 kii_core_api_call(
         kii_core_t* kii,
         const char* http_method,
         const char* resource_path,
         const char* http_body,
-        size_t body_size,
         const char* content_type,
         char* header,
         ...);
