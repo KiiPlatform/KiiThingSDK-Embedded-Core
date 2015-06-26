@@ -94,7 +94,6 @@ typedef kii_http_client_code_t
  * do not return KII_HTTPC_AGAIN from this callback.
  * @param [in] http_context context object defined by application.
  * @param [in] body_data request body data.
- * This data is null-terminated byte string.
  */
 typedef kii_http_client_code_t
         (*KII_HTTPCB_SET_BODY)(
@@ -502,7 +501,7 @@ kii_core_get_mqtt_endpoint(kii_core_t* kii,
  * @param [in] http_method method of http request.
  * @param [in] resource_path resource path of http request.
  * @param [in] http_body body data of http request.
- * This must be null-terminated byte string.
+ * @param [in] body_size size of http_body.
  * @param [in] content_type content type of http_body.
  * @param [in] header append headers of http request.
  * one header value like "{key}:{value}".
@@ -513,6 +512,7 @@ kii_core_api_call(
         const char* http_method,
         const char* resource_path,
         const char* http_body,
+        size_t body_size,
         const char* content_type,
         char* header,
         ...);
