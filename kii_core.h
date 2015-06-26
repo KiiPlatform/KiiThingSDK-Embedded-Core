@@ -89,7 +89,6 @@ typedef kii_http_client_code_t
 /** callback for preparing HTTP request body.
  * application implement this callback with the HTTP client
  * in the target environment.<br>
- * this callback is called per one header line.
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
  * do not return KII_HTTPC_AGAIN from this callback.
  * @param [in] http_context context object defined by application.
