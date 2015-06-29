@@ -178,9 +178,11 @@ prv_http_request(
     }
 
     if (body != NULL) {
+        size_t body_len;
         char content_length[8];
+        body_len = kii_strlen(body);
         kii_memset(content_length, 0x00, 8);
-        prv_content_length_str(kii_strlen(body), content_length, 8);
+        prv_content_length_str(body_len, content_length, 8);
         result = kii->http_set_header_cb(
                 &(kii->http_context),
                 "content-length",
@@ -193,7 +195,7 @@ prv_http_request(
 
         result = kii->http_set_body_cb(
                 &(kii->http_context),
-                body);
+                body, body_len);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
             return KIIE_FAIL;
@@ -201,7 +203,7 @@ prv_http_request(
     } else {
         result = kii->http_set_body_cb(
                 &(kii->http_context),
-                NULL);
+                NULL, 0);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
             return KIIE_FAIL;
@@ -903,19 +905,19 @@ kii_core_api_call(
             M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
             goto exit;
         }
-        strcat(kii->http_context.buffer, "\r\n");
-        kii->http_context.total_send_size = strlen(kii->http_context.buffer);
-	if ((kii->http_context.total_send_size + body_size) > kii->http_context.buffer_size) {
+        result = kii->http_set_body_cb(&(kii->http_context), http_body,
+                body_size);
+        if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
             goto exit;
-	} else {
-		kii->http_context.total_send_size +=body_size;
-		memcpy(kii->http_context.buffer + strlen(kii->http_context.buffer), http_body, body_size);
-	}
+        } else {
+            kii->http_context.total_send_size =
+                strlen(kii->http_context.buffer);
+        }
     } else {
         result = kii->http_set_body_cb(
                 &(kii->http_context),
-                NULL);
+                NULL, 0);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
             goto exit;
