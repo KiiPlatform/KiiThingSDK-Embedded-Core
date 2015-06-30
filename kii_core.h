@@ -93,11 +93,13 @@ typedef kii_http_client_code_t
  * do not return KII_HTTPC_AGAIN from this callback.
  * @param [in] http_context context object defined by application.
  * @param [in] body_data request body data.
+ * @param [in] body_size request body data size.
  */
 typedef kii_http_client_code_t
         (*KII_HTTPCB_SET_BODY)(
                 kii_http_context_t* http_context,
-                const char* body_data);
+                const char* body_data,
+                size_t body_size);
 
 /** callback for execution of HTTP request.
  * application implement this callback with the HTTP client
