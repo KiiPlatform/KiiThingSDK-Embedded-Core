@@ -206,26 +206,44 @@ kii_http_client_code_t
     return KII_HTTPC_OK;
 }
 
+kii_http_client_code_t append_body(
+        kii_http_context_t* http_context,
+        const char* data,
+        size_t data_len)
+{
+    char* reqBuff = http_context->buffer;
+
+    if ((strlen(reqBuff) + data_len + 1) > http_context->buffer_size) {
+        return KII_HTTPC_FAIL;
+    }
+
+    if (data == NULL) {
+        return KII_HTTPC_FAIL;
+    }
+
+    strncat(reqBuff, data, data_len);
+    return KII_HTTPC_OK;
+}
+
+kii_http_client_code_t append_body_start_cb(kii_http_context_t* http_context)
+{
+    return append_body(http_context, "\r\n", 2);
+}
+
 kii_http_client_code_t
-    body_cb(
+    append_body_cb(
         kii_http_context_t* http_context,
         const char* body_data,
         size_t body_size)
 {
-    /* TODO: prevent overflow. */
-    char* reqBuff = http_context->buffer;
+    return append_body(http_context, body_data, body_size);
+}
 
-    if ((strlen(reqBuff) + 3 + body_size) > http_context->buffer_size)
-    {
-        return KII_HTTPC_FAIL;
-    }
-
-    strcat(reqBuff, "\r\n");
-    if (body_data != NULL) {
-        strncat(reqBuff, body_data, body_size);
-    }
+kii_http_client_code_t append_body_end_cb(kii_http_context_t* http_context)
+{
     return KII_HTTPC_OK;
 }
+
 
 kii_http_client_code_t
     execute_cb(
@@ -368,7 +386,9 @@ void init(kii_core_t* kii, char* buff, context_t* ctx) {
 
     kii->http_set_request_line_cb = request_line_cb;
     kii->http_set_header_cb = header_cb;
-    kii->http_set_body_cb = body_cb;
+    kii->http_append_body_start_cb = append_body_start_cb;
+    kii->http_append_body_cb = append_body_cb;
+    kii->http_append_body_end_cb = append_body_end_cb;
     kii->http_execute_cb = execute_cb;
     kii->logger_cb = logger_cb;
 

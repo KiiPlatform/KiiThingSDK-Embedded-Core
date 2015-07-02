@@ -86,21 +86,6 @@ typedef kii_http_client_code_t
                 const char* key,
                 const char* value);
 
-/** callback for preparing HTTP request body.
- * application implement this callback with the HTTP client
- * in the target environment.<br>
- * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
- * do not return KII_HTTPC_AGAIN from this callback.
- * @param [in] http_context context object defined by application.
- * @param [in] body_data request body data.
- * @param [in] body_size request body data size.
- */
-typedef kii_http_client_code_t
-        (*KII_HTTPCB_SET_BODY)(
-                kii_http_context_t* http_context,
-                const char* body_data,
-                size_t body_size);
-
 /** callback to notify starting HTTP request body creation.
  * Applications implement this callback with the HTTP client in target
  * environment.<br>
@@ -230,10 +215,6 @@ typedef struct kii_core_t
      * Should be set before execute apis.
      */
     KII_HTTPCB_SET_HEADER http_set_header_cb;
-    /** request body callback function pointer
-     * Should be set before execute apis.
-     */
-    KII_HTTPCB_SET_BODY http_set_body_cb;
 
     /**
      * Notifying start of creation of request body callback function.

@@ -193,17 +193,33 @@ prv_http_request(
             return KIIE_FAIL;
         }
 
-        result = kii->http_set_body_cb(
+        result = kii->http_append_body_start_cb(&(kii->http_context));
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
+
+        result = kii->http_append_body_cb(
                 &(kii->http_context),
                 body, body_len);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
             return KIIE_FAIL;
         }
+
+        result = kii->http_append_body_end_cb(&(kii->http_context));
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
     } else {
-        result = kii->http_set_body_cb(
-                &(kii->http_context),
-                NULL, 0);
+        result = kii->http_append_body_start_cb(&(kii->http_context));
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
+
+        result = kii->http_append_body_end_cb(&(kii->http_context));
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
             return KIIE_FAIL;
@@ -905,25 +921,46 @@ kii_core_api_call(
             M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
             goto exit;
         }
-        result = kii->http_set_body_cb(&(kii->http_context), http_body,
+        result = kii->http_append_body_start_cb(&(kii->http_context));
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            goto exit;
+        }
+
+        result = kii->http_append_body_cb(&(kii->http_context), http_body,
                 body_size);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
             goto exit;
-        } else {
-            kii->http_context.total_send_size =
-                strlen(kii->http_context.buffer);
         }
-    } else {
-        result = kii->http_set_body_cb(
-                &(kii->http_context),
-                NULL, 0);
+
+        result = kii->http_append_body_end_cb(&(kii->http_context));
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
             goto exit;
-        } else {
-			kii->http_context.total_send_size = strlen(kii->http_context.buffer);
-		} 
+        }
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            goto exit;
+        }
+        // TODO: fix this. Don't assume kii->http_context.buffer is
+        // null teminated.
+        kii->http_context.total_send_size = strlen(kii->http_context.buffer);
+    } else {
+        result = kii->http_append_body_start_cb(&(kii->http_context));
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            goto exit;
+        }
+
+        result = kii->http_append_body_end_cb(&(kii->http_context));
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            goto exit;
+        }
+        // TODO: fix this. Don't assume kii->http_context.buffer is
+        // null teminated.
+        kii->http_context.total_send_size = strlen(kii->http_context.buffer);
     }
     kii->_state = KII_STATE_READY;
     ret = KIIE_OK;
