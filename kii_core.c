@@ -31,7 +31,7 @@
     x = (kii_strlen((y)) > 0) ? ((y)) : (NULL)
 
 #define M_KII_CONST_STR_LEN(str) (sizeof(str) - 1)
-#define M_KII_APPEND_CONSTANT(kii, conststr) \
+#define M_KII_APPEND_CONSTANT_STR(kii, conststr) \
     kii->http_append_body_cb(&(kii->http_context), conststr, \
         sizeof(conststr) - 1)
 
@@ -397,7 +397,7 @@ kii_core_thing_authentication(kii_core_t* kii,
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_CONSTANT(kii, "{\"username\":\"VENDOR_THING_ID:") !=
+    if (M_KII_APPEND_CONSTANT_STR(kii, "{\"username\":\"VENDOR_THING_ID:") !=
             KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
@@ -407,7 +407,7 @@ kii_core_thing_authentication(kii_core_t* kii,
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_CONSTANT(kii, ",\"password\":\"") != KII_HTTPC_OK) {
+    if (M_KII_APPEND_CONSTANT_STR(kii, ",\"password\":\"") != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -416,7 +416,7 @@ kii_core_thing_authentication(kii_core_t* kii,
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_CONSTANT(kii, "\"}") != KII_HTTPC_OK) {
+    if (M_KII_APPEND_CONSTANT_STR(kii, "\"}") != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -830,7 +830,7 @@ kii_core_install_thing_push(
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_CONSTANT(kii,
+    if (M_KII_APPEND_CONSTANT_STR(kii,
                     "{\"installationType\":\"MQTT\",\"development\":") !=
             KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
@@ -841,7 +841,7 @@ kii_core_install_thing_push(
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_CONSTANT(kii, "}") != KII_HTTPC_OK) {
+    if (M_KII_APPEND_CONSTANT_STR(kii, "}") != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
