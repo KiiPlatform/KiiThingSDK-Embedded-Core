@@ -24,14 +24,14 @@
         kii->logger_cb(x); \
     }
 
-#define M_KII_LOG_2(x) \
+#define M_KII_LOG_FORMAT(x) \
     if (kii->logger_cb != NULL) {\
         kii->logger_cb("file:%s, line:%d ", __FILE__, __LINE__); \
-        kii->logger_cb x ; \
+        x ; \
     }
 #else
 #define M_KII_LOG(x)
-#define M_KII_LOG_2(x)
+#define M_KII_LOG_FORMAT(x)
 #endif
 
 #define M_ACCESS_TOKEN(x, y) \
@@ -864,8 +864,8 @@ kii_core_api_call(
         }
         strncpy(key, str, ptr - str);
         strncpy(value, ptr + 1, sizeof(value));
-        M_KII_LOG_2(("key: %s\n", key));
-        M_KII_LOG_2(("value: %s\n", value));
+        M_KII_LOG_FORMAT(kii->logger_cb("key: %s\n", key));
+        M_KII_LOG_FORMAT(kii->logger_cb("value: %s\n", value));
         result = kii->http_set_header_cb(
                 &(kii->http_context),
                 key,
@@ -885,8 +885,8 @@ kii_core_api_call(
             }
             strncpy(key, str, ptr - str);
             strncpy(value, ptr + 1, sizeof(value));
-            M_KII_LOG_2(("key: %s\n", key));
-            M_KII_LOG_2(("value: %s\n", value));
+            M_KII_LOG_FORMAT(kii->logger_cb("key: %s\n", key));
+            M_KII_LOG_FORMAT(kii->logger_cb("value: %s\n", value));
             result = kii->http_set_header_cb(
                     &(kii->http_context),
                     key,
