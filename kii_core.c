@@ -331,24 +331,79 @@ prv_topic_path(
     kii_error_code_t
 kii_core_register_thing(
         kii_core_t* kii,
-        const char* thing_data)
+        const char* vendor_thing_id,
+        const char* password,
+        const char* thing_type)
 {
     kii_error_code_t result;
+    char content_length_str[8];
+    size_t content_length = 0;
+
     prv_set_thing_register_path(kii);
-    result = prv_http_request(
+    result = prv_http_request_line_and_headers(
             kii,
             "POST",
             kii->_http_request_path,
             "application/vnd.kii.ThingRegistrationAndAuthorizationRequest+json",
             NULL,
-            NULL,
-            thing_data
+            NULL
             );
 
-    if (result == KIIE_OK) {
-        kii->_state = KII_STATE_READY;
+    content_length = M_KII_CONST_STR_LEN("{\"_vendorThingID\":\"");
+    content_length += kii_strlen(vendor_thing_id);
+    content_length += M_KII_CONST_STR_LEN("\",\"_password\":\"");
+    content_length += kii_strlen(password);
+    if (thing_type != NULL) {
+        content_length += M_KII_CONST_STR_LEN("\",\"_thingType\":\"");
+        content_length += kii_strlen(thing_type);
     }
-    return result;
+    content_length += M_KII_CONST_STR_LEN("\"}");
+    kii_memset(content_length_str, 0x00, 8);
+    prv_content_length_str(content_length, content_length_str, 8);
+    if (kii->http_set_header_cb(&(kii->http_context),
+                    "content-length", content_length_str) != KII_HTTPC_OK) {
+        return KIIE_FAIL;
+    }
+
+    if (kii->http_append_body_start_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT_STR(kii, "{\"_vendorThingID\":\"") !=
+            KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_STR(kii, vendor_thing_id) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT_STR(kii, "\",\"_password\":\"") != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_STR(kii, password) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (thing_type != NULL) {
+        if (M_KII_APPEND_CONSTANT_STR(kii, "\",\"_thingType\":\"") !=
+                KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
+        if (M_KII_APPEND_STR(kii, thing_type) != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
+    }
+    if (M_KII_APPEND_CONSTANT_STR(kii, "\"}") != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    kii->_state = KII_STATE_READY;
+    return KIIE_OK;
 }
 
     static void

@@ -437,16 +437,14 @@ static int register_thing(kii_core_t* kii)
     kii_state_t state;
     kii_error_code_t err;
     pid_t pid;
-    char thingData[1024];
+    char vendor_thing_id[32];
     
     /* Prepare Thing Data */
-    memset(thingData, 0x00, 1024);
+    memset(vendor_thing_id, 0x00, sizeof(vendor_thing_id));
     pid = getpid();
-    sprintf(thingData,
-            "{\"_vendorThingID\":\"%d\", \"_password\":\"1234\"}",
-            pid);
+    sprintf(vendor_thing_id, "%d", pid);
     /* Register Thing */
-    err = kii_core_register_thing(kii, thingData);
+    err = kii_core_register_thing(kii, vendor_thing_id, "1234", NULL);
     print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");

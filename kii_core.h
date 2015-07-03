@@ -287,14 +287,17 @@ kii_error_code_t kii_core_run(kii_core_t* kii);
  * execute kii_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
- * @param [in] thing_data JSON object represents thing to be registered.<br>
- * for details of format, please refer to<br>
- * http://documentation.kii.com/rest/apps-collection/application/thing-collection/#method-thingsResourceType-POST
- * <br>This must be null terminated.
+ * @param [in] vendor_thing_id the thing identifier given by vendor.
+ * @param [in] password - the password of the thing given by vendor.
+ * @param [in] thing_type the type of the thing given by vendor. This
+ * is optional. Can be null.
  */
 kii_error_code_t
-kii_core_register_thing(kii_core_t* kii,
-        const char* thing_data);
+kii_core_register_thing(
+        kii_core_t* kii,
+        const char* vendor_thing_id,
+        const char* thing_type,
+        const char* password);
 
 /** prepare request of thing authentication.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
