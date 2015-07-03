@@ -437,6 +437,38 @@ static int register_thing(kii_core_t* kii)
     kii_state_t state;
     kii_error_code_t err;
     pid_t pid;
+    char thingData[1024];
+
+    /* Prepare Thing Data */
+    memset(thingData, 0x00, 1024);
+    pid = getpid();
+    sprintf(thingData,
+            "{\"_vendorThingID\":\"%d\", \"_password\":\"1234\"}",
+            pid);
+    /* Register Thing */
+    err = kii_core_register_thing(kii, thingData);
+    print_request(kii);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+    return 0;
+}
+
+static int register_thing_with_id(kii_core_t* kii)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+    pid_t pid;
     char vendor_thing_id[32];
     
     /* Prepare Thing Data */
@@ -444,7 +476,8 @@ static int register_thing(kii_core_t* kii)
     pid = getpid();
     sprintf(vendor_thing_id, "%d", pid);
     /* Register Thing */
-    err = kii_core_register_thing(kii, vendor_thing_id, "1234", NULL);
+    err = kii_core_register_thing_with_id(kii, vendor_thing_id, "1234",
+            "my_type");
     print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
@@ -960,6 +993,7 @@ int main(int argc, char** argv)
             {"get-endpoint", no_argument, NULL, 14},
             {"authentication", no_argument, NULL,  15},
             {"api", no_argument, NULL,  16},
+            {"register-with-id", no_argument, NULL,  17},
             {"help", no_argument, NULL, 1000},
             {0, 0, 0, 0}
         };
@@ -1039,6 +1073,10 @@ int main(int argc, char** argv)
             kii_core_api_call(&kii, "GET", "hoge/fuga", "body", 4, "text/plain",
                     "x-kii-http-header1:value", "x-kii-http-header2:value2", NULL);
             print_request(&kii);
+            break;
+        case 17:
+            printf("register with id\n");
+            register_thing_with_id(&kii);
             break;
         case 1000:
             printf("to configure parameters, edit example.h\n\n");

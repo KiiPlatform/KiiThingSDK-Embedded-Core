@@ -334,6 +334,29 @@ prv_topic_path(
     kii_error_code_t
 kii_core_register_thing(
         kii_core_t* kii,
+        const char* thing_data)
+{
+    kii_error_code_t result;
+    prv_set_thing_register_path(kii);
+    result = prv_http_request(
+            kii,
+            "POST",
+            kii->_http_request_path,
+            "application/vnd.kii.ThingRegistrationAndAuthorizationRequest+json",
+            NULL,
+            NULL,
+            thing_data
+            );
+
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+    return result;
+}
+
+    kii_error_code_t
+kii_core_register_thing_with_id(
+        kii_core_t* kii,
         const char* vendor_thing_id,
         const char* password,
         const char* thing_type)
@@ -356,10 +379,8 @@ kii_core_register_thing(
     content_length += kii_strlen(vendor_thing_id);
     content_length += M_KII_CONST_STR_LEN("\",\"_password\":\"");
     content_length += kii_strlen(password);
-    if (thing_type != NULL) {
-        content_length += M_KII_CONST_STR_LEN("\",\"_thingType\":\"");
-        content_length += kii_strlen(thing_type);
-    }
+    content_length += M_KII_CONST_STR_LEN("\",\"_thingType\":\"");
+    content_length += kii_strlen(thing_type);
     content_length += M_KII_CONST_STR_LEN("\"}");
     kii_memset(content_length_str, 0x00, 8);
     prv_content_length_str(content_length, content_length_str, 8);
@@ -389,16 +410,14 @@ kii_core_register_thing(
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (thing_type != NULL) {
-        if (M_KII_APPEND_CONSTANT_STR(kii, "\",\"_thingType\":\"") !=
-                KII_HTTPC_OK) {
-            M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
-            return KIIE_FAIL;
-        }
-        if (M_KII_APPEND_STR(kii, thing_type) != KII_HTTPC_OK) {
-            M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
-            return KIIE_FAIL;
-        }
+    if (M_KII_APPEND_CONSTANT_STR(kii, "\",\"_thingType\":\"") !=
+            KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_STR(kii, thing_type) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
     }
     if (M_KII_APPEND_CONSTANT_STR(kii, "\"}") != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
