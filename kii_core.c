@@ -198,10 +198,11 @@ prv_http_request(
         const char* body)
 {
     kii_http_client_code_t result = KII_HTTPC_FAIL;
+    kii_error_code_t retval = prv_http_request_line_and_headers(kii, method,
+            resource_path, content_type, access_token, etag);
 
-    if (prv_http_request_line_and_headers(kii, method, resource_path,
-                    content_type, access_token, etag) == KIIE_FAIL) {
-        return KIIE_FAIL;
+    if (retval != KIIE_OK) {
+        return retval;
     }
 
     if (body != NULL) {
@@ -445,7 +446,7 @@ kii_core_thing_authentication(kii_core_t* kii,
 
     content_length = M_KII_CONST_STR_LEN("{\"username\":\"VENDOR_THING_ID:");
     content_length += kii_strlen(vendor_thing_id);
-    content_length += M_KII_CONST_STR_LEN(",\"password\":\"");
+    content_length += M_KII_CONST_STR_LEN("\",\"password\":\"");
     content_length += kii_strlen(password);
     content_length += M_KII_CONST_STR_LEN("\"}");
 
@@ -469,7 +470,7 @@ kii_core_thing_authentication(kii_core_t* kii,
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_CONSTANT_STR(kii, ",\"password\":\"") != KII_HTTPC_OK) {
+    if (M_KII_APPEND_CONSTANT_STR(kii, "\",\"password\":\"") != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -880,7 +881,7 @@ kii_core_install_thing_push(
     content_length = M_KII_CONST_STR_LEN(
             "{\"installationType\":\"MQTT\",\"development\":");
     content_length += kii_strlen(c_development);
-    content_length = M_KII_CONST_STR_LEN("}");
+    content_length += M_KII_CONST_STR_LEN("}");
     kii_memset(content_length_str, 0x00, 8);
     prv_content_length_str(content_length, content_length_str, 8);
     if (kii->http_set_header_cb(&(kii->http_context),
