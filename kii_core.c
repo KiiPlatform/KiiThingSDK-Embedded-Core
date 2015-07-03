@@ -420,6 +420,10 @@ kii_core_thing_authentication(kii_core_t* kii,
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
+    if (kii->http_append_body_end_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
 
     kii->_state = KII_STATE_READY;
     return KIIE_OK;
@@ -792,7 +796,8 @@ kii_core_install_thing_push(
         kii_bool_t development)
 {
     kii_error_code_t result;
-    char body[256];
+    size_t content_length = 0;
+    char content_length_str[8];
     char* access_token;
     char* c_development;
     M_ACCESS_TOKEN(access_token, kii->author.access_token);
@@ -800,22 +805,53 @@ kii_core_install_thing_push(
     c_development = ((development == KII_TRUE) ? ("true") : ("false"));
     prv_set_installation_path(kii);
 
-    kii_memset(body, 0x00, 256);
-    kii_sprintf(body,
-            "{\"installationType\":\"MQTT\", \"development\":%s}",
-            c_development);
-    result = prv_http_request(
+    result = prv_http_request_line_and_headers(
             kii,
             "POST",
             kii->_http_request_path,
             "application/vnd.kii.InstallationCreationRequest+json",
             access_token,
-            NULL,
-            body);
-    if (result == KIIE_OK) {
-        kii->_state = KII_STATE_READY;
+            NULL);
+    if (result != KIIE_OK) {
+        return result;
     }
-    return result;
+
+    content_length = M_KII_CONST_STR_LEN(
+            "{\"installationType\":\"MQTT\",\"development\":");
+    content_length += kii_strlen(c_development);
+    content_length = M_KII_CONST_STR_LEN("}");
+    kii_memset(content_length_str, 0x00, 8);
+    prv_content_length_str(content_length, content_length_str, 8);
+    if (kii->http_set_header_cb(&(kii->http_context),
+                    "content-length", content_length_str) != KII_HTTPC_OK) {
+        return KIIE_FAIL;
+    }
+    if (kii->http_append_body_start_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT(kii,
+                    "{\"installationType\":\"MQTT\",\"development\":") !=
+            KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (kii->http_append_body_cb(&(kii->http_context), c_development,
+                    kii_strlen(c_development)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT(kii, "}") != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (kii->http_append_body_end_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    kii->_state = KII_STATE_READY;
+    return KIIE_OK;
 }
 
     kii_error_code_t
