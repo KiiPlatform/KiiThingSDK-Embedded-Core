@@ -30,6 +30,11 @@
 #define M_ACCESS_TOKEN(x, y) \
     x = (kii_strlen((y)) > 0) ? ((y)) : (NULL)
 
+#define M_KII_CONST_STR_LEN(str) (sizeof(str) - 1)
+#define M_KII_APPEND_CONSTANT(kii, conststr) \
+    kii->http_append_body_cb(&(kii->http_context), conststr, \
+        sizeof(conststr) - 1)
+
 /*
   This is a size of authorization header.
   128 may be enough size to set authorization header.
@@ -94,14 +99,13 @@ prv_set_thing_register_path(kii_core_t* kii)
 }
 
     static kii_error_code_t 
-prv_http_request(
+prv_http_request_line_and_headers(
         kii_core_t* kii,
         const char* method,
         const char* resource_path,
         const char* content_type,
         const char* access_token,
-        const char* etag,
-        const char* body)
+        const char* etag)
 {
     kii_http_client_code_t result;
     result = kii->http_set_request_line_cb(
@@ -175,6 +179,25 @@ prv_http_request(
             M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
             return KIIE_FAIL;
         }
+    }
+    return KIIE_OK;
+}
+
+    static kii_error_code_t
+prv_http_request(
+        kii_core_t* kii,
+        const char* method,
+        const char* resource_path,
+        const char* content_type,
+        const char* access_token,
+        const char* etag,
+        const char* body)
+{
+    kii_http_client_code_t result = KII_HTTPC_FAIL;
+
+    if (prv_http_request_line_and_headers(kii, method, resource_path,
+                    content_type, access_token, etag) == KIIE_FAIL) {
+        return KIIE_FAIL;
     }
 
     if (body != NULL) {
@@ -340,29 +363,66 @@ kii_core_thing_authentication(kii_core_t* kii,
         )
 {
     kii_error_code_t result;
-    char body[256];
+    char content_length_str[8];
+    size_t content_length = 0;
 
     prv_set_auth_path(kii);
-    kii_memset(body, 0x00, sizeof(body));
-    kii_sprintf(body,
-            "{\"username\":\"VENDOR_THING_ID:%s\", \"password\": \"%s\"}",
-            vendor_thing_id,
-            password);
 
-    result = prv_http_request(
+    result = prv_http_request_line_and_headers(
             kii,
             "POST",
             kii->_http_request_path,
             "application/json",
             NULL,
-            NULL,
-            body
+            NULL
             );
-
-    if (result == KIIE_OK) {
-        kii->_state = KII_STATE_READY;
+    if (result != KIIE_OK) {
+        return result;
     }
-    return result;
+
+    content_length = M_KII_CONST_STR_LEN("{\"username\":\"VENDOR_THING_ID:");
+    content_length += kii_strlen(vendor_thing_id);
+    content_length += M_KII_CONST_STR_LEN(",\"password\":\"");
+    content_length += kii_strlen(password);
+    content_length += M_KII_CONST_STR_LEN("\"}");
+
+    kii_memset(content_length_str, 0x00, 8);
+    prv_content_length_str(content_length, content_length_str, 8);
+    if (kii->http_set_header_cb(&(kii->http_context),
+                    "content-length", content_length_str) != KII_HTTPC_OK) {
+        return KIIE_FAIL;
+    }
+
+    if (kii->http_append_body_start_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT(kii, "{\"username\":\"VENDOR_THING_ID:") !=
+            KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (kii->http_append_body_cb(&(kii->http_context), vendor_thing_id,
+                    kii_strlen(vendor_thing_id)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT(kii, ",\"password\":\"") != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (kii->http_append_body_cb(&(kii->http_context), password,
+                    kii_strlen(password)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT(kii, "\"}") != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    kii->_state = KII_STATE_READY;
+    return KIIE_OK;
 }
 
 
