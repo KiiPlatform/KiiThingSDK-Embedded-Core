@@ -34,6 +34,8 @@
 #define M_KII_APPEND_CONSTANT_STR(kii, conststr) \
     kii->http_append_body_cb(&(kii->http_context), conststr, \
         sizeof(conststr) - 1)
+#define M_KII_APPEND_STR(kii, str) \
+    kii->http_append_body_cb(&(kii->http_context), str, sizeof(str) - 1)
 
 /*
   This is a size of authorization header.
@@ -402,8 +404,7 @@ kii_core_thing_authentication(kii_core_t* kii,
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (kii->http_append_body_cb(&(kii->http_context), vendor_thing_id,
-                    kii_strlen(vendor_thing_id)) != KII_HTTPC_OK) {
+    if (M_KII_APPEND_STR(kii, vendor_thing_id) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -411,8 +412,7 @@ kii_core_thing_authentication(kii_core_t* kii,
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (kii->http_append_body_cb(&(kii->http_context), password,
-                    kii_strlen(password)) != KII_HTTPC_OK) {
+    if (M_KII_APPEND_STR(kii, password) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -836,8 +836,7 @@ kii_core_install_thing_push(
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (kii->http_append_body_cb(&(kii->http_context), c_development,
-                    kii_strlen(c_development)) != KII_HTTPC_OK) {
+    if (M_KII_APPEND_STR(kii, c_development) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
