@@ -44,7 +44,7 @@
     kii->http_append_body_cb(&(kii->http_context), conststr, \
         sizeof(conststr) - 1)
 #define M_KII_APPEND_STR(kii, str) \
-    kii->http_append_body_cb(&(kii->http_context), str, sizeof(str) - 1)
+    kii->http_append_body_cb(&(kii->http_context), str, kii_strlen(str))
 
 /*
   This is a size of authorization header.
@@ -435,6 +435,7 @@ kii_core_register_thing_with_id(
         return KIIE_FAIL;
     }
 
+    kii->http_context.total_send_size = strlen(kii->http_context.buffer);
     kii->_state = KII_STATE_READY;
     return KIIE_OK;
 }
@@ -513,6 +514,7 @@ kii_core_thing_authentication(kii_core_t* kii,
         return KIIE_FAIL;
     }
 
+    kii->http_context.total_send_size = strlen(kii->http_context.buffer);
     kii->_state = KII_STATE_READY;
     return KIIE_OK;
 }
@@ -937,6 +939,7 @@ kii_core_install_thing_push(
         return KIIE_FAIL;
     }
 
+    kii->http_context.total_send_size = strlen(kii->http_context.buffer);
     kii->_state = KII_STATE_READY;
     return KIIE_OK;
 }
