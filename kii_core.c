@@ -435,7 +435,7 @@ kii_core_register_thing_with_id(
         return KIIE_FAIL;
     }
 
-    kii->http_context.total_send_size = strlen(kii->http_context.buffer);
+    kii->http_context.total_send_size = kii_strlen(kii->http_context.buffer);
     kii->_state = KII_STATE_READY;
     return KIIE_OK;
 }
@@ -514,7 +514,7 @@ kii_core_thing_authentication(kii_core_t* kii,
         return KIIE_FAIL;
     }
 
-    kii->http_context.total_send_size = strlen(kii->http_context.buffer);
+    kii->http_context.total_send_size = kii_strlen(kii->http_context.buffer);
     kii->_state = KII_STATE_READY;
     return KIIE_OK;
 }
@@ -939,7 +939,7 @@ kii_core_install_thing_push(
         return KIIE_FAIL;
     }
 
-    kii->http_context.total_send_size = strlen(kii->http_context.buffer);
+    kii->http_context.total_send_size = kii_strlen(kii->http_context.buffer);
     kii->_state = KII_STATE_READY;
     return KIIE_OK;
 }
