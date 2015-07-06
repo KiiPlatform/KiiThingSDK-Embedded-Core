@@ -284,7 +284,7 @@ kii_error_code_t kii_core_run(kii_core_t* kii);
 
 /** prepare request of regiser thing.
  * This function requires JSON string as thing_data argument. In this
- * JSON string, You can add arbitrary properties. "_vendorThingID" and
+ * JSON string, you can add custom properties. "_vendorThingID" and
  * "_password" properties are required in this JSON string.  after
  * this method succeeded, state of SDK becomes KII_STATE_READY.<br>
  * execute kii_run() to send the request to Kii Cloud.
