@@ -8,7 +8,9 @@
 #define M_REQUEST_LINE_CB_FAILED "failed to set request line\n"
 #define M_REQUEST_HEADER_CB_FAILED "failed to set request header\n"
 #define M_REQUEST_HEADER_CB_AUTH_HEADER "access token is too long\n"
-#define M_REQUEST_BODY_CB_FAILED "failed to set request body\n"
+#define M_REQUEST_APPEND_BODY_START_CB_FAILED "failed to start appending request body\n"
+#define M_REQUEST_APPEND_BODY_CB_FAILED "failed to append request body\n"
+#define M_REQUEST_APPEND_BODY_END_CB_FAILED "failed to end appending request body\n"
 
 #ifndef __FILE__
 #define __FILE__ ("__FILE__ macro is not available")
@@ -36,6 +38,13 @@
 
 #define M_ACCESS_TOKEN(x, y) \
     x = (kii_strlen((y)) > 0) ? ((y)) : (NULL)
+
+#define M_KII_CONST_STR_LEN(str) (sizeof(str) - 1)
+#define M_KII_APPEND_CONSTANT_STR(kii, conststr) \
+    kii->http_append_body_cb(&(kii->http_context), conststr, \
+        sizeof(conststr) - 1)
+#define M_KII_APPEND_STR(kii, str) \
+    kii->http_append_body_cb(&(kii->http_context), str, sizeof(str) - 1)
 
 /*
   This is a size of authorization header.
@@ -101,14 +110,13 @@ prv_set_thing_register_path(kii_core_t* kii)
 }
 
     static kii_error_code_t 
-prv_http_request(
+prv_http_request_line_and_headers(
         kii_core_t* kii,
         const char* method,
         const char* resource_path,
         const char* content_type,
         const char* access_token,
-        const char* etag,
-        const char* body)
+        const char* etag)
 {
     kii_http_client_code_t result;
     result = kii->http_set_request_line_cb(
@@ -183,6 +191,26 @@ prv_http_request(
             return KIIE_FAIL;
         }
     }
+    return KIIE_OK;
+}
+
+    static kii_error_code_t
+prv_http_request(
+        kii_core_t* kii,
+        const char* method,
+        const char* resource_path,
+        const char* content_type,
+        const char* access_token,
+        const char* etag,
+        const char* body)
+{
+    kii_http_client_code_t result = KII_HTTPC_FAIL;
+    kii_error_code_t retval = prv_http_request_line_and_headers(kii, method,
+            resource_path, content_type, access_token, etag);
+
+    if (retval != KIIE_OK) {
+        return retval;
+    }
 
     if (body != NULL) {
         size_t body_len;
@@ -200,19 +228,35 @@ prv_http_request(
             return KIIE_FAIL;
         }
 
-        result = kii->http_set_body_cb(
+        result = kii->http_append_body_start_cb(&(kii->http_context));
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
+            return KIIE_FAIL;
+        }
+
+        result = kii->http_append_body_cb(
                 &(kii->http_context),
                 body, body_len);
         if (result != KII_HTTPC_OK) {
-            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
+
+        result = kii->http_append_body_end_cb(&(kii->http_context));
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
             return KIIE_FAIL;
         }
     } else {
-        result = kii->http_set_body_cb(
-                &(kii->http_context),
-                NULL, 0);
+        result = kii->http_append_body_start_cb(&(kii->http_context));
         if (result != KII_HTTPC_OK) {
-            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
+            return KIIE_FAIL;
+        }
+
+        result = kii->http_append_body_end_cb(&(kii->http_context));
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
             return KIIE_FAIL;
         }
     }
@@ -317,6 +361,84 @@ kii_core_register_thing(
     return result;
 }
 
+    kii_error_code_t
+kii_core_register_thing_with_id(
+        kii_core_t* kii,
+        const char* vendor_thing_id,
+        const char* password,
+        const char* thing_type)
+{
+    kii_error_code_t result;
+    char content_length_str[8];
+    size_t content_length = 0;
+
+    prv_set_thing_register_path(kii);
+    result = prv_http_request_line_and_headers(
+            kii,
+            "POST",
+            kii->_http_request_path,
+            "application/vnd.kii.ThingRegistrationAndAuthorizationRequest+json",
+            NULL,
+            NULL
+            );
+
+    content_length = M_KII_CONST_STR_LEN("{\"_vendorThingID\":\"");
+    content_length += kii_strlen(vendor_thing_id);
+    content_length += M_KII_CONST_STR_LEN("\",\"_password\":\"");
+    content_length += kii_strlen(password);
+    content_length += M_KII_CONST_STR_LEN("\",\"_thingType\":\"");
+    content_length += kii_strlen(thing_type);
+    content_length += M_KII_CONST_STR_LEN("\"}");
+    kii_memset(content_length_str, 0x00, 8);
+    prv_content_length_str(content_length, content_length_str, 8);
+    if (kii->http_set_header_cb(&(kii->http_context),
+                    "content-length", content_length_str) != KII_HTTPC_OK) {
+        return KIIE_FAIL;
+    }
+
+    if (kii->http_append_body_start_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT_STR(kii, "{\"_vendorThingID\":\"") !=
+            KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_STR(kii, vendor_thing_id) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT_STR(kii, "\",\"_password\":\"") != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_STR(kii, password) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT_STR(kii, "\",\"_thingType\":\"") !=
+            KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_STR(kii, thing_type) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT_STR(kii, "\"}") != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (kii->http_append_body_end_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    kii->_state = KII_STATE_READY;
+    return KIIE_OK;
+}
+
     static void
 prv_set_auth_path(kii_core_t* kii)
 {
@@ -331,29 +453,68 @@ kii_core_thing_authentication(kii_core_t* kii,
         )
 {
     kii_error_code_t result;
-    char body[256];
+    char content_length_str[8];
+    size_t content_length = 0;
 
     prv_set_auth_path(kii);
-    kii_memset(body, 0x00, sizeof(body));
-    kii_sprintf(body,
-            "{\"username\":\"VENDOR_THING_ID:%s\", \"password\": \"%s\"}",
-            vendor_thing_id,
-            password);
 
-    result = prv_http_request(
+    result = prv_http_request_line_and_headers(
             kii,
             "POST",
             kii->_http_request_path,
             "application/json",
             NULL,
-            NULL,
-            body
+            NULL
             );
-
-    if (result == KIIE_OK) {
-        kii->_state = KII_STATE_READY;
+    if (result != KIIE_OK) {
+        return result;
     }
-    return result;
+
+    content_length = M_KII_CONST_STR_LEN("{\"username\":\"VENDOR_THING_ID:");
+    content_length += kii_strlen(vendor_thing_id);
+    content_length += M_KII_CONST_STR_LEN("\",\"password\":\"");
+    content_length += kii_strlen(password);
+    content_length += M_KII_CONST_STR_LEN("\"}");
+
+    kii_memset(content_length_str, 0x00, 8);
+    prv_content_length_str(content_length, content_length_str, 8);
+    if (kii->http_set_header_cb(&(kii->http_context),
+                    "content-length", content_length_str) != KII_HTTPC_OK) {
+        return KIIE_FAIL;
+    }
+
+    if (kii->http_append_body_start_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT_STR(kii, "{\"username\":\"VENDOR_THING_ID:") !=
+            KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_STR(kii, vendor_thing_id) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT_STR(kii, "\",\"password\":\"") != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_STR(kii, password) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT_STR(kii, "\"}") != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (kii->http_append_body_end_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    kii->_state = KII_STATE_READY;
+    return KIIE_OK;
 }
 
 
@@ -723,7 +884,8 @@ kii_core_install_thing_push(
         kii_bool_t development)
 {
     kii_error_code_t result;
-    char body[256];
+    size_t content_length = 0;
+    char content_length_str[8];
     char* access_token;
     char* c_development;
     M_ACCESS_TOKEN(access_token, kii->author.access_token);
@@ -731,22 +893,52 @@ kii_core_install_thing_push(
     c_development = ((development == KII_TRUE) ? ("true") : ("false"));
     prv_set_installation_path(kii);
 
-    kii_memset(body, 0x00, 256);
-    kii_sprintf(body,
-            "{\"installationType\":\"MQTT\", \"development\":%s}",
-            c_development);
-    result = prv_http_request(
+    result = prv_http_request_line_and_headers(
             kii,
             "POST",
             kii->_http_request_path,
             "application/vnd.kii.InstallationCreationRequest+json",
             access_token,
-            NULL,
-            body);
-    if (result == KIIE_OK) {
-        kii->_state = KII_STATE_READY;
+            NULL);
+    if (result != KIIE_OK) {
+        return result;
     }
-    return result;
+
+    content_length = M_KII_CONST_STR_LEN(
+            "{\"installationType\":\"MQTT\",\"development\":");
+    content_length += kii_strlen(c_development);
+    content_length += M_KII_CONST_STR_LEN("}");
+    kii_memset(content_length_str, 0x00, 8);
+    prv_content_length_str(content_length, content_length_str, 8);
+    if (kii->http_set_header_cb(&(kii->http_context),
+                    "content-length", content_length_str) != KII_HTTPC_OK) {
+        return KIIE_FAIL;
+    }
+    if (kii->http_append_body_start_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT_STR(kii,
+                    "{\"installationType\":\"MQTT\",\"development\":") !=
+            KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_STR(kii, c_development) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (M_KII_APPEND_CONSTANT_STR(kii, "}") != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (kii->http_append_body_end_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    kii->_state = KII_STATE_READY;
+    return KIIE_OK;
 }
 
     kii_error_code_t
@@ -912,25 +1104,42 @@ kii_core_api_call(
             M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
             goto exit;
         }
-        result = kii->http_set_body_cb(&(kii->http_context), http_body,
+        result = kii->http_append_body_start_cb(&(kii->http_context));
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
+            goto exit;
+        }
+
+        result = kii->http_append_body_cb(&(kii->http_context), http_body,
                 body_size);
         if (result != KII_HTTPC_OK) {
-            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
             goto exit;
-        } else {
-            kii->http_context.total_send_size =
-                strlen(kii->http_context.buffer);
         }
-    } else {
-        result = kii->http_set_body_cb(
-                &(kii->http_context),
-                NULL, 0);
+
+        result = kii->http_append_body_end_cb(&(kii->http_context));
         if (result != KII_HTTPC_OK) {
-            M_KII_LOG(M_REQUEST_BODY_CB_FAILED);
+            M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
             goto exit;
-        } else {
-			kii->http_context.total_send_size = strlen(kii->http_context.buffer);
-		} 
+        }
+        // TODO: fix this. Don't assume kii->http_context.buffer is
+        // null teminated.
+        kii->http_context.total_send_size = strlen(kii->http_context.buffer);
+    } else {
+        result = kii->http_append_body_start_cb(&(kii->http_context));
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
+            goto exit;
+        }
+
+        result = kii->http_append_body_end_cb(&(kii->http_context));
+        if (result != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
+            goto exit;
+        }
+        // TODO: fix this. Don't assume kii->http_context.buffer is
+        // null teminated.
+        kii->http_context.total_send_size = strlen(kii->http_context.buffer);
     }
     kii->_state = KII_STATE_READY;
     ret = KIIE_OK;

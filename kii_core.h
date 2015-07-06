@@ -86,7 +86,17 @@ typedef kii_http_client_code_t
                 const char* key,
                 const char* value);
 
-/** callback for preparing HTTP request body.
+/** callback to notify starting HTTP request body creation.
+ * Applications implement this callback with the HTTP client in target
+ * environment.<br>
+ * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
+ * do not return KII_HTTPC_AGAIN from this callback.
+ * @param [in] http_context context object defined by application.
+ */
+typedef kii_http_client_code_t
+        (*KII_HTTPCB_APPEND_BODY_START)(kii_http_context_t* http_context);
+
+/** callback for appending HTTP request body.
  * application implement this callback with the HTTP client
  * in the target environment.<br>
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
@@ -96,10 +106,20 @@ typedef kii_http_client_code_t
  * @param [in] body_size request body data size.
  */
 typedef kii_http_client_code_t
-        (*KII_HTTPCB_SET_BODY)(
+        (*KII_HTTPCB_APPEND_BODY)(
                 kii_http_context_t* http_context,
                 const char* body_data,
                 size_t body_size);
+
+/** callback to notify ending HTTP request body creation.
+ * Applications implement this callback with the HTTP client in target
+ * environment.<br>
+ * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
+ * do not return KII_HTTPC_AGAIN from this callback.
+ * @param [in] http_context context object defined by application.
+ */
+typedef kii_http_client_code_t
+        (*KII_HTTPCB_APPEND_BODY_END)(kii_http_context_t* http_context);
 
 /** callback for execution of HTTP request.
  * application implement this callback with the HTTP client
@@ -195,10 +215,25 @@ typedef struct kii_core_t
      * Should be set before execute apis.
      */
     KII_HTTPCB_SET_HEADER http_set_header_cb;
-    /** request body callback function pointer
-     * Should be set before execute apis.
+
+    /**
+     * Notifying start of creation of request body callback function.
+     * Should be set before execute APIs.
      */
-    KII_HTTPCB_SET_BODY http_set_body_cb;
+    KII_HTTPCB_APPEND_BODY_START http_append_body_start_cb;
+
+    /**
+     * Appending request body callback function.
+     * Should be set before execute APIs.
+     */
+    KII_HTTPCB_APPEND_BODY http_append_body_cb;
+
+    /**
+     * Notifying end of creation of request body callback function.
+     * Should be set before execute APIs.
+     */
+    KII_HTTPCB_APPEND_BODY_END http_append_body_end_cb;
+
     /** execute HTTP request function pointer
      * Should be set before execute apis.
      */
@@ -248,7 +283,10 @@ kii_state_t kii_core_get_state(kii_core_t* kii);
 kii_error_code_t kii_core_run(kii_core_t* kii);
 
 /** prepare request of regiser thing.
- * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * This function requires JSON string as thing_data argument. In this
+ * JSON string, you can add custom properties. "_vendorThingID" and
+ * "_password" properties are required in this JSON string.  after
+ * this method succeeded, state of SDK becomes KII_STATE_READY.<br>
  * execute kii_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
@@ -260,6 +298,26 @@ kii_error_code_t kii_core_run(kii_core_t* kii);
 kii_error_code_t
 kii_core_register_thing(kii_core_t* kii,
         const char* thing_data);
+
+/** prepare request of regiser thing.
+ * Unlike kii_core_register_thing(kii_core_t*, const char*), this
+ * function only register "_vendorThingID", "_password" and
+ * "_thingType" fields.  after this method succeeded, state of SDK
+ * becomes KII_STATE_READY.<br> execute kii_run() to send the request
+ * to Kii Cloud.
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] vendor_thing_id the thing identifier given by vendor.
+ * @param [in] password - the password of the thing given by vendor.
+ * @param [in] thing_type the type of the thing given by vendor. This
+ * is optional. Can be null.
+ */
+kii_error_code_t
+kii_core_register_thing_with_id(
+        kii_core_t* kii,
+        const char* vendor_thing_id,
+        const char* password,
+        const char* thing_type);
 
 /** prepare request of thing authentication.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>

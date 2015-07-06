@@ -206,26 +206,44 @@ kii_http_client_code_t
     return KII_HTTPC_OK;
 }
 
+kii_http_client_code_t append_body(
+        kii_http_context_t* http_context,
+        const char* data,
+        size_t data_len)
+{
+    char* reqBuff = http_context->buffer;
+
+    if ((strlen(reqBuff) + data_len + 1) > http_context->buffer_size) {
+        return KII_HTTPC_FAIL;
+    }
+
+    if (data == NULL) {
+        return KII_HTTPC_FAIL;
+    }
+
+    strncat(reqBuff, data, data_len);
+    return KII_HTTPC_OK;
+}
+
+kii_http_client_code_t append_body_start_cb(kii_http_context_t* http_context)
+{
+    return append_body(http_context, "\r\n", 2);
+}
+
 kii_http_client_code_t
-    body_cb(
+    append_body_cb(
         kii_http_context_t* http_context,
         const char* body_data,
         size_t body_size)
 {
-    /* TODO: prevent overflow. */
-    char* reqBuff = http_context->buffer;
+    return append_body(http_context, body_data, body_size);
+}
 
-    if ((strlen(reqBuff) + 3 + body_size) > http_context->buffer_size)
-    {
-        return KII_HTTPC_FAIL;
-    }
-
-    strcat(reqBuff, "\r\n");
-    if (body_data != NULL) {
-        strncat(reqBuff, body_data, body_size);
-    }
+kii_http_client_code_t append_body_end_cb(kii_http_context_t* http_context)
+{
     return KII_HTTPC_OK;
 }
+
 
 kii_http_client_code_t
     execute_cb(
@@ -368,7 +386,9 @@ void init(kii_core_t* kii, char* buff, context_t* ctx) {
 
     kii->http_set_request_line_cb = request_line_cb;
     kii->http_set_header_cb = header_cb;
-    kii->http_set_body_cb = body_cb;
+    kii->http_append_body_start_cb = append_body_start_cb;
+    kii->http_append_body_cb = append_body_cb;
+    kii->http_append_body_end_cb = append_body_end_cb;
     kii->http_execute_cb = execute_cb;
     kii->logger_cb = logger_cb;
 
@@ -418,7 +438,7 @@ static int register_thing(kii_core_t* kii)
     kii_error_code_t err;
     pid_t pid;
     char thingData[1024];
-    
+
     /* Prepare Thing Data */
     memset(thingData, 0x00, 1024);
     pid = getpid();
@@ -427,6 +447,37 @@ static int register_thing(kii_core_t* kii)
             pid);
     /* Register Thing */
     err = kii_core_register_thing(kii, thingData);
+    print_request(kii);
+    if (err != KIIE_OK) {
+        printf("execution failed\n");
+        return 1;
+    }
+    do {
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+    return 0;
+}
+
+static int register_thing_with_id(kii_core_t* kii)
+{
+    kii_state_t state;
+    kii_error_code_t err;
+    pid_t pid;
+    char vendor_thing_id[32];
+    
+    /* Prepare Thing Data */
+    memset(vendor_thing_id, 0x00, sizeof(vendor_thing_id));
+    pid = getpid();
+    sprintf(vendor_thing_id, "%d", pid);
+    /* Register Thing */
+    err = kii_core_register_thing_with_id(kii, vendor_thing_id, "1234",
+            "my_type");
     print_request(kii);
     if (err != KIIE_OK) {
         printf("execution failed\n");
@@ -942,6 +993,7 @@ int main(int argc, char** argv)
             {"get-endpoint", no_argument, NULL, 14},
             {"authentication", no_argument, NULL,  15},
             {"api", no_argument, NULL,  16},
+            {"register-with-id", no_argument, NULL,  17},
             {"help", no_argument, NULL, 1000},
             {0, 0, 0, 0}
         };
@@ -1021,6 +1073,10 @@ int main(int argc, char** argv)
             kii_core_api_call(&kii, "GET", "hoge/fuga", "body", 4, "text/plain",
                     "x-kii-http-header1:value", "x-kii-http-header2:value2", NULL);
             print_request(&kii);
+            break;
+        case 17:
+            printf("register with id\n");
+            register_thing_with_id(&kii);
             break;
         case 1000:
             printf("to configure parameters, edit example.h\n\n");
