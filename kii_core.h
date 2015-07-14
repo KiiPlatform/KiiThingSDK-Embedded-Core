@@ -576,6 +576,38 @@ kii_core_api_call(
         char* header,
         ...);
 
+kii_error_code_t kii_core_http_append_body_start(kii_core_t* kii);
+
+kii_error_code_t
+kii_core_http_append_body(
+        kii_core_t* kii,
+        const char* body_data,
+        size_t body_size);
+
+kii_error_code_t kii_core_http_append_body_end(kii_core_t* kii);
+
+kii_error_code_t
+kii_core_set_default_request_headers(
+        kii_core_t* kii,
+        const char* content_type,
+        size_t content_length);
+
+kii_error_code_t
+kii_core_append_request_header(
+        kii_core_t* kii,
+        const char* key,
+        const char* value);
+
+kii_error_code_t kii_core_append_path_start(kii_core_t* kii);
+
+kii_error_code_t kii_core_append_path(kii_core_t* kii, const char* path);
+
+kii_error_code_t kii_core_append_path_end(kii_core_t* kii);
+
+kii_error_code_t kii_core_set_request_line(
+        kii_core_t* kii,
+        const char* http_method);
+
 #ifdef __cplusplus
 }
 #endif
