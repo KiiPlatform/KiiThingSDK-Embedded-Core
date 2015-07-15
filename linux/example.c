@@ -441,6 +441,10 @@ kii_http_client_code_t
                 }
                 *response_body = bodyPtr;
                 ctx->state = PRV_SSL_STATE_IDLE;
+                ctx->request_line_position = NULL;
+                ctx->header_position = NULL;
+                ctx->body_position = NULL;
+                ctx->sending_size = 0;
                 return KII_HTTPC_OK;
             } else if (res == KII_HTTPC_AGAIN) {
                 return KII_HTTPC_AGAIN;
