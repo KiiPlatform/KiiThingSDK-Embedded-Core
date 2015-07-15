@@ -268,6 +268,7 @@ kii_http_client_code_t
         char* insert_positin = app_context->body_position;
         memmove(app_context->body_position + len, app_context->body_position,
                 body_size);
+        app_context->body_position += len;
         http_context->buffer[app_context->sending_size + len] = '\0';
         if (app_context->header_position == NULL) {
             app_context->header_position = insert_positin;
