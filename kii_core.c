@@ -1306,4 +1306,14 @@ kii_error_code_t kii_core_set_request_line(
     return KIIE_OK;
 }
 
+kii_error_code_t kii_core_set_ready(kii_core_t* kii)
+{
+    if (kii->_state != KII_STATE_IDLE) {
+        return KIIE_FAIL;
+    }
+    kii->_state = KII_STATE_READY;
+    return KIIE_OK;
+}
+
+
 /* vim:set ts=4 sts=4 sw=4 et fenc=UTF-8 ff=unix: */

@@ -608,6 +608,8 @@ kii_error_code_t kii_core_set_request_line(
         kii_core_t* kii,
         const char* http_method);
 
+kii_error_code_t kii_core_set_ready(kii_core_t* kii);
+
 #ifdef __cplusplus
 }
 #endif

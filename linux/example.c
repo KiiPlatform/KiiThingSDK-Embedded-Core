@@ -1136,7 +1136,10 @@ static int thing_authentication_generic(kii_core_t* kii)
         printf("execution failed.\n");
         return 1;
     }
-    kii->_state = KII_STATE_READY;
+    if (kii_core_set_ready(kii) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
     print_request(kii);
     do {
         err = kii_core_run(kii);
