@@ -8,7 +8,6 @@
 #define M_REQUEST_LINE_CB_FAILED "failed to set request line\n"
 #define M_REQUEST_HEADER_CB_FAILED "failed to set request header\n"
 #define M_REQUEST_HEADER_CB_AUTH_HEADER "access token is too long\n"
-#define M_REQUEST_HEADER_CB_NO_AUTH_HEADER "there is no access token\n"
 #define M_REQUEST_APPEND_BODY_START_CB_FAILED "failed to start appending request body\n"
 #define M_REQUEST_APPEND_BODY_CB_FAILED "failed to append request body\n"
 #define M_REQUEST_APPEND_BODY_END_CB_FAILED "failed to end appending request body\n"
