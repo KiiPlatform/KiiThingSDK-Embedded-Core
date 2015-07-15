@@ -219,6 +219,10 @@ kii_http_client_code_t
         memcpy(buf, host, len);
         buf += len;
 
+        len = sizeof("/") - 1;
+        memcpy(buf, "/", len);
+        buf += len;
+
         len = strlen(path);
         memcpy(buf, path, len);
         buf += len;
@@ -1062,6 +1066,91 @@ static int get_endpoint(kii_core_t* kii)
     return 0;
 }
 
+static int thing_authentication_generic(kii_core_t* kii)
+{
+    kii_error_code_t err;
+    kii_state_t state;
+    size_t content_length;
+
+    /* create http request body */
+    content_length = strlen("{\"username\":\"VENDOR_THING_ID:");
+    content_length += strlen(EX_AUTH_VENDOR_ID);
+    content_length += strlen("\",\"password\":\"");
+    content_length += strlen(EX_AUTH_VENDOR_PASS);
+    content_length += strlen("\"}");
+
+    if (kii_core_http_append_body_start(kii) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    if (kii_core_http_append_body(kii, "{\"username\":\"VENDOR_THING_ID:",
+                    strlen("{\"username\":\"VENDOR_THING_ID:")) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    if (kii_core_http_append_body(kii, EX_AUTH_VENDOR_ID,
+                    strlen(EX_AUTH_VENDOR_ID)) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    if (kii_core_http_append_body(kii, "\",\"password\":\"",
+                    strlen("\",\"password\":\"")) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    if (kii_core_http_append_body(kii, EX_AUTH_VENDOR_PASS,
+                    strlen(EX_AUTH_VENDOR_PASS)) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    if (kii_core_http_append_body(kii, "\"}", strlen("\"}")) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    if (kii_core_http_append_body_end(kii) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+
+    // set request header.
+    if (kii_core_set_default_request_headers(kii, "application/json",
+                    content_length) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+
+    // set request line.
+    if (kii_core_append_path_start(kii) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    if (kii_core_append_path(kii, "api/oauth2/token") != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    if (kii_core_append_path_end(kii) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    if (kii_core_set_request_line(kii, "POST") != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    kii->_state = KII_STATE_READY;
+    print_request(kii);
+    do {
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+    return 0;
+}
+
 int main(int argc, char** argv)
 {
     context_t ctx;
@@ -1094,6 +1183,7 @@ int main(int argc, char** argv)
             {"authentication", no_argument, NULL,  15},
             {"api", no_argument, NULL,  16},
             {"register-with-id", no_argument, NULL,  17},
+            {"authentication-generic", no_argument, NULL, 18},
             {"help", no_argument, NULL, 1000},
             {0, 0, 0, 0}
         };
@@ -1178,6 +1268,10 @@ int main(int argc, char** argv)
             printf("register with id\n");
             register_thing_with_id(&kii);
             break;
+        case 18:
+            printf("authentication generic\n");
+            thing_authentication_generic(&kii);
+            break;
         case 1000:
             printf("to configure parameters, edit example.h\n\n");
             printf("commands: \n");
@@ -1197,6 +1291,7 @@ int main(int argc, char** argv)
             printf("--unsubscribe-topic\n unsubscribe to topic.\n");
             printf("--install-push\n install push.\n");
             printf("--get-endpoint\n get endpoint of MQTT.\n");
+            printf("--authentication-generic\n get access toekn.\n");
             break;
             
         case '?':

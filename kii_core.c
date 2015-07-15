@@ -1194,11 +1194,15 @@ prv_kii_core_http_set_content_length_header(
         kii_core_t* kii,
         size_t content_length)
 {
-    char content_length_str[8];
-    kii_memset(content_length_str, 0x00, 8);
-    prv_content_length_str(content_length, content_length_str, 8);
-    return kii->http_set_header_cb(&(kii->http_context), "content_length",
-            content_length_str);
+    if (content_length > 0) {
+        char content_length_str[8];
+        kii_memset(content_length_str, 0x00, 8);
+        prv_content_length_str(content_length, content_length_str, 8);
+        return kii->http_set_header_cb(&(kii->http_context), "content-length",
+                content_length_str);
+    } else {
+        return KII_HTTPC_FAIL;
+    }
 }
 
 static kii_http_client_code_t
