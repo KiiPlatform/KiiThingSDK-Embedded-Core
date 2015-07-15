@@ -1206,8 +1206,7 @@ static kii_http_client_code_t
 prv_kii_core_set_authorization_header(kii_core_t* kii)
 {
     if (kii_strlen(kii->author.access_token) <= 0) {
-        M_KII_LOG(M_REQUEST_HEADER_CB_NO_AUTH_HEADER);
-        return KII_HTTPC_FAIL;
+        return KII_HTTPC_OK;
     } else if (BEARER_LEN + kii_strlen(kii->author.access_token) <
             MAX_AUTH_BUFF_SIZE) {
         M_KII_LOG(M_REQUEST_HEADER_CB_AUTH_HEADER);
