@@ -1067,7 +1067,7 @@ static int get_endpoint(kii_core_t* kii)
     return 0;
 }
 
-static int thing_authentication_generic(kii_core_t* kii)
+static int thing_api_call_example_auth(kii_core_t* kii)
 {
     kii_error_code_t err;
     kii_state_t state;
@@ -1153,7 +1153,7 @@ int main(int argc, char** argv)
             {"authentication", no_argument, NULL,  15},
             {"api", no_argument, NULL,  16},
             {"register-with-id", no_argument, NULL,  17},
-            {"authentication-generic", no_argument, NULL, 18},
+            {"api-call-example-auth", no_argument, NULL, 18},
             {"help", no_argument, NULL, 1000},
             {0, 0, 0, 0}
         };
@@ -1240,7 +1240,7 @@ int main(int argc, char** argv)
             break;
         case 18:
             printf("authentication generic\n");
-            thing_authentication_generic(&kii);
+            thing_api_call_example_auth(&kii);
             break;
         case 1000:
             printf("to configure parameters, edit example.h\n\n");
