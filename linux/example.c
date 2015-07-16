@@ -1071,76 +1071,42 @@ static int thing_authentication_generic(kii_core_t* kii)
 {
     kii_error_code_t err;
     kii_state_t state;
-    size_t content_length;
 
-    /* create http request body */
-    content_length = strlen("{\"username\":\"VENDOR_THING_ID:");
-    content_length += strlen(EX_AUTH_VENDOR_ID);
-    content_length += strlen("\",\"password\":\"");
-    content_length += strlen(EX_AUTH_VENDOR_PASS);
-    content_length += strlen("\"}");
-
-    if (kii_core_http_append_body_start(kii) != KIIE_OK) {
+    if (kii_core_api_call_start(kii, "POST", "api/oauth2/token",
+                    "application/json", KII_FALSE) != KIIE_OK) {
         printf("execution failed.\n");
         return 1;
     }
-    if (kii_core_http_append_body(kii, "{\"username\":\"VENDOR_THING_ID:",
+    if (kii_core_api_call_append_body(kii, "{\"username\":\"VENDOR_THING_ID:",
                     strlen("{\"username\":\"VENDOR_THING_ID:")) != KIIE_OK) {
         printf("execution failed.\n");
         return 1;
     }
-    if (kii_core_http_append_body(kii, EX_AUTH_VENDOR_ID,
+    if (kii_core_api_call_append_body(kii, EX_AUTH_VENDOR_ID,
                     strlen(EX_AUTH_VENDOR_ID)) != KIIE_OK) {
         printf("execution failed.\n");
         return 1;
     }
-    if (kii_core_http_append_body(kii, "\",\"password\":\"",
+    if (kii_core_api_call_append_body(kii, "\",\"password\":\"",
                     strlen("\",\"password\":\"")) != KIIE_OK) {
         printf("execution failed.\n");
         return 1;
     }
-    if (kii_core_http_append_body(kii, EX_AUTH_VENDOR_PASS,
+    if (kii_core_api_call_append_body(kii, EX_AUTH_VENDOR_PASS,
                     strlen(EX_AUTH_VENDOR_PASS)) != KIIE_OK) {
         printf("execution failed.\n");
         return 1;
     }
-    if (kii_core_http_append_body(kii, "\"}", strlen("\"}")) != KIIE_OK) {
-        printf("execution failed.\n");
-        return 1;
-    }
-    if (kii_core_http_append_body_end(kii) != KIIE_OK) {
+    if (kii_core_api_call_append_body(kii, "\"}", strlen("\"}")) != KIIE_OK) {
         printf("execution failed.\n");
         return 1;
     }
 
-    // set request header.
-    if (kii_core_set_default_request_headers(kii, "application/json",
-                    content_length) != KIIE_OK) {
+    if (kii_core_api_call_end(kii) != KIIE_OK) {
         printf("execution failed.\n");
         return 1;
     }
 
-    // set request line.
-    if (kii_core_append_path_start(kii) != KIIE_OK) {
-        printf("execution failed.\n");
-        return 1;
-    }
-    if (kii_core_append_path(kii, "api/oauth2/token") != KIIE_OK) {
-        printf("execution failed.\n");
-        return 1;
-    }
-    if (kii_core_append_path_end(kii) != KIIE_OK) {
-        printf("execution failed.\n");
-        return 1;
-    }
-    if (kii_core_set_request_line(kii, "POST") != KIIE_OK) {
-        printf("execution failed.\n");
-        return 1;
-    }
-    if (kii_core_set_ready(kii) != KIIE_OK) {
-        printf("execution failed.\n");
-        return 1;
-    }
     print_request(kii);
     do {
         err = kii_core_run(kii);
