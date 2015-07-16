@@ -578,6 +578,22 @@ kii_core_api_call(
         char* header,
         ...);
 
+/** start to create request for REST API.
+ *
+ * Among this function and kii_core_api_call_end(kii_core_t*), you can
+ * call kii_core_api_call_append_body(kii_core_t*, const char* size_t)
+ * and kii_core_api_call_append_header(kii_core_t*, const char*, const
+ * char*) any number of times.
+ *
+ * @param [in] kii SDK object.
+ * @param [in] http_method method of http request.
+ * @param [in] resource_path resource path of http request.
+ * @param [in] content_type content type of http_body.
+ * @param [in] set_authentication_header a flag to set or not
+ * authentication header.
+ * @return result of preparation. if KIIE_OK, preparation is
+ * succeeded, otherwise failed
+ */
 kii_error_code_t kii_core_api_call_start(
         kii_core_t* kii,
         const char* http_method,
@@ -585,17 +601,52 @@ kii_error_code_t kii_core_api_call_start(
         const char* content_type,
         kii_bool_t set_authentication_header);
 
+/** append request body.
+ *
+ * This function must be called among
+ * kii_core_api_call_start(kii_core_t*, const char*, const char*,
+ * const char*, kii_bool_t) and kii_core_api_call_end(kii_core_t*).
+ *
+ * @param [in] kii SDK object.
+ * @param [in] body_data appended body data.
+ * @param [in] body_size appended body data size.
+ * @return result of appending. if KIIE_OK appending is succeeded,
+ * otherwise failed.
+ */
 kii_error_code_t kii_core_api_call_append_body(
         kii_core_t* kii,
         const char* body_data,
         size_t body_size);
 
+/** append request header.
+ *
+ * This function must be called among
+ * kii_core_api_call_start(kii_core_t*, const char*, const char*,
+ * const char*, kii_bool_t) and kii_core_api_call_end(kii_core_t*).
+ *
+ * @param [in] kii SDK object.
+ * @param [in] key key of http header.
+ * @param [in] value value of http header.
+ * @return result of appending. if KIIE_OK appending is succeeded,
+ * otherwise failed.
+ */
 kii_error_code_t
-kii_core_append_header(
+kii_core_api_call_append_header(
         kii_core_t* kii,
         const char* key,
         const char* value);
 
+/** End of creation of request for REST API.
+ *
+ * If you call kii_core_api_call_start(kii_core_t*, const char*, const
+ * char*, const char*, kii_bool_t) and
+ * kii_core_api_call_end(kii_core_t*), you must call this function at
+ * the end of creation of request.
+ *
+ * @param [in] kii SDK object.
+ * @return result of closing request creation if KIIE_OK it is
+ * succeeded, otherwise failed.
+ */
 kii_error_code_t kii_core_api_call_end(kii_core_t* kii);
 
 #ifdef __cplusplus

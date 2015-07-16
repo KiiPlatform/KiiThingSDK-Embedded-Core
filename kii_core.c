@@ -1281,7 +1281,7 @@ kii_core_api_call_append_body(
 }
 
 kii_error_code_t
-kii_core_append_request_header(
+kii_core_api_call_append_header(
         kii_core_t* kii,
         const char* key,
         const char* value)
