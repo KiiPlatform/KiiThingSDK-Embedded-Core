@@ -38,8 +38,6 @@ typedef struct context_t
     int sent_size;
     int received_size;
 
-    char* request_line_position;
-    char* header_position;
     char* body_position;
     size_t sending_size;
 } context_t;
@@ -188,50 +186,14 @@ kii_http_client_code_t
     ctx = (context_t*)http_context->app_context;
     strncpy(ctx->host, host, strlen(host));
 
-    if (ctx->header_position == NULL && ctx->body_position == NULL) {
-        /* TODO: prevent overflow. */
-        ctx->sending_size =
-            sprintf(http_context->buffer,
-                    "%s https://%s/%s HTTP/1.1\r\n", method, host, path);
-    } else {
-        /* TODO: prevent overflow. */
-        char* buf = http_context->buffer;
-        size_t len = strlen(method) + strlen(host) + strlen(path) + 21;
-        memmove(buf + len, buf, ctx->sending_size);
-        buf[ctx->sending_size + len] = '\0';
-        if (ctx->header_position != NULL) {
-            ctx->header_position += len;
-        }
-        if (ctx->body_position != NULL) {
-            ctx->body_position += len;
-        }
-        ctx->sending_size += len;
+    memset(http_context->buffer, 0x00, http_context->buffer_size);
 
-        len = strlen(method);
-        memcpy(buf, method, len);
-        buf += len;
+    /* TODO: prevent overflow. */
+    ctx->sending_size =
+        sprintf(http_context->buffer,
+                "%s https://%s/%s HTTP/1.1\r\n", method, host, path);
 
-        len = sizeof(" https://") - 1;
-        memcpy(buf, " https://", len);
-        buf += len;
-
-        len = strlen(host);
-        memcpy(buf, host, len);
-        buf += len;
-
-        len = sizeof("/") - 1;
-        memcpy(buf, "/", len);
-        buf += len;
-
-        len = strlen(path);
-        memcpy(buf, path, len);
-        buf += len;
-
-        len = sizeof(" HTTP/1.1\r\n") - 1;
-        memcpy(buf, " HTTP/1.1\r\n", len);
-    }
-
-    ctx->request_line_position = http_context->buffer;
+    ctx->body_position = http_context->buffer + ctx->sending_size;
     return KII_HTTPC_OK;
 }
 
@@ -242,55 +204,40 @@ kii_http_client_code_t
         const char* value)
 {
     context_t* app_context = (context_t*)http_context->app_context;
-
-    if (app_context->body_position == NULL) {
-        char* reqBuff = http_context->buffer;
-        if (app_context->header_position == NULL) {
-            if (app_context->request_line_position == NULL) {
-                app_context->header_position = http_context->buffer;
-                http_context->buffer[0] = '\0';
-            } else {
-                app_context->header_position =
-                    &http_context->buffer[app_context->sending_size];
-            }
-        }
-        /* TODO: prevent overflow. */
-        strcat(reqBuff, key);
-        strcat(reqBuff, ":");
-        strcat(reqBuff, value);
-        strcat(reqBuff, "\r\n");
-        app_context->sending_size += (strlen(key) + strlen(value) + 3);
-    } else {
-        /* TODO: prevent overflow. */
-        size_t len = strlen(key) + strlen(value) + 3;
-        size_t body_size = app_context->sending_size -
+    char* insert_positin = app_context->body_position;
+    size_t header_size = 0;
+    size_t body_size = app_context->sending_size -
             (app_context->body_position - http_context->buffer);
-        char* insert_positin = app_context->body_position;
-        memmove(app_context->body_position + len, app_context->body_position,
-                body_size);
-        app_context->body_position += len;
-        http_context->buffer[app_context->sending_size + len] = '\0';
-        if (app_context->header_position == NULL) {
-            app_context->header_position = insert_positin;
-        }
+    size_t len;
+    header_size = strlen(key);
+    header_size += strlen(":");
+    header_size += strlen(value);
+    header_size += strlen("\r\n");
 
-        app_context->sending_size += len;
+    /* TODO: prevent overflow. */
+    // move body.
+    memmove(app_context->body_position + header_size,
+            app_context->body_position, body_size);
+    app_context->body_position += header_size;
+    http_context->buffer[app_context->sending_size + header_size] = '\0';
 
-        len = strlen(key);
-        memcpy(insert_positin, key, len);
-        insert_positin += len;
+    // set header.
+    len = strlen(key);
+    memcpy(insert_positin, key, len);
+    insert_positin += len;
 
-        len = sizeof(":") - 1;
-        memcpy(insert_positin, ":", len);
-        insert_positin += len;
+    len = strlen(":");
+    memcpy(insert_positin, ":", len);
+    insert_positin += len;
 
-        len = strlen(value);
-        memcpy(insert_positin, value, len);
-        insert_positin += len;
+    len = strlen(value);
+    memcpy(insert_positin, value, len);
+    insert_positin += len;
 
-        len = sizeof("\r\n") - 1;
-        memcpy(insert_positin, "\r\n", len);
-    }
+    len = strlen("\r\n");
+    memcpy(insert_positin, "\r\n", len);
+
+    app_context->sending_size += header_size;
     return KII_HTTPC_OK;
 }
 
@@ -300,18 +247,6 @@ static kii_http_client_code_t append_body(
         size_t data_len)
 {
     char* reqBuff = http_context->buffer;
-    context_t* app_context = (context_t*)http_context->app_context;
-
-    if (app_context->body_position == NULL) {
-        if (app_context->request_line_position == NULL &&
-                app_context->header_position == NULL) {
-            app_context->body_position = http_context->buffer;
-            http_context->buffer[0] = '\0';
-        } else {
-            app_context->body_position =
-                &http_context->buffer[app_context->sending_size];
-        }
-    }
 
     if ((strlen(reqBuff) + data_len + 1) > http_context->buffer_size) {
         return KII_HTTPC_FAIL;
@@ -322,7 +257,8 @@ static kii_http_client_code_t append_body(
     }
 
     strncat(reqBuff, data, data_len);
-    app_context->sending_size = strlen(http_context->buffer);
+    ((context_t*)(http_context->app_context))->sending_size =
+        strlen(http_context->buffer);
     return KII_HTTPC_OK;
 }
 
@@ -446,10 +382,6 @@ kii_http_client_code_t
                 }
                 *response_body = bodyPtr;
                 ctx->state = PRV_SSL_STATE_IDLE;
-                ctx->request_line_position = NULL;
-                ctx->header_position = NULL;
-                ctx->body_position = NULL;
-                ctx->sending_size = 0;
                 return KII_HTTPC_OK;
             } else if (res == KII_HTTPC_AGAIN) {
                 return KII_HTTPC_AGAIN;
