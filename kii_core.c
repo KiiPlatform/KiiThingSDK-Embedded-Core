@@ -42,9 +42,9 @@
 
 #define M_KII_CONST_STR_LEN(str) (sizeof(str) - 1)
 #define M_KII_APPEND_CONSTANT_STR(kii, conststr) \
-    prv_kii_call_append_body_cb(kii, conststr, sizeof(conststr) - 1)
+    prv_kii_http_append_body_cb(kii, conststr, sizeof(conststr) - 1)
 #define M_KII_APPEND_STR(kii, str) \
-    prv_kii_call_append_body_cb(kii, str, kii_strlen(str))
+    prv_kii_http_append_body_cb(kii, str, kii_strlen(str))
 
 /*
   This is a size of authorization header.
@@ -113,7 +113,7 @@ prv_set_thing_register_path(kii_core_t* kii)
 }
 
     static kii_http_client_code_t
-prv_kii_call_set_request_line_cb(
+prv_kii_http_set_request_line_cb(
         kii_core_t* kii,
         const char* method,
         const char* resource_path)
@@ -127,7 +127,7 @@ prv_kii_call_set_request_line_cb(
 }
 
     static kii_http_client_code_t
-prv_kii_call_set_header_cb(
+prv_kii_http_set_header_cb(
         kii_core_t* kii,
         const char* key,
         const char* value)
@@ -139,7 +139,7 @@ prv_kii_call_set_header_cb(
 #endif
 }
 
-static kii_http_client_code_t prv_kii_call_append_body_start_cb(kii_core_t* kii)
+static kii_http_client_code_t prv_kii_http_append_body_start_cb(kii_core_t* kii)
 {
 #ifdef USE_DEFAULT_HTTP_CLIENT
     // TODO: implement me.
@@ -149,7 +149,7 @@ static kii_http_client_code_t prv_kii_call_append_body_start_cb(kii_core_t* kii)
 }
 
     static kii_http_client_code_t
-prv_kii_call_append_body_cb(
+prv_kii_http_append_body_cb(
         kii_core_t* kii,
         const char* body,
         size_t body_len)
@@ -161,7 +161,7 @@ prv_kii_call_append_body_cb(
 #endif
 }
 
-static kii_http_client_code_t prv_kii_call_append_body_end_cb(kii_core_t* kii)
+static kii_http_client_code_t prv_kii_http_append_body_end_cb(kii_core_t* kii)
 {
 #ifdef USE_DEFAULT_HTTP_CLIENT
     // TODO: implement me.
@@ -180,13 +180,13 @@ prv_http_request_line_and_headers(
         const char* etag)
 {
     kii_http_client_code_t result;
-    result = prv_kii_call_set_request_line_cb(kii, method, resource_path);
+    result = prv_kii_http_set_request_line_cb(kii, method, resource_path);
     if (result != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
         return KIIE_FAIL;
     }
 
-    result = prv_kii_call_set_header_cb(
+    result = prv_kii_http_set_header_cb(
             kii,
             "x-kii-appid",
             kii->app_id);
@@ -195,7 +195,7 @@ prv_http_request_line_and_headers(
         return KIIE_FAIL;
     }
 
-    result = prv_kii_call_set_header_cb(
+    result = prv_kii_http_set_header_cb(
             kii,
             "x-kii-appkey",
             kii->app_key);
@@ -205,7 +205,7 @@ prv_http_request_line_and_headers(
     }
 
     if (content_type != NULL) {
-        result = prv_kii_call_set_header_cb(
+        result = prv_kii_http_set_header_cb(
                 kii,
                 "content-type",
                 content_type
@@ -226,7 +226,7 @@ prv_http_request_line_and_headers(
         }
         kii_memset(bearer_buff, 0x00, MAX_AUTH_BUFF_SIZE);
         kii_sprintf(bearer_buff, "%s%s", bearer, access_token);
-        result = prv_kii_call_set_header_cb(
+        result = prv_kii_http_set_header_cb(
                 kii,
                 "authorization",
                 bearer_buff
@@ -238,7 +238,7 @@ prv_http_request_line_and_headers(
     }
 
     if (etag != NULL) {
-        result = prv_kii_call_set_header_cb(
+        result = prv_kii_http_set_header_cb(
                 kii,
                 "if-match",
                 etag 
@@ -275,7 +275,7 @@ prv_http_request(
         body_len = kii_strlen(body);
         kii_memset(content_length, 0x00, 8);
         prv_content_length_str(body_len, content_length, 8);
-        result = prv_kii_call_set_header_cb(
+        result = prv_kii_http_set_header_cb(
                 kii,
                 "content-length",
                 content_length
@@ -285,13 +285,13 @@ prv_http_request(
             return KIIE_FAIL;
         }
 
-        result = prv_kii_call_append_body_start_cb(kii);
+        result = prv_kii_http_append_body_start_cb(kii);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
             return KIIE_FAIL;
         }
 
-        result = prv_kii_call_append_body_cb(
+        result = prv_kii_http_append_body_cb(
                 kii,
                 body, body_len);
         if (result != KII_HTTPC_OK) {
@@ -299,19 +299,19 @@ prv_http_request(
             return KIIE_FAIL;
         }
 
-        result = prv_kii_call_append_body_end_cb(kii);
+        result = prv_kii_http_append_body_end_cb(kii);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
             return KIIE_FAIL;
         }
     } else {
-        result = prv_kii_call_append_body_start_cb(kii);
+        result = prv_kii_http_append_body_start_cb(kii);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
             return KIIE_FAIL;
         }
 
-        result = prv_kii_call_append_body_end_cb(kii);
+        result = prv_kii_http_append_body_end_cb(kii);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
             return KIIE_FAIL;
@@ -448,12 +448,12 @@ kii_core_register_thing_with_id(
     content_length += M_KII_CONST_STR_LEN("\"}");
     kii_memset(content_length_str, 0x00, 8);
     prv_content_length_str(content_length, content_length_str, 8);
-    if (prv_kii_call_set_header_cb(kii,
+    if (prv_kii_http_set_header_cb(kii,
                      "content-length", content_length_str) != KII_HTTPC_OK) {
         return KIIE_FAIL;
     }
 
-    if (prv_kii_call_append_body_start_cb(kii) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_body_start_cb(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -487,7 +487,7 @@ kii_core_register_thing_with_id(
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (prv_kii_call_append_body_end_cb(kii) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_body_end_cb(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -536,12 +536,12 @@ kii_core_thing_authentication(kii_core_t* kii,
 
     kii_memset(content_length_str, 0x00, 8);
     prv_content_length_str(content_length, content_length_str, 8);
-    if (prv_kii_call_set_header_cb(kii,
+    if (prv_kii_http_set_header_cb(kii,
                     "content-length", content_length_str) != KII_HTTPC_OK) {
         return KIIE_FAIL;
     }
 
-    if (prv_kii_call_append_body_start_cb(kii) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_body_start_cb(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -566,7 +566,7 @@ kii_core_thing_authentication(kii_core_t* kii,
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (prv_kii_call_append_body_end_cb(kii) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_body_end_cb(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -969,11 +969,11 @@ kii_core_install_thing_push(
     content_length += M_KII_CONST_STR_LEN("}");
     kii_memset(content_length_str, 0x00, 8);
     prv_content_length_str(content_length, content_length_str, 8);
-    if (prv_kii_call_set_header_cb(kii,
+    if (prv_kii_http_set_header_cb(kii,
                     "content-length", content_length_str) != KII_HTTPC_OK) {
         return KIIE_FAIL;
     }
-    if (prv_kii_call_append_body_start_cb(kii) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_body_start_cb(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -991,7 +991,7 @@ kii_core_install_thing_push(
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (prv_kii_call_append_body_end_cb(kii) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_body_end_cb(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -1049,14 +1049,14 @@ kii_core_api_call(
     memset(key, 0x00, sizeof(key));
     memset(value, 0x00, sizeof(value));
 
-    result = prv_kii_call_set_request_line_cb(kii, http_method, resource_path);
+    result = prv_kii_http_set_request_line_cb(kii, http_method, resource_path);
     if (result != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
         return KIIE_FAIL;
     }
 
     /* set app id */
-    result = prv_kii_call_set_header_cb(
+    result = prv_kii_http_set_header_cb(
             kii,
             "x-kii-appid",
             kii->app_id);
@@ -1066,7 +1066,7 @@ kii_core_api_call(
     }
 
     /* set app key */
-    result = prv_kii_call_set_header_cb(
+    result = prv_kii_http_set_header_cb(
             kii,
             "x-kii-appkey",
             kii->app_key);
@@ -1077,7 +1077,7 @@ kii_core_api_call(
 
     /* set content-type */
     if (content_type != NULL) {
-        result = prv_kii_call_set_header_cb(
+        result = prv_kii_http_set_header_cb(
                 kii,
                 "content-type",
                 content_type
@@ -1093,7 +1093,7 @@ kii_core_api_call(
     memset(value, 0x00, sizeof(value));
     kii_sprintf(value, "%s%s", "bearer ", access_token);
     if (access_token != NULL) {
-        result = prv_kii_call_set_header_cb(
+        result = prv_kii_http_set_header_cb(
                 kii,
                 "authorization",
                 value);
@@ -1114,7 +1114,7 @@ kii_core_api_call(
         strncpy(value, ptr + 1, sizeof(value));
         M_KII_LOG_FORMAT(kii->logger_cb("key: %s\n", key));
         M_KII_LOG_FORMAT(kii->logger_cb("value: %s\n", value));
-        result = prv_kii_call_set_header_cb(
+        result = prv_kii_http_set_header_cb(
                 kii,
                 key,
                 value);
@@ -1135,7 +1135,7 @@ kii_core_api_call(
             strncpy(value, ptr + 1, sizeof(value));
             M_KII_LOG_FORMAT(kii->logger_cb("key: %s\n", key));
             M_KII_LOG_FORMAT(kii->logger_cb("value: %s\n", value));
-            result = prv_kii_call_set_header_cb(
+            result = prv_kii_http_set_header_cb(
                     kii,
                     key,
                     value);
@@ -1151,7 +1151,7 @@ kii_core_api_call(
         char content_length[8];
         kii_memset(content_length, 0x00, 8);
         prv_content_length_str(body_size, content_length, 8);
-        result = prv_kii_call_set_header_cb(
+        result = prv_kii_http_set_header_cb(
                 kii,
                 "content-length",
                 content_length
@@ -1160,20 +1160,20 @@ kii_core_api_call(
             M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
             goto exit;
         }
-        result = prv_kii_call_append_body_start_cb(kii);
+        result = prv_kii_http_append_body_start_cb(kii);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
             goto exit;
         }
 
-        result = prv_kii_call_append_body_cb(kii, http_body,
+        result = prv_kii_http_append_body_cb(kii, http_body,
                 body_size);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
             goto exit;
         }
 
-        result = prv_kii_call_append_body_end_cb(kii);
+        result = prv_kii_http_append_body_end_cb(kii);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
             goto exit;
@@ -1182,13 +1182,13 @@ kii_core_api_call(
         // null teminated.
         kii->http_context.total_send_size = strlen(kii->http_context.buffer);
     } else {
-        result = prv_kii_call_append_body_start_cb(kii);
+        result = prv_kii_http_append_body_start_cb(kii);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
             goto exit;
         }
 
-        result = prv_kii_call_append_body_end_cb(kii);
+        result = prv_kii_http_append_body_end_cb(kii);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
             goto exit;
@@ -1218,7 +1218,7 @@ prv_kii_core_set_authorization_header(kii_core_t* kii)
         char access_token[MAX_AUTH_BUFF_SIZE];
         memset(access_token, 0x00, sizeof(access_token));
         kii_sprintf(access_token, "%s%s", BEARER, kii->author.access_token);
-        return prv_kii_call_set_header_cb(kii, "authorization", access_token);
+        return prv_kii_http_set_header_cb(kii, "authorization", access_token);
     }
 }
 
@@ -1231,24 +1231,24 @@ kii_core_api_call_start(
         kii_bool_t set_authentication_header)
 {
     // set request line.
-    if (prv_kii_call_set_request_line_cb(kii, http_method,
+    if (prv_kii_http_set_request_line_cb(kii, http_method,
                     resource_path) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
         return KIIE_FAIL;
     }
 
     // set default headers.
-    if (prv_kii_call_set_header_cb(kii, "x-kii-appid",
+    if (prv_kii_http_set_header_cb(kii, "x-kii-appid",
                     kii->app_id) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (prv_kii_call_set_header_cb(kii, "x-kii-appkey",
+    if (prv_kii_http_set_header_cb(kii, "x-kii-appkey",
                     kii->app_key) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (prv_kii_call_set_header_cb(kii, "content-type",
+    if (prv_kii_http_set_header_cb(kii, "content-type",
                     content_type) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
         return KIIE_FAIL;
@@ -1261,7 +1261,7 @@ kii_core_api_call_start(
     }
 
     // start body cb.
-    if (prv_kii_call_append_body_start_cb(kii) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_body_start_cb(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -1280,7 +1280,7 @@ prv_kii_core_http_set_content_length_header(
         char content_length_str[8];
         kii_memset(content_length_str, 0x00, 8);
         prv_content_length_str(content_length, content_length_str, 8);
-        return prv_kii_call_set_header_cb(kii, "content-length",
+        return prv_kii_http_set_header_cb(kii, "content-length",
                 content_length_str);
     } else {
         return KII_HTTPC_FAIL;
@@ -1290,7 +1290,7 @@ prv_kii_core_http_set_content_length_header(
 kii_error_code_t kii_core_api_call_end(kii_core_t* kii)
 {
     // close body cb.
-    if (prv_kii_call_append_body_end_cb(kii) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_body_end_cb(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -1319,7 +1319,7 @@ kii_core_api_call_append_body(
         const char* body_data,
         size_t body_size)
 {
-    if (prv_kii_call_append_body_cb(kii, body_data, body_size) !=
+    if (prv_kii_http_append_body_cb(kii, body_data, body_size) !=
             KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
@@ -1334,7 +1334,7 @@ kii_core_api_call_append_header(
         const char* key,
         const char* value)
 {
-    if (prv_kii_call_set_header_cb(kii,key, value) != KIIE_OK) {
+    if (prv_kii_http_set_header_cb(kii,key, value) != KIIE_OK) {
         M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
         return KIIE_FAIL;
     }
