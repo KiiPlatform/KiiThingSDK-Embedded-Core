@@ -113,6 +113,20 @@ prv_set_thing_register_path(kii_core_t* kii)
             kii->app_id);
 }
 
+    static kii_http_client_code_t
+prv_kii_call_set_request_line_cb(
+        kii_core_t* kii,
+        const char* method,
+        const char* resource_path)
+{
+#ifdef USE_DEFAULT_HTTP_CLIENT
+    // TODO: implement me.
+#else
+    return kii->http_set_request_line_cb(&(kii->http_context),
+            method, kii->app_host, resource_path);
+#endif
+}
+
     static kii_error_code_t 
 prv_http_request_line_and_headers(
         kii_core_t* kii,
@@ -123,11 +137,7 @@ prv_http_request_line_and_headers(
         const char* etag)
 {
     kii_http_client_code_t result;
-    result = kii->http_set_request_line_cb(
-            &(kii->http_context),
-            method,
-            kii->app_host,
-            resource_path);
+    result = prv_kii_call_set_request_line_cb(kii, method, resource_path);
     if (result != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
         return KIIE_FAIL;
@@ -996,11 +1006,7 @@ kii_core_api_call(
     memset(key, 0x00, sizeof(key));
     memset(value, 0x00, sizeof(value));
 
-    result = kii->http_set_request_line_cb(
-            &(kii->http_context),
-            http_method,
-            kii->app_host,
-            resource_path);
+    result = prv_kii_call_set_request_line_cb(kii, http_method, resource_path);
     if (result != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
         return KIIE_FAIL;
@@ -1183,8 +1189,8 @@ kii_core_api_call_start(
         kii_bool_t set_authentication_header)
 {
     // set request line.
-    if (kii->http_set_request_line_cb(&(kii->http_context), http_method,
-                    kii->app_host, resource_path) != KII_HTTPC_OK) {
+    if (prv_kii_call_set_request_line_cb(kii, http_method,
+                    resource_path) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
         return KIIE_FAIL;
     }
