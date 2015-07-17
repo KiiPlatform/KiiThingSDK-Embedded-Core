@@ -37,6 +37,9 @@ typedef struct context_t
     int last_chunk;
     int sent_size;
     int received_size;
+
+    char* body_position;
+    size_t sending_size;
 } context_t;
 
 static kii_http_client_code_t prv_ssl_connect(kii_http_context_t* http_context,
@@ -178,16 +181,19 @@ kii_http_client_code_t
         const char* host,
         const char* path)
 {
-    char* reqBuff;
     context_t* ctx;
 
     ctx = (context_t*)http_context->app_context;
     strncpy(ctx->host, host, strlen(host));
 
-    reqBuff = http_context->buffer;
-    /* TODO: prevent overflow. */
-    sprintf(reqBuff, "%s https://%s/%s HTTP/1.1\r\n", method, host, path);
+    memset(http_context->buffer, 0x00, http_context->buffer_size);
 
+    /* TODO: prevent overflow. */
+    ctx->sending_size =
+        sprintf(http_context->buffer,
+                "%s https://%s/%s HTTP/1.1\r\n", method, host, path);
+
+    ctx->body_position = http_context->buffer + ctx->sending_size;
     return KII_HTTPC_OK;
 }
 
@@ -197,16 +203,45 @@ kii_http_client_code_t
         const char* key,
         const char* value)
 {
+    context_t* app_context = (context_t*)http_context->app_context;
+    char* insert_positin = app_context->body_position;
+    size_t header_size = 0;
+    size_t body_size = app_context->sending_size -
+            (app_context->body_position - http_context->buffer);
+    size_t len;
+    header_size = strlen(key);
+    header_size += strlen(":");
+    header_size += strlen(value);
+    header_size += strlen("\r\n");
+
     /* TODO: prevent overflow. */
-    char* reqBuff = http_context->buffer;
-    strcat(reqBuff, key);
-    strcat(reqBuff, ":");
-    strcat(reqBuff, value);
-    strcat(reqBuff, "\r\n");
+    // move body.
+    memmove(app_context->body_position + header_size,
+            app_context->body_position, body_size);
+    app_context->body_position += header_size;
+    http_context->buffer[app_context->sending_size + header_size] = '\0';
+
+    // set header.
+    len = strlen(key);
+    memcpy(insert_positin, key, len);
+    insert_positin += len;
+
+    len = strlen(":");
+    memcpy(insert_positin, ":", len);
+    insert_positin += len;
+
+    len = strlen(value);
+    memcpy(insert_positin, value, len);
+    insert_positin += len;
+
+    len = strlen("\r\n");
+    memcpy(insert_positin, "\r\n", len);
+
+    app_context->sending_size += header_size;
     return KII_HTTPC_OK;
 }
 
-kii_http_client_code_t append_body(
+static kii_http_client_code_t append_body(
         kii_http_context_t* http_context,
         const char* data,
         size_t data_len)
@@ -222,6 +257,8 @@ kii_http_client_code_t append_body(
     }
 
     strncat(reqBuff, data, data_len);
+    ((context_t*)(http_context->app_context))->sending_size =
+        strlen(http_context->buffer);
     return KII_HTTPC_OK;
 }
 
@@ -962,6 +999,60 @@ static int get_endpoint(kii_core_t* kii)
     return 0;
 }
 
+static int thing_api_call_example_auth(kii_core_t* kii)
+{
+    kii_error_code_t err;
+    kii_state_t state;
+
+    if (kii_core_api_call_start(kii, "POST", "api/oauth2/token",
+                    "application/json", KII_FALSE) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    if (kii_core_api_call_append_body(kii, "{\"username\":\"VENDOR_THING_ID:",
+                    strlen("{\"username\":\"VENDOR_THING_ID:")) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    if (kii_core_api_call_append_body(kii, EX_AUTH_VENDOR_ID,
+                    strlen(EX_AUTH_VENDOR_ID)) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    if (kii_core_api_call_append_body(kii, "\",\"password\":\"",
+                    strlen("\",\"password\":\"")) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    if (kii_core_api_call_append_body(kii, EX_AUTH_VENDOR_PASS,
+                    strlen(EX_AUTH_VENDOR_PASS)) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    if (kii_core_api_call_append_body(kii, "\"}", strlen("\"}")) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+
+    if (kii_core_api_call_end(kii) != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+
+    print_request(kii);
+    do {
+        err = kii_core_run(kii);
+        state = kii_core_get_state(kii);
+    } while (state != KII_STATE_IDLE);
+    if (err != KIIE_OK) {
+        printf("execution failed.\n");
+        return 1;
+    }
+    print_response(kii);
+    parse_response(kii->response_body);
+    return 0;
+}
+
 int main(int argc, char** argv)
 {
     context_t ctx;
@@ -994,6 +1085,7 @@ int main(int argc, char** argv)
             {"authentication", no_argument, NULL,  15},
             {"api", no_argument, NULL,  16},
             {"register-with-id", no_argument, NULL,  17},
+            {"api-call-example-auth", no_argument, NULL, 18},
             {"help", no_argument, NULL, 1000},
             {0, 0, 0, 0}
         };
@@ -1078,6 +1170,10 @@ int main(int argc, char** argv)
             printf("register with id\n");
             register_thing_with_id(&kii);
             break;
+        case 18:
+            printf("api call example authentication\n");
+            thing_api_call_example_auth(&kii);
+            break;
         case 1000:
             printf("to configure parameters, edit example.h\n\n");
             printf("commands: \n");
@@ -1097,6 +1193,7 @@ int main(int argc, char** argv)
             printf("--unsubscribe-topic\n unsubscribe to topic.\n");
             printf("--install-push\n install push.\n");
             printf("--get-endpoint\n get endpoint of MQTT.\n");
+            printf("--api-call-example-auth\n api call example for authentication.\n");
             break;
             
         case '?':

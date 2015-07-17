@@ -8,6 +8,7 @@
 #define M_REQUEST_LINE_CB_FAILED "failed to set request line\n"
 #define M_REQUEST_HEADER_CB_FAILED "failed to set request header\n"
 #define M_REQUEST_HEADER_CB_AUTH_HEADER "access token is too long\n"
+#define M_REQUEST_HEADER_CB_NO_AUTH_HEADER "there is no access token\n"
 #define M_REQUEST_APPEND_BODY_START_CB_FAILED "failed to start appending request body\n"
 #define M_REQUEST_APPEND_BODY_CB_FAILED "failed to append request body\n"
 #define M_REQUEST_APPEND_BODY_END_CB_FAILED "failed to end appending request body\n"
@@ -53,6 +54,9 @@
   changed.
 */
 #define MAX_AUTH_BUFF_SIZE 128
+
+#define BEARER "bearer"
+#define BEARER_LEN sizeof(BEARER) - 1
 
 const char DEFAULT_OBJECT_CONTENT_TYPE[] = "application/json";
 
@@ -1150,4 +1154,143 @@ exit:
     va_end(ap);
     return ret;
 }
+
+static kii_http_client_code_t
+prv_kii_core_set_authorization_header(kii_core_t* kii)
+{
+    if (kii_strlen(kii->author.access_token) <= 0) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_NO_AUTH_HEADER);
+        return KII_HTTPC_FAIL;
+    } else if (BEARER_LEN + kii_strlen(kii->author.access_token) <
+            MAX_AUTH_BUFF_SIZE) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_AUTH_HEADER);
+        return KII_HTTPC_FAIL;
+    } else {
+        char access_token[MAX_AUTH_BUFF_SIZE];
+        memset(access_token, 0x00, sizeof(access_token));
+        kii_sprintf(access_token, "%s%s", BEARER, kii->author.access_token);
+        return kii->http_set_header_cb(&(kii->http_context), "authorization",
+                access_token);
+    }
+}
+
+kii_error_code_t
+kii_core_api_call_start(
+        kii_core_t* kii,
+        const char* http_method,
+        const char* resource_path,
+        const char* content_type,
+        kii_bool_t set_authentication_header)
+{
+    // set request line.
+    if (kii->http_set_request_line_cb(&(kii->http_context), http_method,
+                    kii->app_host, resource_path) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    // set default headers.
+    if (kii->http_set_header_cb(&(kii->http_context), "x-kii-appid",
+                    kii->app_id) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (kii->http_set_header_cb(&(kii->http_context), "x-kii-appkey",
+                    kii->app_key) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (kii->http_set_header_cb(&(kii->http_context), "content-type",
+                    content_type) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    if (set_authentication_header == KII_TRUE) {
+        if (prv_kii_core_set_authorization_header(kii) != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+            return KIIE_FAIL;
+        }
+    }
+
+    // start body cb.
+    if (kii->http_append_body_start_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    kii->_content_length = 0;
+
+    return KIIE_OK;
+
+}
+
+static kii_http_client_code_t
+prv_kii_core_http_set_content_length_header(
+        kii_core_t* kii,
+        size_t content_length)
+{
+    if (content_length > 0) {
+        char content_length_str[8];
+        kii_memset(content_length_str, 0x00, 8);
+        prv_content_length_str(content_length, content_length_str, 8);
+        return kii->http_set_header_cb(&(kii->http_context), "content-length",
+                content_length_str);
+    } else {
+        return KII_HTTPC_FAIL;
+    }
+}
+
+kii_error_code_t kii_core_api_call_end(kii_core_t* kii)
+{
+    // close body cb.
+    if (kii->http_append_body_end_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    // TODO: fix this. Don't assume kii->http_context.buffer is
+    // null teminated.
+    kii->http_context.total_send_size = kii_strlen(kii->http_context.buffer);
+
+    // set content length.
+    if (prv_kii_core_http_set_content_length_header(kii,
+                    kii->_content_length) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    // set reday.
+    if (kii->_state != KII_STATE_IDLE) {
+        return KIIE_FAIL;
+    }
+    kii->_state = KII_STATE_READY;
+    return KIIE_OK;
+}
+
+kii_error_code_t
+kii_core_api_call_append_body(
+        kii_core_t* kii,
+        const char* body_data,
+        size_t body_size)
+{
+    if (kii->http_append_body_cb(&(kii->http_context), body_data, body_size) !=
+            KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    kii->_content_length += body_size;
+    return KIIE_OK;
+}
+
+kii_error_code_t
+kii_core_api_call_append_header(
+        kii_core_t* kii,
+        const char* key,
+        const char* value)
+{
+    if (kii->http_set_header_cb(&(kii->http_context),key, value) != KIIE_OK) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+        return KIIE_FAIL;
+    }
+    return KIIE_OK;
+}
+
 /* vim:set ts=4 sts=4 sw=4 et fenc=UTF-8 ff=unix: */
