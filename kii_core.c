@@ -42,10 +42,9 @@
 
 #define M_KII_CONST_STR_LEN(str) (sizeof(str) - 1)
 #define M_KII_APPEND_CONSTANT_STR(kii, conststr) \
-    kii->http_append_body_cb(&(kii->http_context), conststr, \
-        sizeof(conststr) - 1)
+    prv_kii_call_append_body_cb(kii, conststr, sizeof(conststr) - 1)
 #define M_KII_APPEND_STR(kii, str) \
-    kii->http_append_body_cb(&(kii->http_context), str, kii_strlen(str))
+    prv_kii_call_append_body_cb(kii, str, kii_strlen(str))
 
 /*
   This is a size of authorization header.
@@ -140,13 +139,25 @@ prv_kii_call_set_header_cb(
 #endif
 }
 
-
 static kii_http_client_code_t prv_kii_call_append_body_start_cb(kii_core_t* kii)
 {
 #ifdef USE_DEFAULT_HTTP_CLIENT
     // TODO: implement me.
 #else
     return kii->http_append_body_start_cb(&(kii->http_context));
+#endif
+}
+
+    static kii_http_client_code_t
+prv_kii_call_append_body_cb(
+        kii_core_t* kii,
+        const char* body,
+        size_t body_len)
+{
+#ifdef USE_DEFAULT_HTTP_CLIENT
+    // TODO: implement me.
+#else
+    return kii->http_append_body_cb(&(kii->http_context), body, body_len);
 #endif
 }
 
@@ -271,8 +282,8 @@ prv_http_request(
             return KIIE_FAIL;
         }
 
-        result = kii->http_append_body_cb(
-                &(kii->http_context),
+        result = prv_kii_call_append_body_cb(
+                kii,
                 body, body_len);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
@@ -1146,7 +1157,7 @@ kii_core_api_call(
             goto exit;
         }
 
-        result = kii->http_append_body_cb(&(kii->http_context), http_body,
+        result = prv_kii_call_append_body_cb(kii, http_body,
                 body_size);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
@@ -1299,7 +1310,7 @@ kii_core_api_call_append_body(
         const char* body_data,
         size_t body_size)
 {
-    if (kii->http_append_body_cb(&(kii->http_context), body_data, body_size) !=
+    if (prv_kii_call_append_body_cb(kii, body_data, body_size) !=
             KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
