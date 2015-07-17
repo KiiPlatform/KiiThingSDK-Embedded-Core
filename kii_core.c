@@ -124,7 +124,13 @@ prv_kii_http_set_request_line(
 
     memset(http_context->buffer, 0x00, http_context->buffer_size);
 
-    /* TODO: prevent overflow. */
+    if (http_context->buffer_size <=
+            (kii_strlen(method) + kii_strlen(kii->app_host) +
+                    kii_strlen(resource_path) + 21)) {
+        M_KII_LOG("buffer size too short. can't insert request line.\n");
+        return KII_HTTPC_FAIL;
+    }
+
     http_context->_sending_size =
         sprintf(http_context->buffer,
                 "%s https://%s/%s HTTP/1.1\r\n", method, kii->app_host,
@@ -157,7 +163,11 @@ prv_kii_http_set_header(
     header_size += strlen(value);
     header_size += strlen("\r\n");
 
-    /* TODO: prevent overflow. */
+    if (http_context->buffer_size <=
+            header_size + http_context->_sending_size) {
+        M_KII_LOG("buffer size too short. can't insert header.\n");
+        return KII_HTTPC_FAIL;
+    }
     // move body.
     memmove(http_context->_body_position + header_size,
             http_context->_body_position, body_size);
@@ -196,8 +206,9 @@ prv_kii_http_append_body(
 #ifdef USE_DEFAULT_HTTP_CLIENT
     kii_http_context_t* http_context = &(kii->http_context);
 
-    if ((kii_strlen(http_context->buffer) + body_len + 1) >
-            http_context->buffer_size) {
+    if (http_context->buffer_size <=
+            http_context->_sending_size + body_len) {
+        M_KII_LOG("buffer size too short. can't insert body.\n");
         return KII_HTTPC_FAIL;
     }
 
