@@ -42,6 +42,12 @@ typedef struct kii_http_context_t
 	/** total size of data to be sent*/
 	size_t total_send_size;
 
+#ifdef USE_DEFAULT_HTTP_CLIENT
+    char* _body_position;
+    size_t _sending_size;
+    const char* host;
+#endif
+
     /** socket context used by the http client */
     kii_socket_context_t socket_context;
     /** socket close function callback */
@@ -207,6 +213,8 @@ typedef struct kii_core_t
 
     /** application's context object used by HTTP callback implementations. */
     kii_http_context_t http_context;
+
+#ifndef USE_DEFAULT_HTTP_CLIENT
     /** request line callback function pointer
      * Should be set before execute apis.
      */
@@ -233,6 +241,7 @@ typedef struct kii_core_t
      * Should be set before execute APIs.
      */
     KII_HTTPCB_APPEND_BODY_END http_append_body_end_cb;
+#endif
 
     /** execute HTTP request function pointer
      * Should be set before execute apis.

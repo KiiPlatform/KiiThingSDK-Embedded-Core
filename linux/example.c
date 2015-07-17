@@ -32,14 +32,16 @@ typedef struct context_t
     SSL *ssl;
     SSL_CTX *ssl_ctx;
     int sock;
-    char host[256];
     prv_ssl_state_t state;
     int last_chunk;
     int sent_size;
     int received_size;
 
+#ifndef USE_DEFAULT_HTTP_CLIENT
+    char host[256];
     char* body_position;
     size_t sending_size;
+#endif
 } context_t;
 
 static kii_http_client_code_t prv_ssl_connect(kii_http_context_t* http_context,
@@ -173,6 +175,7 @@ static kii_http_client_code_t prv_ssl_close(kii_http_context_t* http_context)
     return KII_HTTPC_OK;
 }
 
+#ifndef USE_DEFAULT_HTTP_CLIENT
 /* HTTP Callback functions */
 kii_http_client_code_t
     request_line_cb(
@@ -280,7 +283,7 @@ kii_http_client_code_t append_body_end_cb(kii_http_context_t* http_context)
 {
     return KII_HTTPC_OK;
 }
-
+#endif
 
 kii_http_client_code_t
     execute_cb(
@@ -301,7 +304,11 @@ kii_http_client_code_t
             ctx->state = PRV_SSL_STATE_CONNECT;
             return KII_HTTPC_AGAIN;
         case PRV_SSL_STATE_CONNECT:
+#ifdef USE_DEFAULT_HTTP_CLIENT
+            res = prv_ssl_connect(http_context, http_context->host);
+#else
             res = prv_ssl_connect(http_context, ctx->host);
+#endif
             if (res == KII_HTTPC_OK) {
                 ctx->state = PRV_SSL_STATE_SEND;
                 return KII_HTTPC_AGAIN;
@@ -421,11 +428,13 @@ void init(kii_core_t* kii, char* buff, context_t* ctx) {
     http_ctx->buffer = buff;
     http_ctx->buffer_size = EX_BUFFER_SIZE;
 
+#ifndef USE_DEFAULT_HTTP_CLIENT
     kii->http_set_request_line_cb = request_line_cb;
     kii->http_set_header_cb = header_cb;
     kii->http_append_body_start_cb = append_body_start_cb;
     kii->http_append_body_cb = append_body_cb;
     kii->http_append_body_end_cb = append_body_end_cb;
+#endif
     kii->http_execute_cb = execute_cb;
     kii->logger_cb = logger_cb;
 

@@ -119,7 +119,20 @@ prv_kii_http_set_request_line_cb(
         const char* resource_path)
 {
 #ifdef USE_DEFAULT_HTTP_CLIENT
-    // TODO: implement me.
+    kii_http_context_t* http_context = &(kii->http_context);
+    http_context->host = kii->app_host;
+
+    memset(http_context->buffer, 0x00, http_context->buffer_size);
+
+    /* TODO: prevent overflow. */
+    http_context->_sending_size =
+        sprintf(http_context->buffer,
+                "%s https://%s/%s HTTP/1.1\r\n", method, kii->app_host,
+                resource_path);
+
+    http_context->_body_position =
+        http_context->buffer + http_context->_sending_size;
+    return KII_HTTPC_OK;
 #else
     return kii->http_set_request_line_cb(&(kii->http_context),
             method, kii->app_host, resource_path);
@@ -133,18 +146,44 @@ prv_kii_http_set_header_cb(
         const char* value)
 {
 #ifdef USE_DEFAULT_HTTP_CLIENT
-    // TODO: implement me.
+    kii_http_context_t* http_context = &(kii->http_context);
+    char* insert_positin = http_context->_body_position;
+    size_t header_size = 0;
+    size_t body_size = http_context->_sending_size -
+            (http_context->_body_position - http_context->buffer);
+    size_t len;
+    header_size = strlen(key);
+    header_size += strlen(":");
+    header_size += strlen(value);
+    header_size += strlen("\r\n");
+
+    /* TODO: prevent overflow. */
+    // move body.
+    memmove(http_context->_body_position + header_size,
+            http_context->_body_position, body_size);
+    http_context->_body_position += header_size;
+    http_context->buffer[http_context->_sending_size + header_size] = '\0';
+
+    // set header.
+    len = kii_strlen(key);
+    memcpy(insert_positin, key, len);
+    insert_positin += len;
+
+    len = kii_strlen(":");
+    memcpy(insert_positin, ":", len);
+    insert_positin += len;
+
+    len = kii_strlen(value);
+    memcpy(insert_positin, value, len);
+    insert_positin += len;
+
+    len = kii_strlen("\r\n");
+    memcpy(insert_positin, "\r\n", len);
+
+    http_context->_sending_size += header_size;
+    return KII_HTTPC_OK;
 #else
     return kii->http_set_header_cb(&(kii->http_context), key, value);
-#endif
-}
-
-static kii_http_client_code_t prv_kii_http_append_body_start_cb(kii_core_t* kii)
-{
-#ifdef USE_DEFAULT_HTTP_CLIENT
-    // TODO: implement me.
-#else
-    return kii->http_append_body_start_cb(&(kii->http_context));
 #endif
 }
 
@@ -155,16 +194,39 @@ prv_kii_http_append_body_cb(
         size_t body_len)
 {
 #ifdef USE_DEFAULT_HTTP_CLIENT
-    // TODO: implement me.
+    kii_http_context_t* http_context = &(kii->http_context);
+
+    if ((kii_strlen(http_context->buffer) + body_len + 1) >
+            http_context->buffer_size) {
+        return KII_HTTPC_FAIL;
+    }
+
+    if (body == NULL) {
+        return KII_HTTPC_FAIL;
+    }
+
+    strncat(http_context->buffer, body, body_len);
+    http_context->_sending_size = kii_strlen(http_context->buffer);
+    return KII_HTTPC_OK;
 #else
     return kii->http_append_body_cb(&(kii->http_context), body, body_len);
+#endif
+}
+
+static kii_http_client_code_t prv_kii_http_append_body_start_cb(kii_core_t* kii)
+{
+#ifdef USE_DEFAULT_HTTP_CLIENT
+    return prv_kii_http_append_body_cb(kii, "\r\n", 2);
+#else
+    return kii->http_append_body_start_cb(&(kii->http_context));
 #endif
 }
 
 static kii_http_client_code_t prv_kii_http_append_body_end_cb(kii_core_t* kii)
 {
 #ifdef USE_DEFAULT_HTTP_CLIENT
-    // TODO: implement me.
+    // Nothing to do.
+    return KII_HTTPC_OK;
 #else
     return kii->http_append_body_end_cb(&(kii->http_context));
 #endif
