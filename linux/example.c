@@ -1239,7 +1239,7 @@ int main(int argc, char** argv)
             register_thing_with_id(&kii);
             break;
         case 18:
-            printf("authentication generic\n");
+            printf("api call example authentication\n");
             thing_api_call_example_auth(&kii);
             break;
         case 1000:
@@ -1261,7 +1261,7 @@ int main(int argc, char** argv)
             printf("--unsubscribe-topic\n unsubscribe to topic.\n");
             printf("--install-push\n install push.\n");
             printf("--get-endpoint\n get endpoint of MQTT.\n");
-            printf("--authentication-generic\n get access toekn.\n");
+            printf("--api-call-example-auth\n api call example for authentication.\n");
             break;
             
         case '?':
