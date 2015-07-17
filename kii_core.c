@@ -127,6 +127,19 @@ prv_kii_call_set_request_line_cb(
 #endif
 }
 
+    static kii_http_client_code_t
+prv_kii_call_set_header_cb(
+        kii_core_t* kii,
+        const char* key,
+        const char* value)
+{
+#ifdef USE_DEFAULT_HTTP_CLIENT
+    // TODO: implement me.
+#else
+    return kii->http_set_header_cb(&(kii->http_context), key, value);
+#endif
+}
+
     static kii_error_code_t 
 prv_http_request_line_and_headers(
         kii_core_t* kii,
@@ -143,8 +156,8 @@ prv_http_request_line_and_headers(
         return KIIE_FAIL;
     }
 
-    result = kii->http_set_header_cb(
-            &(kii->http_context),
+    result = prv_kii_call_set_header_cb(
+            kii,
             "x-kii-appid",
             kii->app_id);
     if (result != KII_HTTPC_OK) {
@@ -152,8 +165,8 @@ prv_http_request_line_and_headers(
         return KIIE_FAIL;
     }
 
-    result = kii->http_set_header_cb(
-            &(kii->http_context),
+    result = prv_kii_call_set_header_cb(
+            kii,
             "x-kii-appkey",
             kii->app_key);
     if (result != KII_HTTPC_OK) {
@@ -162,8 +175,8 @@ prv_http_request_line_and_headers(
     }
 
     if (content_type != NULL) {
-        result = kii->http_set_header_cb(
-                &(kii->http_context),
+        result = prv_kii_call_set_header_cb(
+                kii,
                 "content-type",
                 content_type
                 );
@@ -183,8 +196,8 @@ prv_http_request_line_and_headers(
         }
         kii_memset(bearer_buff, 0x00, MAX_AUTH_BUFF_SIZE);
         kii_sprintf(bearer_buff, "%s%s", bearer, access_token);
-        result = kii->http_set_header_cb(
-                &(kii->http_context),
+        result = prv_kii_call_set_header_cb(
+                kii,
                 "authorization",
                 bearer_buff
                 );
@@ -195,8 +208,8 @@ prv_http_request_line_and_headers(
     }
 
     if (etag != NULL) {
-        result = kii->http_set_header_cb(
-                &(kii->http_context),
+        result = prv_kii_call_set_header_cb(
+                kii,
                 "if-match",
                 etag 
                 );
@@ -232,8 +245,8 @@ prv_http_request(
         body_len = kii_strlen(body);
         kii_memset(content_length, 0x00, 8);
         prv_content_length_str(body_len, content_length, 8);
-        result = kii->http_set_header_cb(
-                &(kii->http_context),
+        result = prv_kii_call_set_header_cb(
+                kii,
                 "content-length",
                 content_length
                 );
@@ -405,8 +418,8 @@ kii_core_register_thing_with_id(
     content_length += M_KII_CONST_STR_LEN("\"}");
     kii_memset(content_length_str, 0x00, 8);
     prv_content_length_str(content_length, content_length_str, 8);
-    if (kii->http_set_header_cb(&(kii->http_context),
-                    "content-length", content_length_str) != KII_HTTPC_OK) {
+    if (prv_kii_call_set_header_cb(kii,
+                     "content-length", content_length_str) != KII_HTTPC_OK) {
         return KIIE_FAIL;
     }
 
@@ -493,7 +506,7 @@ kii_core_thing_authentication(kii_core_t* kii,
 
     kii_memset(content_length_str, 0x00, 8);
     prv_content_length_str(content_length, content_length_str, 8);
-    if (kii->http_set_header_cb(&(kii->http_context),
+    if (prv_kii_call_set_header_cb(kii,
                     "content-length", content_length_str) != KII_HTTPC_OK) {
         return KIIE_FAIL;
     }
@@ -926,7 +939,7 @@ kii_core_install_thing_push(
     content_length += M_KII_CONST_STR_LEN("}");
     kii_memset(content_length_str, 0x00, 8);
     prv_content_length_str(content_length, content_length_str, 8);
-    if (kii->http_set_header_cb(&(kii->http_context),
+    if (prv_kii_call_set_header_cb(kii,
                     "content-length", content_length_str) != KII_HTTPC_OK) {
         return KIIE_FAIL;
     }
@@ -1013,8 +1026,8 @@ kii_core_api_call(
     }
 
     /* set app id */
-    result = kii->http_set_header_cb(
-            &(kii->http_context),
+    result = prv_kii_call_set_header_cb(
+            kii,
             "x-kii-appid",
             kii->app_id);
     if (result != KII_HTTPC_OK) {
@@ -1023,8 +1036,8 @@ kii_core_api_call(
     }
 
     /* set app key */
-    result = kii->http_set_header_cb(
-            &(kii->http_context),
+    result = prv_kii_call_set_header_cb(
+            kii,
             "x-kii-appkey",
             kii->app_key);
     if (result != KII_HTTPC_OK) {
@@ -1034,8 +1047,8 @@ kii_core_api_call(
 
     /* set content-type */
     if (content_type != NULL) {
-        result = kii->http_set_header_cb(
-                &(kii->http_context),
+        result = prv_kii_call_set_header_cb(
+                kii,
                 "content-type",
                 content_type
                 );
@@ -1050,8 +1063,8 @@ kii_core_api_call(
     memset(value, 0x00, sizeof(value));
     kii_sprintf(value, "%s%s", "bearer ", access_token);
     if (access_token != NULL) {
-        result = kii->http_set_header_cb(
-                &(kii->http_context),
+        result = prv_kii_call_set_header_cb(
+                kii,
                 "authorization",
                 value);
         if (result != KII_HTTPC_OK) {
@@ -1071,8 +1084,8 @@ kii_core_api_call(
         strncpy(value, ptr + 1, sizeof(value));
         M_KII_LOG_FORMAT(kii->logger_cb("key: %s\n", key));
         M_KII_LOG_FORMAT(kii->logger_cb("value: %s\n", value));
-        result = kii->http_set_header_cb(
-                &(kii->http_context),
+        result = prv_kii_call_set_header_cb(
+                kii,
                 key,
                 value);
         if (result != KII_HTTPC_OK) {
@@ -1092,8 +1105,8 @@ kii_core_api_call(
             strncpy(value, ptr + 1, sizeof(value));
             M_KII_LOG_FORMAT(kii->logger_cb("key: %s\n", key));
             M_KII_LOG_FORMAT(kii->logger_cb("value: %s\n", value));
-            result = kii->http_set_header_cb(
-                    &(kii->http_context),
+            result = prv_kii_call_set_header_cb(
+                    kii,
                     key,
                     value);
             if (result != KII_HTTPC_OK) {
@@ -1108,8 +1121,8 @@ kii_core_api_call(
         char content_length[8];
         kii_memset(content_length, 0x00, 8);
         prv_content_length_str(body_size, content_length, 8);
-        result = kii->http_set_header_cb(
-                &(kii->http_context),
+        result = prv_kii_call_set_header_cb(
+                kii,
                 "content-length",
                 content_length
                 );
@@ -1175,8 +1188,7 @@ prv_kii_core_set_authorization_header(kii_core_t* kii)
         char access_token[MAX_AUTH_BUFF_SIZE];
         memset(access_token, 0x00, sizeof(access_token));
         kii_sprintf(access_token, "%s%s", BEARER, kii->author.access_token);
-        return kii->http_set_header_cb(&(kii->http_context), "authorization",
-                access_token);
+        return prv_kii_call_set_header_cb(kii, "authorization", access_token);
     }
 }
 
@@ -1196,17 +1208,17 @@ kii_core_api_call_start(
     }
 
     // set default headers.
-    if (kii->http_set_header_cb(&(kii->http_context), "x-kii-appid",
+    if (prv_kii_call_set_header_cb(kii, "x-kii-appid",
                     kii->app_id) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (kii->http_set_header_cb(&(kii->http_context), "x-kii-appkey",
+    if (prv_kii_call_set_header_cb(kii, "x-kii-appkey",
                     kii->app_key) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (kii->http_set_header_cb(&(kii->http_context), "content-type",
+    if (prv_kii_call_set_header_cb(kii, "content-type",
                     content_type) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
         return KIIE_FAIL;
@@ -1238,7 +1250,7 @@ prv_kii_core_http_set_content_length_header(
         char content_length_str[8];
         kii_memset(content_length_str, 0x00, 8);
         prv_content_length_str(content_length, content_length_str, 8);
-        return kii->http_set_header_cb(&(kii->http_context), "content-length",
+        return prv_kii_call_set_header_cb(kii, "content-length",
                 content_length_str);
     } else {
         return KII_HTTPC_FAIL;
@@ -1292,7 +1304,7 @@ kii_core_api_call_append_header(
         const char* key,
         const char* value)
 {
-    if (kii->http_set_header_cb(&(kii->http_context),key, value) != KIIE_OK) {
+    if (prv_kii_call_set_header_cb(kii,key, value) != KIIE_OK) {
         M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
         return KIIE_FAIL;
     }
