@@ -140,6 +140,16 @@ prv_kii_call_set_header_cb(
 #endif
 }
 
+
+static kii_http_client_code_t prv_kii_call_append_body_start_cb(kii_core_t* kii)
+{
+#ifdef USE_DEFAULT_HTTP_CLIENT
+    // TODO: implement me.
+#else
+    return kii->http_append_body_start_cb(&(kii->http_context));
+#endif
+}
+
     static kii_error_code_t 
 prv_http_request_line_and_headers(
         kii_core_t* kii,
@@ -255,7 +265,7 @@ prv_http_request(
             return KIIE_FAIL;
         }
 
-        result = kii->http_append_body_start_cb(&(kii->http_context));
+        result = prv_kii_call_append_body_start_cb(kii);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
             return KIIE_FAIL;
@@ -275,7 +285,7 @@ prv_http_request(
             return KIIE_FAIL;
         }
     } else {
-        result = kii->http_append_body_start_cb(&(kii->http_context));
+        result = prv_kii_call_append_body_start_cb(kii);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
             return KIIE_FAIL;
@@ -423,7 +433,7 @@ kii_core_register_thing_with_id(
         return KIIE_FAIL;
     }
 
-    if (kii->http_append_body_start_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+    if (prv_kii_call_append_body_start_cb(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -511,7 +521,7 @@ kii_core_thing_authentication(kii_core_t* kii,
         return KIIE_FAIL;
     }
 
-    if (kii->http_append_body_start_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+    if (prv_kii_call_append_body_start_cb(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -943,7 +953,7 @@ kii_core_install_thing_push(
                     "content-length", content_length_str) != KII_HTTPC_OK) {
         return KIIE_FAIL;
     }
-    if (kii->http_append_body_start_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+    if (prv_kii_call_append_body_start_cb(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -1130,7 +1140,7 @@ kii_core_api_call(
             M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
             goto exit;
         }
-        result = kii->http_append_body_start_cb(&(kii->http_context));
+        result = prv_kii_call_append_body_start_cb(kii);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
             goto exit;
@@ -1152,7 +1162,7 @@ kii_core_api_call(
         // null teminated.
         kii->http_context.total_send_size = strlen(kii->http_context.buffer);
     } else {
-        result = kii->http_append_body_start_cb(&(kii->http_context));
+        result = prv_kii_call_append_body_start_cb(kii);
         if (result != KII_HTTPC_OK) {
             M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
             goto exit;
@@ -1231,7 +1241,7 @@ kii_core_api_call_start(
     }
 
     // start body cb.
-    if (kii->http_append_body_start_cb(&(kii->http_context)) != KII_HTTPC_OK) {
+    if (prv_kii_call_append_body_start_cb(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
         return KIIE_FAIL;
     }
