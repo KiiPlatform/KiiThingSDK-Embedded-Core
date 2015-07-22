@@ -112,13 +112,14 @@ prv_set_thing_register_path(kii_core_t* kii)
             kii->app_id);
 }
 
+#ifdef USE_DEFAULT_HTTP_CLIENT
+
     static kii_http_client_code_t
 prv_kii_http_set_request_line(
         kii_core_t* kii,
         const char* method,
         const char* resource_path)
 {
-#ifdef USE_DEFAULT_HTTP_CLIENT
     kii_http_context_t* http_context = &(kii->http_context);
     http_context->host = kii->app_host;
 
@@ -139,10 +140,6 @@ prv_kii_http_set_request_line(
     http_context->_body_position =
         http_context->buffer + http_context->_sending_size;
     return KII_HTTPC_OK;
-#else
-    return kii->http_set_request_line_cb(&(kii->http_context),
-            method, kii->app_host, resource_path);
-#endif
 }
 
     static kii_http_client_code_t
@@ -151,7 +148,6 @@ prv_kii_http_set_header(
         const char* key,
         const char* value)
 {
-#ifdef USE_DEFAULT_HTTP_CLIENT
     kii_http_context_t* http_context = &(kii->http_context);
     char* insert_positin = http_context->_body_position;
     size_t header_size = 0;
@@ -192,9 +188,6 @@ prv_kii_http_set_header(
 
     http_context->_sending_size += header_size;
     return KII_HTTPC_OK;
-#else
-    return kii->http_set_header_cb(&(kii->http_context), key, value);
-#endif
 }
 
     static kii_http_client_code_t
@@ -203,7 +196,6 @@ prv_kii_http_append_body(
         const char* body,
         size_t body_len)
 {
-#ifdef USE_DEFAULT_HTTP_CLIENT
     kii_http_context_t* http_context = &(kii->http_context);
 
     if (http_context->buffer_size <=
@@ -219,29 +211,60 @@ prv_kii_http_append_body(
     strncat(http_context->buffer, body, body_len);
     http_context->_sending_size = kii_strlen(http_context->buffer);
     return KII_HTTPC_OK;
-#else
-    return kii->http_append_body_cb(&(kii->http_context), body, body_len);
-#endif
 }
 
 static kii_http_client_code_t prv_kii_http_append_body_start(kii_core_t* kii)
 {
-#ifdef USE_DEFAULT_HTTP_CLIENT
     return prv_kii_http_append_body(kii, "\r\n", 2);
-#else
-    return kii->http_append_body_start_cb(&(kii->http_context));
-#endif
 }
 
 static kii_http_client_code_t prv_kii_http_append_body_end(kii_core_t* kii)
 {
-#ifdef USE_DEFAULT_HTTP_CLIENT
     // Nothing to do.
     return KII_HTTPC_OK;
-#else
-    return kii->http_append_body_end_cb(&(kii->http_context));
-#endif
 }
+
+#else
+
+    static kii_http_client_code_t
+prv_kii_http_set_request_line(
+        kii_core_t* kii,
+        const char* method,
+        const char* resource_path)
+{
+    return kii->http_set_request_line_cb(&(kii->http_context),
+            method, kii->app_host, resource_path);
+}
+
+    static kii_http_client_code_t
+prv_kii_http_set_header(
+        kii_core_t* kii,
+        const char* key,
+        const char* value)
+{
+    return kii->http_set_header_cb(&(kii->http_context), key, value);
+}
+
+    static kii_http_client_code_t
+prv_kii_http_append_body(
+        kii_core_t* kii,
+        const char* body,
+        size_t body_len)
+{
+    return kii->http_append_body_cb(&(kii->http_context), body, body_len);
+}
+
+static kii_http_client_code_t prv_kii_http_append_body_start(kii_core_t* kii)
+{
+    return kii->http_append_body_start_cb(&(kii->http_context));
+
+
+static kii_http_client_code_t prv_kii_http_append_body_end(kii_core_t* kii)
+{
+    return kii->http_append_body_end_cb(&(kii->http_context));
+}
+
+#endif
 
     static kii_error_code_t 
 prv_http_request_line_and_headers(
