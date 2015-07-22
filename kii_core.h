@@ -65,7 +65,7 @@ typedef struct kii_http_context_t
      * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
-    const char* const host;
+    const char* host;
 
     /** socket context used by the http client
      *
