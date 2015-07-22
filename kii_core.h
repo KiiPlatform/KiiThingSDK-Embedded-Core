@@ -43,21 +43,64 @@ typedef struct kii_http_context_t
 	size_t total_send_size;
 
 #ifndef USE_CUSTOM_HTTP_CLIENT
+    /** This is a private field for this SDK.
+     * Application programmers must not use this field.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
     char* _body_position;
-    size_t _sending_size;
-    const char* host;
-#endif
 
-    /** socket context used by the http client */
+    /** This is a private field for this SDK.
+     * Application programmers must not use this field.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
+    size_t _sending_size;
+
+    /** Host name to send HTTP request. You can connect to target
+     * server with this host name.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
+    const char* const host;
+
+    /** socket context used by the http client
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
     kii_socket_context_t socket_context;
-    /** socket close function callback */
+
+    /** socket close function callback.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
+
     KII_SOCKET_CONNECT_CB connect_cb;
-    /** socket send function callback */
+    /** socket send function callback.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
     KII_SOCKET_SEND_CB send_cb;
-    /** socket recv function callback */
+    /** socket recv function callback.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
     KII_SOCKET_RECV_CB recv_cb;
-    /** socket close function callback */
+    /** socket close function callback.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
     KII_SOCKET_CLOSE_CB close_cb;
+
+#endif
 } kii_http_context_t;
 
 /** callback for preparing HTTP request line.
@@ -217,28 +260,43 @@ typedef struct kii_core_t
 #ifdef USE_CUSTOM_HTTP_CLIENT
     /** request line callback function pointer
      * Should be set before execute apis.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * defined.
      */
     KII_HTTPCB_SET_REQUEST_LINE http_set_request_line_cb;
     /** request header callback function pointer
      * Should be set before execute apis.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * defined.
      */
     KII_HTTPCB_SET_HEADER http_set_header_cb;
 
     /**
      * Notifying start of creation of request body callback function.
      * Should be set before execute APIs.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * defined.
      */
     KII_HTTPCB_APPEND_BODY_START http_append_body_start_cb;
 
     /**
      * Appending request body callback function.
      * Should be set before execute APIs.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * defined.
      */
     KII_HTTPCB_APPEND_BODY http_append_body_cb;
 
     /**
      * Notifying end of creation of request body callback function.
      * Should be set before execute APIs.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * defined.
      */
     KII_HTTPCB_APPEND_BODY_END http_append_body_end_cb;
 #endif
