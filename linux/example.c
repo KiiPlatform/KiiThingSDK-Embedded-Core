@@ -37,11 +37,6 @@ typedef struct context_t
     int sent_size;
     int received_size;
 
-#ifndef USE_DEFAULT_HTTP_CLIENT
-    char host[256];
-    char* body_position;
-    size_t sending_size;
-#endif
 } context_t;
 
 static kii_http_client_code_t prv_ssl_connect(kii_http_context_t* http_context,
@@ -175,116 +170,6 @@ static kii_http_client_code_t prv_ssl_close(kii_http_context_t* http_context)
     return KII_HTTPC_OK;
 }
 
-#ifndef USE_DEFAULT_HTTP_CLIENT
-/* HTTP Callback functions */
-kii_http_client_code_t
-    request_line_cb(
-        kii_http_context_t* http_context,
-        const char* method,
-        const char* host,
-        const char* path)
-{
-    context_t* ctx;
-
-    ctx = (context_t*)http_context->app_context;
-    strncpy(ctx->host, host, strlen(host));
-
-    memset(http_context->buffer, 0x00, http_context->buffer_size);
-
-    /* TODO: prevent overflow. */
-    ctx->sending_size =
-        sprintf(http_context->buffer,
-                "%s https://%s/%s HTTP/1.1\r\n", method, host, path);
-
-    ctx->body_position = http_context->buffer + ctx->sending_size;
-    return KII_HTTPC_OK;
-}
-
-kii_http_client_code_t
-    header_cb(
-        kii_http_context_t* http_context,
-        const char* key,
-        const char* value)
-{
-    context_t* app_context = (context_t*)http_context->app_context;
-    char* insert_positin = app_context->body_position;
-    size_t header_size = 0;
-    size_t body_size = app_context->sending_size -
-            (app_context->body_position - http_context->buffer);
-    size_t len;
-    header_size = strlen(key);
-    header_size += strlen(":");
-    header_size += strlen(value);
-    header_size += strlen("\r\n");
-
-    /* TODO: prevent overflow. */
-    // move body.
-    memmove(app_context->body_position + header_size,
-            app_context->body_position, body_size);
-    app_context->body_position += header_size;
-    http_context->buffer[app_context->sending_size + header_size] = '\0';
-
-    // set header.
-    len = strlen(key);
-    memcpy(insert_positin, key, len);
-    insert_positin += len;
-
-    len = strlen(":");
-    memcpy(insert_positin, ":", len);
-    insert_positin += len;
-
-    len = strlen(value);
-    memcpy(insert_positin, value, len);
-    insert_positin += len;
-
-    len = strlen("\r\n");
-    memcpy(insert_positin, "\r\n", len);
-
-    app_context->sending_size += header_size;
-    return KII_HTTPC_OK;
-}
-
-static kii_http_client_code_t append_body(
-        kii_http_context_t* http_context,
-        const char* data,
-        size_t data_len)
-{
-    char* reqBuff = http_context->buffer;
-
-    if ((strlen(reqBuff) + data_len + 1) > http_context->buffer_size) {
-        return KII_HTTPC_FAIL;
-    }
-
-    if (data == NULL) {
-        return KII_HTTPC_FAIL;
-    }
-
-    strncat(reqBuff, data, data_len);
-    ((context_t*)(http_context->app_context))->sending_size =
-        strlen(http_context->buffer);
-    return KII_HTTPC_OK;
-}
-
-kii_http_client_code_t append_body_start_cb(kii_http_context_t* http_context)
-{
-    return append_body(http_context, "\r\n", 2);
-}
-
-kii_http_client_code_t
-    append_body_cb(
-        kii_http_context_t* http_context,
-        const char* body_data,
-        size_t body_size)
-{
-    return append_body(http_context, body_data, body_size);
-}
-
-kii_http_client_code_t append_body_end_cb(kii_http_context_t* http_context)
-{
-    return KII_HTTPC_OK;
-}
-#endif
-
 kii_http_client_code_t
     execute_cb(
         kii_http_context_t* http_context,
@@ -304,11 +189,7 @@ kii_http_client_code_t
             ctx->state = PRV_SSL_STATE_CONNECT;
             return KII_HTTPC_AGAIN;
         case PRV_SSL_STATE_CONNECT:
-#ifdef USE_DEFAULT_HTTP_CLIENT
             res = prv_ssl_connect(http_context, http_context->host);
-#else
-            res = prv_ssl_connect(http_context, ctx->host);
-#endif
             if (res == KII_HTTPC_OK) {
                 ctx->state = PRV_SSL_STATE_SEND;
                 return KII_HTTPC_AGAIN;
@@ -428,13 +309,6 @@ void init(kii_core_t* kii, char* buff, context_t* ctx) {
     http_ctx->buffer = buff;
     http_ctx->buffer_size = EX_BUFFER_SIZE;
 
-#ifndef USE_DEFAULT_HTTP_CLIENT
-    kii->http_set_request_line_cb = request_line_cb;
-    kii->http_set_header_cb = header_cb;
-    kii->http_append_body_start_cb = append_body_start_cb;
-    kii->http_append_body_cb = append_body_cb;
-    kii->http_append_body_end_cb = append_body_end_cb;
-#endif
     kii->http_execute_cb = execute_cb;
     kii->logger_cb = logger_cb;
 
