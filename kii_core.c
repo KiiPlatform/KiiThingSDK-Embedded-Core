@@ -112,7 +112,7 @@ prv_set_thing_register_path(kii_core_t* kii)
             kii->app_id);
 }
 
-#ifdef USE_DEFAULT_HTTP_CLIENT
+#ifndef USE_CUSTOM_HTTP_CLIENT
 
     static kii_http_client_code_t
 prv_kii_http_set_request_line(
