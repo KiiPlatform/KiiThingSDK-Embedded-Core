@@ -1,4 +1,4 @@
-CFLAGS = -std=gnu89 -Wall -pedantic
+override CFLAGS += -std=gnu89 -Wall -pedantic
 ifdef DEBUG
 CFLAGS += -g -DDEBUG
 endif
