@@ -178,7 +178,8 @@ typedef kii_http_client_code_t
  * This option may be useful if you execute kii_run() in function which
  * takes care of other events.
  * @param [out] response_code HTTP response code
- * @param [out] response_body pointer refers the HTTP response body 
+ * @param [out] response_body pointer refers the HTTP response
+ * body. This must be null-terminated string.
  */
 typedef kii_http_client_code_t
         (*KII_HTTPCB_EXECUTE)(
