@@ -257,7 +257,7 @@ prv_kii_http_append_body(
 static kii_http_client_code_t prv_kii_http_append_body_start(kii_core_t* kii)
 {
     return kii->http_append_body_start_cb(&(kii->http_context));
-
+}
 
 static kii_http_client_code_t prv_kii_http_append_body_end(kii_core_t* kii)
 {
