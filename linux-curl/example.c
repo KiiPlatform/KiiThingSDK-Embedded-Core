@@ -33,6 +33,8 @@ typedef struct prv_memory_t {
 typedef struct context_t
 {
     CURL* curl;
+    char* buffer;
+    size_t buffer_size;
     struct curl_slist* headers;
     prv_http_method_t method;
 } context_t;
@@ -61,7 +63,10 @@ kii_http_client_code_t
         app_context->headers = NULL;
     }
 
+#ifdef DEBUG
     curl_easy_setopt(app_context->curl, CURLOPT_VERBOSE, 1);
+#endif
+
     sprintf(url, "https://%s/%s", host, path);
     curl_easy_setopt(app_context->curl, CURLOPT_URL, url);
 
@@ -101,7 +106,8 @@ kii_http_client_code_t
 
 kii_http_client_code_t append_body_start_cb(kii_http_context_t* http_context)
 {
-    memset(http_context->buffer, 0x00, http_context->buffer_size);
+    context_t* app_context = (context_t*)http_context->app_context;
+    memset(app_context->buffer, 0x00, app_context->buffer_size);
     return KII_HTTPC_OK;
 }
 
@@ -111,9 +117,10 @@ kii_http_client_code_t
         const char* body_data,
         size_t body_size)
 {
-    char* reqBuff = http_context->buffer;
+    context_t* app_context = (context_t*)http_context->app_context;
+    char* reqBuff = app_context->buffer;
 
-    if ((strlen(reqBuff) + body_size + 1) > http_context->buffer_size) {
+    if ((strlen(reqBuff) + body_size + 1) > app_context->buffer_size) {
         return KII_HTTPC_FAIL;
     }
 
@@ -191,11 +198,11 @@ kii_http_client_code_t
                 return KII_HTTPC_FAIL;
             }
             if (curl_easy_setopt(app_context->curl, CURLOPT_POSTFIELDSIZE,
-                            strlen(http_context->buffer)) != CURLE_OK) {
+                            strlen(app_context->buffer)) != CURLE_OK) {
                 return KII_HTTPC_FAIL;
             }
             if (curl_easy_setopt(app_context->curl, CURLOPT_POSTFIELDS,
-                            http_context->buffer) != CURLE_OK) {
+                            app_context->buffer) != CURLE_OK) {
                 return KII_HTTPC_FAIL;
             }
             break;
@@ -210,8 +217,8 @@ kii_http_client_code_t
                 return KII_HTTPC_FAIL;
             }
             request.position = 0;
-            request.buffer = http_context->buffer;
-            request.buffer_size = strlen(http_context->buffer);
+            request.buffer = app_context->buffer;
+            request.buffer_size = strlen(app_context->buffer);
             if (curl_easy_setopt(app_context->curl, CURLOPT_READDATA,
                             &request)!= CURLE_OK) {
                 return KII_HTTPC_FAIL;
@@ -235,11 +242,11 @@ kii_http_client_code_t
                 return KII_HTTPC_FAIL;
             }
             if (curl_easy_setopt(app_context->curl, CURLOPT_POSTFIELDSIZE,
-                            strlen(http_context->buffer)) != CURLE_OK) {
+                            strlen(app_context->buffer)) != CURLE_OK) {
                 return KII_HTTPC_FAIL;
             }
             if (curl_easy_setopt(app_context->curl, CURLOPT_POSTFIELDS,
-                            http_context->buffer) != CURLE_OK) {
+                            app_context->buffer) != CURLE_OK) {
                 return KII_HTTPC_FAIL;
             }
             break;
@@ -253,8 +260,8 @@ kii_http_client_code_t
     }
 
     response.position = 0;
-    response.buffer = http_context->buffer;
-    response.buffer_size = http_context->buffer_size;
+    response.buffer = app_context->buffer;
+    response.buffer_size = app_context->buffer_size;
     if (curl_easy_setopt(app_context->curl, CURLOPT_WRITEDATA, &response)
             != CURLE_OK) {
         return KII_HTTPC_FAIL;
@@ -269,7 +276,7 @@ kii_http_client_code_t
     }
 
     *response_code = resp_code;
-    *response_body = http_context->buffer;
+    *response_body = app_context->buffer;
     return KII_HTTPC_OK;
 }
 
@@ -294,10 +301,10 @@ void init(kii_core_t* kii, char* buff, context_t* ctx) {
     kii->app_host = (char*)EX_APP_HOST;
 
     memset(ctx, 0x00, sizeof(context_t));
+    ctx->buffer = buff;
+    ctx->buffer_size = EX_BUFFER_SIZE;
     http_ctx = &kii->http_context;
     http_ctx->app_context = ctx;
-    http_ctx->buffer = buff;
-    http_ctx->buffer_size = EX_BUFFER_SIZE;
 
     kii->http_set_request_line_cb = request_line_cb;
     kii->http_set_header_cb = header_cb;
@@ -333,15 +340,17 @@ static void init_topic(kii_topic_t* topic) {
 
 static void print_request(kii_core_t* kii)
 {
+    context_t* app_context = (context_t*)kii->http_context.app_context;
     printf("========request========\n");
-    printf("%s\n", kii->http_context.buffer);
+    printf("%s\n", app_context->buffer);
     printf("========request========\n");
 }
 
 static void print_response(kii_core_t* kii)
 {
+    context_t* app_context = (context_t*)kii->http_context.app_context;
     printf("========response========\n");
-    printf("%s\n", kii->http_context.buffer);
+    printf("%s\n", app_context->buffer);
     printf("========response========\n");
     printf("response_code: %d\n", kii->response_code);
     printf("response_body:\n%s\n", kii->response_body);
