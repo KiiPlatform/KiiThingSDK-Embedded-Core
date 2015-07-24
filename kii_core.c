@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #ifdef DEBUG
 #define M_REQUEST_LINE_CB_FAILED "failed to set request line\n"
@@ -56,6 +57,9 @@
 
 #define BEARER "bearer"
 #define BEARER_LEN sizeof(BEARER) - 1
+#define HTTP1_1 "HTTP/1.1 "
+#define END_OF_HEADER "\r\n\r\n"
+#define CONST_LEN(str) sizeof(str) - 1
 
 const char DEFAULT_OBJECT_CONTENT_TYPE[] = "application/json";
 
@@ -65,54 +69,158 @@ kii_core_get_state(kii_core_t* kii)
     return kii->_state;
 }
 
-    kii_error_code_t
-kii_core_run(kii_core_t* kii)
-{
-    kii_http_client_code_t cbr;
-    switch(kii->_state) {
-        case KII_STATE_IDLE:
-            return KIIE_FAIL;
-        case KII_STATE_READY:
-            kii->_state = KII_STATE_EXECUTE;
-            return KIIE_OK;
-        case KII_STATE_EXECUTE:
-            cbr = kii->http_execute_cb(
-                    &(kii->http_context),
-                    &(kii->response_code),
-                    &(kii->response_body));
-            if (cbr == KII_HTTPC_OK) {
-                kii->_state = KII_STATE_IDLE;
-                return KIIE_OK;
-            } else if (cbr == KII_HTTPC_AGAIN) {
-                return KIIE_OK;
-            } else {
-                kii->_state = KII_STATE_IDLE;
-                return KIIE_FAIL;
-            }
-        default:
-            M_KII_ASSERT(0);
-
-    }
-}
-
-    static void
-prv_content_length_str(
-        size_t content_length,
-        char* buff,
-        size_t buff_len)
-{
-    kii_sprintf(buff, "%lu", ((unsigned long)content_length));
-}
-
-    static void
-prv_set_thing_register_path(kii_core_t* kii)
-{
-    kii_sprintf(kii->_http_request_path,
-            "api/apps/%s/things",
-            kii->app_id);
-}
-
 #ifndef USE_CUSTOM_HTTP_CLIENT
+
+    static kii_http_client_code_t
+prv_kii_http_execute(kii_core_t* kii)
+{
+    kii_http_context_t* http_context = &(kii->http_context);
+
+    M_KII_LOG_FORMAT(kii->logger_cb("socket state: %d\n",
+                    http_context->_socket_state));
+    switch (http_context->_socket_state) {
+        case PRV_KII_SOCKET_STATE_IDLE:
+            http_context->_sent_size = 0;
+            http_context->_received_size = 0;
+            http_context->_socket_state = PRV_KII_SOCKET_STATE_CONNECT;
+            return KII_HTTPC_AGAIN;
+        case PRV_KII_SOCKET_STATE_CONNECT:
+            switch (http_context->connect_cb(&(http_context->socket_context),
+                            http_context->host, KII_SERVER_PORT)) {
+                case KII_SOCKETC_OK:
+                    http_context->_socket_state = PRV_KII_SOCKET_STATE_SEND;
+                    return KII_HTTPC_AGAIN;
+                case KII_SOCKETC_AGAIN:
+                    return KII_HTTPC_AGAIN;
+                default:
+                    http_context->_socket_state = PRV_KII_SOCKET_STATE_IDLE;
+                    return KII_HTTPC_FAIL;
+            }
+            // This is programing error.
+            M_KII_ASSERT(0);
+            return KII_HTTPC_FAIL;
+        case PRV_KII_SOCKET_STATE_SEND:
+        {
+            size_t size =
+                http_context->total_send_size - http_context->_sent_size;
+            if (size > KII_SOCKET_MAX_BUFF_SIZE) {
+                size = KII_SOCKET_MAX_BUFF_SIZE;
+            }
+            switch (http_context->send_cb(&(http_context->socket_context),
+                            http_context->buffer + http_context->_sent_size,
+                            size)) {
+                case KII_SOCKETC_OK:
+                    http_context->_sent_size += size;
+                    if (http_context->_sent_size ==
+                            http_context->total_send_size) {
+                        // All contents were sent.
+                        http_context->_socket_state = PRV_KII_SOCKET_STATE_RECV;
+                    }
+                    // If _sent_size is over total_send_size, it is
+                    // programming error.
+                    M_KII_ASSERT(http_context->_sent_size <=
+                            http_context->total_send_size);
+                    return KII_HTTPC_AGAIN;
+                case KII_SOCKETC_AGAIN:
+                    return KII_HTTPC_AGAIN;
+                default:
+                    http_context->_socket_state = PRV_KII_SOCKET_STATE_IDLE;
+                    return KII_HTTPC_FAIL;
+            }
+            // This is programing error.
+            M_KII_ASSERT(0);
+            return KII_HTTPC_FAIL;
+        }
+        case PRV_KII_SOCKET_STATE_RECV:
+        {
+            size_t actualLength = 0;
+            size_t size =
+                http_context->buffer_size - http_context->_received_size;
+            if (size > KII_SOCKET_MAX_BUFF_SIZE) {
+                size = KII_SOCKET_MAX_BUFF_SIZE;
+            }
+            if (http_context->_received_size == 0) {
+                memset(http_context->buffer, 0x00, http_context->buffer_size);
+            }
+
+            switch (http_context->recv_cb(&(http_context->socket_context),
+                            http_context->buffer + http_context->_received_size,
+                            size, &actualLength)) {
+                case KII_SOCKETC_OK:
+                    http_context->_received_size += actualLength;
+                    if (http_context->_received_size >=
+                            http_context->buffer_size) {
+                        M_KII_LOG("buffer is smaller than receiving data.");
+                        return KII_HTTPC_FAIL;
+                    }
+                    if (actualLength < KII_SOCKET_MAX_BUFF_SIZE) {
+                        http_context->buffer[http_context->_received_size] =
+                            '\0';
+                        http_context->_socket_state =
+                            PRV_KII_SOCKET_STATE_CLOSE;
+                    }
+                    return KII_HTTPC_AGAIN;
+                case KII_SOCKETC_AGAIN:
+                    return KII_HTTPC_AGAIN;
+                default:
+                    http_context->_socket_state = PRV_KII_SOCKET_STATE_IDLE;
+                    return KII_HTTPC_FAIL;
+            }
+            // This is programing error.
+            M_KII_ASSERT(0);
+            return KII_HTTPC_FAIL;
+        }
+        case PRV_KII_SOCKET_STATE_CLOSE:
+        {
+            switch (http_context->close_cb(&(http_context->socket_context))) {
+                case KII_HTTPC_OK:
+                {
+                    /* parse status code */
+                    char* pointer = strstr(http_context->buffer, HTTP1_1);
+                    int i = 0;
+                    if (pointer == NULL) {
+                        M_KII_LOG("invalid response.");
+                        return KII_HTTPC_FAIL;
+                    }
+
+                    kii->response_code = 0;
+                    pointer += CONST_LEN(HTTP1_1);
+                    // parse status code.
+                    for (i = 0; i < 3; ++i) {
+                        if (isdigit(pointer[i]) == 0) {
+                            M_KII_LOG("invalid status code.");
+                            kii->response_code = 0;
+                            return KII_HTTPC_FAIL;
+                        }
+                        kii->response_code = (kii->response_code * 10) +
+                                (pointer[i] - '0');
+                    }
+
+                    /* set body pointer */
+                    kii->response_body =
+                        strstr(http_context->buffer, END_OF_HEADER);
+                    if (kii->response_body != NULL) {
+                        kii->response_body += CONST_LEN(END_OF_HEADER);
+                    }
+                    http_context->_socket_state = PRV_KII_SOCKET_STATE_IDLE;
+                    return KII_HTTPC_OK;
+                }
+                case KII_HTTPC_AGAIN:
+                    return KII_HTTPC_AGAIN;
+                default:
+                    http_context->_socket_state = PRV_KII_SOCKET_STATE_IDLE;
+                    return KII_HTTPC_FAIL;
+            }
+            // This is programing error.
+            M_KII_ASSERT(0);
+            return KII_HTTPC_FAIL;
+        }
+    }
+
+    // This is programing error.
+    M_KII_ASSERT(0);
+    return KII_HTTPC_FAIL;
+}
 
     static kii_http_client_code_t
 prv_kii_http_set_request_line(
@@ -139,6 +247,9 @@ prv_kii_http_set_request_line(
 
     http_context->_body_position =
         http_context->buffer + http_context->total_send_size;
+
+    // Correct position of initializing socket_state is under consideration.
+    http_context->_socket_state = PRV_KII_SOCKET_STATE_IDLE;
     return KII_HTTPC_OK;
 }
 
@@ -227,6 +338,13 @@ static kii_http_client_code_t prv_kii_http_append_body_end(kii_core_t* kii)
 #else
 
     static kii_http_client_code_t
+prv_kii_http_execute(kii_core_t* kii)
+{
+    return kii->http_execute_cb(&(kii->http_context), &(kii->response_code),
+            &(kii->response_body));
+}
+
+    static kii_http_client_code_t
 prv_kii_http_set_request_line(
         kii_core_t* kii,
         const char* method,
@@ -265,6 +383,50 @@ static kii_http_client_code_t prv_kii_http_append_body_end(kii_core_t* kii)
 }
 
 #endif
+
+    kii_error_code_t
+kii_core_run(kii_core_t* kii)
+{
+    kii_http_client_code_t cbr;
+    switch(kii->_state) {
+        case KII_STATE_IDLE:
+            return KIIE_FAIL;
+        case KII_STATE_READY:
+            kii->_state = KII_STATE_EXECUTE;
+            return KIIE_OK;
+        case KII_STATE_EXECUTE:
+            cbr = prv_kii_http_execute(kii);
+            if (cbr == KII_HTTPC_OK) {
+                kii->_state = KII_STATE_IDLE;
+                return KIIE_OK;
+            } else if (cbr == KII_HTTPC_AGAIN) {
+                return KIIE_OK;
+            } else {
+                kii->_state = KII_STATE_IDLE;
+                return KIIE_FAIL;
+            }
+        default:
+            M_KII_ASSERT(0);
+
+    }
+}
+
+    static void
+prv_content_length_str(
+        size_t content_length,
+        char* buff,
+        size_t buff_len)
+{
+    kii_sprintf(buff, "%lu", ((unsigned long)content_length));
+}
+
+    static void
+prv_set_thing_register_path(kii_core_t* kii)
+{
+    kii_sprintf(kii->_http_request_path,
+            "api/apps/%s/things",
+            kii->app_id);
+}
 
     static kii_error_code_t 
 prv_http_request_line_and_headers(
