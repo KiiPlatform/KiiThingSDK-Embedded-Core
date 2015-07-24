@@ -33,25 +33,81 @@ typedef struct kii_http_context_t
      * used by HTTP callback implementations.
      */
     void* app_context;
+
+#ifndef USE_CUSTOM_HTTP_CLIENT
+
     /** buffer used to communicate with KiiCloud.
      *  application allocate memory before calling apis.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
      */
     char* buffer;
-    /** size of buffer */
-    size_t buffer_size;
-	/** total size of data to be sent*/
-	size_t total_send_size;
 
-    /** socket context used by the http client */
+    /** size of buffer.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
+    size_t buffer_size;
+
+    /** total size of data to be sent.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
+    size_t total_send_size;
+
+    /** This is a private field for this SDK.
+     * Application programmers must not use this field.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
+    char* _body_position;
+
+    /** Host name to send HTTP request. You can connect to target
+     * server with this host name.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
+    const char* host;
+
+    /** socket context used by the http client
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
     kii_socket_context_t socket_context;
-    /** socket close function callback */
+
+    /** socket close function callback.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
+
     KII_SOCKET_CONNECT_CB connect_cb;
-    /** socket send function callback */
+    /** socket send function callback.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
     KII_SOCKET_SEND_CB send_cb;
-    /** socket recv function callback */
+    /** socket recv function callback.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
     KII_SOCKET_RECV_CB recv_cb;
-    /** socket close function callback */
+    /** socket close function callback.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
     KII_SOCKET_CLOSE_CB close_cb;
+
+#endif
 } kii_http_context_t;
 
 /** callback for preparing HTTP request line.
@@ -129,7 +185,8 @@ typedef kii_http_client_code_t
  * This option may be useful if you execute kii_run() in function which
  * takes care of other events.
  * @param [out] response_code HTTP response code
- * @param [out] response_body pointer refers the HTTP response body 
+ * @param [out] response_body pointer refers the HTTP response
+ * body. This must be null-terminated string.
  */
 typedef kii_http_client_code_t
         (*KII_HTTPCB_EXECUTE)(
@@ -207,32 +264,50 @@ typedef struct kii_core_t
 
     /** application's context object used by HTTP callback implementations. */
     kii_http_context_t http_context;
+
+#ifdef USE_CUSTOM_HTTP_CLIENT
     /** request line callback function pointer
      * Should be set before execute apis.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * defined.
      */
     KII_HTTPCB_SET_REQUEST_LINE http_set_request_line_cb;
     /** request header callback function pointer
      * Should be set before execute apis.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * defined.
      */
     KII_HTTPCB_SET_HEADER http_set_header_cb;
 
     /**
      * Notifying start of creation of request body callback function.
      * Should be set before execute APIs.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * defined.
      */
     KII_HTTPCB_APPEND_BODY_START http_append_body_start_cb;
 
     /**
      * Appending request body callback function.
      * Should be set before execute APIs.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * defined.
      */
     KII_HTTPCB_APPEND_BODY http_append_body_cb;
 
     /**
      * Notifying end of creation of request body callback function.
      * Should be set before execute APIs.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * defined.
      */
     KII_HTTPCB_APPEND_BODY_END http_append_body_end_cb;
+#endif
 
     /** execute HTTP request function pointer
      * Should be set before execute apis.

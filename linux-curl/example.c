@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <sys/types.h>
 #include <netdb.h>
 #include <sys/socket.h>
@@ -11,163 +12,165 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
-#include <openssl/crypto.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-
 #include <getopt.h>
 
-#define BUFF_SIZE 256
+#include <curl/curl.h>
 
-typedef enum prv_ssl_state_t {
-    PRV_SSL_STATE_IDLE,
-    PRV_SSL_STATE_CONNECT,
-    PRV_SSL_STATE_SEND,
-    PRV_SSL_STATE_RECV,
-    PRV_SSL_STATE_CLOSE
-} prv_ssl_state_t;
+typedef enum prv_http_method_t {
+    PRV_POST,
+    PRV_PUT,
+    PRV_GET,
+    PRV_DELETE,
+    PRV_PATCH
+} prv_http_method_t;
+
+typedef struct prv_memory_t {
+    size_t position;
+    size_t buffer_size;
+    char* buffer;
+} prv_memory_t;
 
 typedef struct context_t
 {
-    SSL *ssl;
-    SSL_CTX *ssl_ctx;
-    int sock;
-    prv_ssl_state_t state;
-    int last_chunk;
-    int sent_size;
-    int received_size;
-
+    CURL* curl;
+    char* buffer;
+    size_t buffer_size;
+    struct curl_slist* headers;
+    prv_http_method_t method;
 } context_t;
 
-static kii_http_client_code_t prv_ssl_connect(kii_http_context_t* http_context,
-        const char* host)
+/* HTTP Callback functions */
+kii_http_client_code_t
+    request_line_cb(
+        kii_http_context_t* http_context,
+        const char* method,
+        const char* host,
+        const char* path)
 {
-    int sock, ret;
-    struct hostent *servhost;
-    struct sockaddr_in server;
-    struct servent *service;
-    context_t* ctx = (context_t*)(http_context->app_context);
-    SSL *ssl;
-    SSL_CTX *ssl_ctx;
+    context_t* app_context = (context_t*)http_context->app_context;
+    char url[512];
 
-    printf("host: %s\n", host);
-    
-    servhost = gethostbyname(host);
-    if (servhost == NULL) {
-        printf("failed to get host.\n");
-        return KII_HTTPC_FAIL;
-    }
-    memset(&server, 0x00, sizeof(server));
-    server.sin_family = AF_INET;
-    /* More secure. */
-    memcpy(&(server.sin_addr), servhost->h_addr, servhost->h_length);
-
-    /* Get Port number */
-    service = getservbyname("https", "tcp");
-    if (service != NULL) {
-        server.sin_port = service->s_port;
+    if (app_context->curl != NULL) {
+        curl_easy_reset(app_context->curl);
     } else {
-        server.sin_port = htons(443);
-    }
-
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
-        printf("failed to init socket.\n");
-        return KII_HTTPC_FAIL;
-    }
-
-    if (connect(sock, (struct sockaddr*) &server, sizeof(server)) == -1 ){
-        printf("failed to connect socket.\n");
-        return KII_HTTPC_FAIL;
-    }
-
-    SSL_library_init();
-    ssl_ctx = SSL_CTX_new(SSLv23_client_method());
-    if (ssl_ctx == NULL){
-        printf("failed to init ssl context.\n");
-        return KII_HTTPC_FAIL;
-    }
-
-    ssl = SSL_new(ssl_ctx);
-    if (ssl == NULL){
-        printf("failed to init ssl.\n");
-        return KII_HTTPC_FAIL;
-    }
-
-    ret = SSL_set_fd(ssl, sock);
-    if (ret == 0){
-        printf("failed to set fd.\n");
-        return KII_HTTPC_FAIL;
-    }
-
-    ret = SSL_connect(ssl);
-    if (ret != 1) {
-        int sslErr= SSL_get_error(ssl, ret);
-        char sslErrStr[120];
-        ERR_error_string_n(sslErr, sslErrStr, 120);
-        printf("failed to connect: %s\n", sslErrStr);
-        return KII_HTTPC_FAIL;
-    }
-    ctx->sock = sock;
-    ctx->ssl = ssl;
-    ctx->ssl_ctx = ssl_ctx;
-    return KII_HTTPC_OK;
-}
-
-static kii_http_client_code_t prv_ssl_send(kii_http_context_t* http_context,
-        const char* send_buff, int buff_length)
-{
-    context_t* ctx = (context_t*)http_context->app_context;
-    int ret = SSL_write(ctx->ssl, send_buff, buff_length);
-    if (ret > 0) {
-        return KII_HTTPC_OK;
-    } else {
-        printf("failed to send\n");
-        return KII_HTTPC_FAIL;
-    }
-}
-
-static kii_http_client_code_t prv_ssl_recv(kii_http_context_t* http_context,
-        char* recv_buff, int length_to_read, int* out_actual_length)
-{
-    context_t* ctx = (context_t*)http_context->app_context;
-    int ret = SSL_read(ctx->ssl, recv_buff, length_to_read);
-    if (ret > 0) {
-        *out_actual_length = ret;
-        return KII_HTTPC_OK;
-    } else {
-        printf("failed to receive:\n");
-        /* TOOD: could be 0 on success? */
-        *out_actual_length = 0;
-        return KII_HTTPC_FAIL;
-    }
-}
-
-
-static kii_http_client_code_t prv_ssl_close(kii_http_context_t* http_context)
-{
-    context_t* ctx = (context_t*)http_context->app_context;
-    int ret = SSL_shutdown(ctx->ssl);
-    if (ret != 1) {
-        int sslErr = SSL_get_error(ctx->ssl, ret);
-        if (sslErr == SSL_ERROR_SYSCALL) {
-            /* This is OK.*/
-            /* See https://www.openssl.org/docs/ssl/SSL_shutdown.html */
-            ret = 1;
-        } else {
-            char sslErrStr[120];
-            ERR_error_string_n(sslErr, sslErrStr, 120);
-            printf("failed to shutdown: %s\n", sslErrStr);
+        app_context->curl = curl_easy_init();
+        if (app_context->curl == NULL) {
+            return KII_HTTPC_FAIL;
         }
     }
-    close(ctx->sock);
-    SSL_free(ctx->ssl);
-    SSL_CTX_free(ctx->ssl_ctx);
-    if (ret != 1) {
-        printf("failed to close:\n");
+    if (app_context->headers != NULL) {
+        curl_slist_free_all(app_context->headers);
+        app_context->headers = NULL;
+    }
+
+#ifdef DEBUG
+    curl_easy_setopt(app_context->curl, CURLOPT_VERBOSE, 1);
+#endif
+
+    sprintf(url, "https://%s/%s", host, path);
+    curl_easy_setopt(app_context->curl, CURLOPT_URL, url);
+
+    if (strcmp("POST", method) == 0) {
+        app_context->method = PRV_POST;
+    } else if (strcmp("PUT", method) == 0) {
+        app_context->method = PRV_PUT;
+    } else if (strcmp("GET", method) == 0) {
+        app_context->method = PRV_GET;
+    } else if (strcmp("DELETE", method) == 0) {
+        app_context->method = PRV_DELETE;
+    } else if (strcmp("PATCH", method) == 0) {
+        app_context->method = PRV_PATCH;
+    } else {
         return KII_HTTPC_FAIL;
     }
     return KII_HTTPC_OK;
+}
+
+kii_http_client_code_t
+    header_cb(
+        kii_http_context_t* http_context,
+        const char* key,
+        const char* value)
+{
+    context_t *app_context = (context_t*)http_context->app_context;
+    char header[512];
+    struct curl_slist *headers = NULL;
+    sprintf(header, "%s: %s", key, value);
+    headers = curl_slist_append(app_context->headers, header);
+    if (headers == NULL) {
+        return KII_HTTPC_FAIL;
+    }
+    app_context->headers = headers;
+    return KII_HTTPC_OK;
+}
+
+kii_http_client_code_t append_body_start_cb(kii_http_context_t* http_context)
+{
+    context_t* app_context = (context_t*)http_context->app_context;
+    memset(app_context->buffer, 0x00, app_context->buffer_size);
+    return KII_HTTPC_OK;
+}
+
+kii_http_client_code_t
+    append_body_cb(
+        kii_http_context_t* http_context,
+        const char* body_data,
+        size_t body_size)
+{
+    context_t* app_context = (context_t*)http_context->app_context;
+    char* reqBuff = app_context->buffer;
+
+    if ((strlen(reqBuff) + body_size + 1) > app_context->buffer_size) {
+        return KII_HTTPC_FAIL;
+    }
+
+    if (body_data == NULL) {
+        return KII_HTTPC_FAIL;
+    }
+
+    strncat(reqBuff, body_data, body_size);
+    return KII_HTTPC_OK;
+}
+
+kii_http_client_code_t append_body_end_cb(kii_http_context_t* http_context)
+{
+    // Nothing to do.
+    return KII_HTTPC_OK;
+}
+
+size_t
+read_callback(void* ptr, size_t size, size_t nmemb, void* data)
+{
+    size_t block_size = size * nmemb;
+    prv_memory_t* memory = (prv_memory_t*)data;
+    if (block_size == 0) {
+        return 0;
+    }
+    if (memory->buffer_size - memory->position < block_size) {
+        block_size = memory->buffer_size - memory->position;
+    }
+    memcpy(ptr, memory->buffer + memory->position, block_size);
+    memory->position += block_size;
+    return block_size;
+}
+
+size_t
+write_callback(void* ptr, size_t size, size_t nmemb, void* data)
+{
+    size_t block_size = size * nmemb;
+    prv_memory_t* memory = (prv_memory_t*)data;
+    if (block_size == 0) {
+        return 0;
+    }
+
+    if (memory->position + block_size > memory->buffer_size) {
+        return 0;
+    }
+
+    memcpy(memory->buffer + memory->position, ptr, block_size);
+    memory->position += block_size;
+    memory->buffer[memory->position] = '\0';
+    return block_size;
 }
 
 kii_http_client_code_t
@@ -176,110 +179,104 @@ kii_http_client_code_t
         int* response_code,
         char** response_body)
 {
-    context_t* ctx;
-    kii_http_client_code_t res;
+    context_t* app_context = (context_t*)http_context->app_context;
+    prv_memory_t request;
+    prv_memory_t response;
+    long resp_code;
 
-    ctx = (context_t*)http_context->app_context;
-    printf("client state: %d\n", ctx->state);
-    switch (ctx->state) {
-        case PRV_SSL_STATE_IDLE:
-            ctx->sent_size = 0;
-            ctx->last_chunk = 0;
-            ctx->received_size = 0;
-            ctx->state = PRV_SSL_STATE_CONNECT;
-            return KII_HTTPC_AGAIN;
-        case PRV_SSL_STATE_CONNECT:
-            res = prv_ssl_connect(http_context, http_context->host);
-            if (res == KII_HTTPC_OK) {
-                ctx->state = PRV_SSL_STATE_SEND;
-                return KII_HTTPC_AGAIN;
-            } else if (res == KII_HTTPC_AGAIN) {
-                return KII_HTTPC_AGAIN;
-            } else {
-                ctx->state = PRV_SSL_STATE_IDLE;
+    // NOTE: Removing Transfer-Encoding header may be workaround for server.
+    app_context->headers = curl_slist_append(app_context->headers,
+            "Transfer-Encoding: ");
+    if (curl_easy_setopt(app_context->curl, CURLOPT_HTTPHEADER,
+                    app_context->headers) != CURLE_OK) {
+        return KII_HTTPC_FAIL;
+    }
+    switch (app_context->method) {
+        case PRV_POST:
+            if (curl_easy_setopt(app_context->curl, CURLOPT_POST, 1)
+                    != CURLE_OK) {
                 return KII_HTTPC_FAIL;
             }
-        case PRV_SSL_STATE_SEND:
-        {
-            char* sendBuff = NULL;
-            int size = BUFF_SIZE;
-            int remain = strlen(http_context->buffer) - ctx->sent_size;
-            if (remain < size) {
-                size = remain;
-                ctx->last_chunk = 1;
-            }
-            sendBuff = http_context->buffer + ctx->sent_size;
-            res = prv_ssl_send(
-                    http_context,
-                    sendBuff,
-                    size);
-            if (res == KII_HTTPC_OK) {
-                ctx->sent_size += size;
-                if (ctx->last_chunk > 0) {
-                    ctx->state = PRV_SSL_STATE_RECV;
-                }
-                return KII_HTTPC_AGAIN;
-            } else if(res == KII_HTTPC_AGAIN) {
-                return KII_HTTPC_AGAIN;
-            } else {
-                ctx->state = PRV_SSL_STATE_IDLE;
+            if (curl_easy_setopt(app_context->curl, CURLOPT_POSTFIELDSIZE,
+                            strlen(app_context->buffer)) != CURLE_OK) {
                 return KII_HTTPC_FAIL;
             }
-        }
-        case PRV_SSL_STATE_RECV:
-        {
-            int actualLength = 0;
-            char* buffPtr = http_context->buffer + ctx->received_size;
-            if (ctx->received_size == 0) {
-                memset(http_context->buffer, 0x00, http_context->buffer_size);
-            }
-            res = prv_ssl_recv(http_context, buffPtr, BUFF_SIZE, &actualLength);
-            if (res == KII_HTTPC_OK) {
-                ctx->received_size += actualLength;
-                if (actualLength < BUFF_SIZE) {
-                    ctx->state = PRV_SSL_STATE_CLOSE;
-                }
-                return KII_HTTPC_AGAIN;
-            } else if (res == KII_HTTPC_AGAIN) {
-                return KII_HTTPC_AGAIN;
-            } else {
-                ctx->state = PRV_SSL_STATE_IDLE;
+            if (curl_easy_setopt(app_context->curl, CURLOPT_POSTFIELDS,
+                            app_context->buffer) != CURLE_OK) {
                 return KII_HTTPC_FAIL;
             }
-        }
-        case PRV_SSL_STATE_CLOSE:
-        {
-            res = prv_ssl_close(http_context);
-            if (res == KII_HTTPC_OK) {
-                /* parse status code */
-                char* statusPtr = strstr(http_context->buffer, "HTTP/1.1 ");
-                int numCode = 0;
-                char* bodyPtr = NULL;
-                if (statusPtr != NULL) {
-                    char c_status_code[4];
-                    c_status_code[3] = '\0';
-                    statusPtr += strlen("HTTP/1.1 ");
-                    memcpy(c_status_code, statusPtr, 3);
-                    numCode = atoi(c_status_code);
-                    *response_code = numCode;
-                }
-                /* set body pointer */
-                bodyPtr = strstr(http_context->buffer, "\r\n\r\n");
-                if (bodyPtr != NULL) {
-                    bodyPtr += 4;
-                }
-                *response_body = bodyPtr;
-                ctx->state = PRV_SSL_STATE_IDLE;
-                return KII_HTTPC_OK;
-            } else if (res == KII_HTTPC_AGAIN) {
-                return KII_HTTPC_AGAIN;
-            } else {
-                ctx->state = PRV_SSL_STATE_IDLE;
+            break;
+        case PRV_PUT:
+            curl_easy_setopt(app_context->curl, CURLOPT_TRANSFER_ENCODING, 0);
+            if (curl_easy_setopt(app_context->curl, CURLOPT_UPLOAD, 1)
+                    != CURLE_OK) {
                 return KII_HTTPC_FAIL;
             }
-        }
+            if (curl_easy_setopt(app_context->curl, CURLOPT_READFUNCTION,
+                            read_callback) != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            request.position = 0;
+            request.buffer = app_context->buffer;
+            request.buffer_size = strlen(app_context->buffer);
+            if (curl_easy_setopt(app_context->curl, CURLOPT_READDATA,
+                            &request)!= CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            break;
+        case PRV_GET:
+            if (curl_easy_setopt(app_context->curl, CURLOPT_HTTPGET, 1)
+                    != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            break;
+        case PRV_DELETE:
+            if (curl_easy_setopt(app_context->curl, CURLOPT_CUSTOMREQUEST,
+                            "DELETE") != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            break;
+        case PRV_PATCH:
+            if (curl_easy_setopt(app_context->curl, CURLOPT_CUSTOMREQUEST,
+                            "PATCH") != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            if (curl_easy_setopt(app_context->curl, CURLOPT_POSTFIELDSIZE,
+                            strlen(app_context->buffer)) != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            if (curl_easy_setopt(app_context->curl, CURLOPT_POSTFIELDS,
+                            app_context->buffer) != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            break;
+        default:
+            return KII_HTTPC_FAIL;
     }
 
+    if (curl_easy_setopt(app_context->curl, CURLOPT_WRITEFUNCTION,
+                    write_callback) != CURLE_OK) {
+        return KII_HTTPC_FAIL;
+    }
+
+    response.position = 0;
+    response.buffer = app_context->buffer;
+    response.buffer_size = app_context->buffer_size;
+    if (curl_easy_setopt(app_context->curl, CURLOPT_WRITEDATA, &response)
+            != CURLE_OK) {
+        return KII_HTTPC_FAIL;
+    }
+
+    if (curl_easy_perform(app_context->curl) != CURLE_OK) {
+        return KII_HTTPC_FAIL;
+    }
+    if (curl_easy_getinfo(app_context->curl, CURLINFO_RESPONSE_CODE, &resp_code)
+            != CURLE_OK) {
+        return KII_HTTPC_FAIL;
+    }
+
+    *response_code = resp_code;
+    *response_body = app_context->buffer;
     return KII_HTTPC_OK;
 }
 
@@ -304,11 +301,16 @@ void init(kii_core_t* kii, char* buff, context_t* ctx) {
     kii->app_host = (char*)EX_APP_HOST;
 
     memset(ctx, 0x00, sizeof(context_t));
+    ctx->buffer = buff;
+    ctx->buffer_size = EX_BUFFER_SIZE;
     http_ctx = &kii->http_context;
     http_ctx->app_context = ctx;
-    http_ctx->buffer = buff;
-    http_ctx->buffer_size = EX_BUFFER_SIZE;
 
+    kii->http_set_request_line_cb = request_line_cb;
+    kii->http_set_header_cb = header_cb;
+    kii->http_append_body_start_cb = append_body_start_cb;
+    kii->http_append_body_cb = append_body_cb;
+    kii->http_append_body_end_cb = append_body_end_cb;
     kii->http_execute_cb = execute_cb;
     kii->logger_cb = logger_cb;
 
@@ -338,15 +340,17 @@ static void init_topic(kii_topic_t* topic) {
 
 static void print_request(kii_core_t* kii)
 {
+    context_t* app_context = (context_t*)kii->http_context.app_context;
     printf("========request========\n");
-    printf("%s\n", kii->http_context.buffer);
+    printf("%s\n", app_context->buffer);
     printf("========request========\n");
 }
 
 static void print_response(kii_core_t* kii)
 {
+    context_t* app_context = (context_t*)kii->http_context.app_context;
     printf("========response========\n");
-    printf("%s\n", kii->http_context.buffer);
+    printf("%s\n", app_context->buffer);
     printf("========response========\n");
     printf("response_code: %d\n", kii->response_code);
     printf("response_body:\n%s\n", kii->response_body);
