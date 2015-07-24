@@ -132,13 +132,13 @@ prv_kii_http_set_request_line(
         return KII_HTTPC_FAIL;
     }
 
-    http_context->_sending_size =
+    http_context->total_send_size =
         sprintf(http_context->buffer,
                 "%s https://%s/%s HTTP/1.1\r\n", method, kii->app_host,
                 resource_path);
 
     http_context->_body_position =
-        http_context->buffer + http_context->_sending_size;
+        http_context->buffer + http_context->total_send_size;
     return KII_HTTPC_OK;
 }
 
@@ -151,7 +151,7 @@ prv_kii_http_set_header(
     kii_http_context_t* http_context = &(kii->http_context);
     char* insert_positin = http_context->_body_position;
     size_t header_size = 0;
-    size_t body_size = http_context->_sending_size -
+    size_t body_size = http_context->total_send_size -
             (http_context->_body_position - http_context->buffer);
     size_t len;
     header_size = strlen(key);
@@ -160,7 +160,7 @@ prv_kii_http_set_header(
     header_size += strlen("\r\n");
 
     if (http_context->buffer_size <=
-            header_size + http_context->_sending_size) {
+            header_size + http_context->total_send_size) {
         M_KII_LOG("buffer size too short. can't insert header.\n");
         return KII_HTTPC_FAIL;
     }
@@ -168,7 +168,7 @@ prv_kii_http_set_header(
     memmove(http_context->_body_position + header_size,
             http_context->_body_position, body_size);
     http_context->_body_position += header_size;
-    http_context->buffer[http_context->_sending_size + header_size] = '\0';
+    http_context->buffer[http_context->total_send_size + header_size] = '\0';
 
     // set header.
     len = kii_strlen(key);
@@ -186,7 +186,7 @@ prv_kii_http_set_header(
     len = kii_strlen("\r\n");
     memcpy(insert_positin, "\r\n", len);
 
-    http_context->_sending_size += header_size;
+    http_context->total_send_size += header_size;
     return KII_HTTPC_OK;
 }
 
@@ -199,7 +199,7 @@ prv_kii_http_append_body(
     kii_http_context_t* http_context = &(kii->http_context);
 
     if (http_context->buffer_size <=
-            http_context->_sending_size + body_len) {
+            http_context->total_send_size + body_len) {
         M_KII_LOG("buffer size too short. can't insert body.\n");
         return KII_HTTPC_FAIL;
     }
@@ -209,7 +209,7 @@ prv_kii_http_append_body(
     }
 
     strncat(http_context->buffer, body, body_len);
-    http_context->_sending_size = kii_strlen(http_context->buffer);
+    http_context->total_send_size = kii_strlen(http_context->buffer);
     return KII_HTTPC_OK;
 }
 
@@ -413,7 +413,6 @@ prv_http_request(
             return KIIE_FAIL;
         }
     }
-	kii->http_context.total_send_size = strlen(kii->http_context.buffer);
     return KIIE_OK;
 }
 
@@ -588,7 +587,6 @@ kii_core_register_thing_with_id(
         return KIIE_FAIL;
     }
 
-    kii->http_context.total_send_size = kii_strlen(kii->http_context.buffer);
     kii->_state = KII_STATE_READY;
     return KIIE_OK;
 }
@@ -667,7 +665,6 @@ kii_core_thing_authentication(kii_core_t* kii,
         return KIIE_FAIL;
     }
 
-    kii->http_context.total_send_size = kii_strlen(kii->http_context.buffer);
     kii->_state = KII_STATE_READY;
     return KIIE_OK;
 }
@@ -1092,7 +1089,6 @@ kii_core_install_thing_push(
         return KIIE_FAIL;
     }
 
-    kii->http_context.total_send_size = kii_strlen(kii->http_context.buffer);
     kii->_state = KII_STATE_READY;
     return KIIE_OK;
 }
@@ -1274,9 +1270,6 @@ kii_core_api_call(
             M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
             goto exit;
         }
-        // TODO: fix this. Don't assume kii->http_context.buffer is
-        // null teminated.
-        kii->http_context.total_send_size = strlen(kii->http_context.buffer);
     } else {
         result = prv_kii_http_append_body_start(kii);
         if (result != KII_HTTPC_OK) {
@@ -1289,9 +1282,6 @@ kii_core_api_call(
             M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
             goto exit;
         }
-        // TODO: fix this. Don't assume kii->http_context.buffer is
-        // null teminated.
-        kii->http_context.total_send_size = strlen(kii->http_context.buffer);
     }
     kii->_state = KII_STATE_READY;
     ret = KIIE_OK;
@@ -1390,9 +1380,6 @@ kii_error_code_t kii_core_api_call_end(kii_core_t* kii)
         M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
         return KIIE_FAIL;
     }
-    // TODO: fix this. Don't assume kii->http_context.buffer is
-    // null teminated.
-    kii->http_context.total_send_size = kii_strlen(kii->http_context.buffer);
 
     // set content length.
     if (prv_kii_core_http_set_content_length_header(kii,

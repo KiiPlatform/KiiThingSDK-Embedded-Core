@@ -33,16 +33,31 @@ typedef struct kii_http_context_t
      * used by HTTP callback implementations.
      */
     void* app_context;
-    /** buffer used to communicate with KiiCloud.
-     *  application allocate memory before calling apis.
-     */
-    char* buffer;
-    /** size of buffer */
-    size_t buffer_size;
-	/** total size of data to be sent*/
-	size_t total_send_size;
 
 #ifndef USE_CUSTOM_HTTP_CLIENT
+
+    /** buffer used to communicate with KiiCloud.
+     *  application allocate memory before calling apis.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
+    char* buffer;
+
+    /** size of buffer.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
+    size_t buffer_size;
+
+    /** total size of data to be sent.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
+    size_t total_send_size;
+
     /** This is a private field for this SDK.
      * Application programmers must not use this field.
      *
@@ -50,14 +65,6 @@ typedef struct kii_http_context_t
      * defined.
      */
     char* _body_position;
-
-    /** This is a private field for this SDK.
-     * Application programmers must not use this field.
-     *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
-     * defined.
-     */
-    size_t _sending_size;
 
     /** Host name to send HTTP request. You can connect to target
      * server with this host name.
