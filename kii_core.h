@@ -180,7 +180,7 @@ typedef struct kii_http_context_t
 #endif
 } kii_http_context_t;
 
-#ifndef USE_CUSTOM_HTTP_CLIENT
+#ifdef USE_CUSTOM_HTTP_CLIENT
 
 /** callback for preparing HTTP request line.
  * application implement this callback with the HTTP client
