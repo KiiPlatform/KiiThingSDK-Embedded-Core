@@ -57,7 +57,7 @@ typedef enum kii_bool_t {
 
 /** HTTP client code returned by callback implementation */
 typedef enum kii_http_client_code_t {
-    /** retrun this ocde when operation completed. */
+    /** retrun this code when operation completed. */
     KII_HTTPC_OK = 0,
     /** return this code when operation failed. */
     KII_HTTPC_FAIL,
