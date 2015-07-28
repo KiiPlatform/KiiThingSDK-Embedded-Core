@@ -49,7 +49,7 @@ static kii_socket_code_t connect_cb(
     memcpy(&(server.sin_addr), servhost->h_addr, servhost->h_length);
 
     /* Get Port number */
-    server.sin_port = htons(443);
+    server.sin_port = htons(port);
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
