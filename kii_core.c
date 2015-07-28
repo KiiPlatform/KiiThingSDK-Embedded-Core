@@ -153,7 +153,9 @@ prv_kii_http_execute(kii_core_t* kii)
                         M_KII_LOG("buffer is smaller than receiving data.");
                         return KII_HTTPC_FAIL;
                     }
-                    if (actualLength < KII_SOCKET_MAX_BUFF_SIZE) {
+                    // TODO: We may check content-length and decide to
+                    // finish calling recv_cb.
+                    if (actualLength < size) {
                         http_context->buffer[http_context->_received_size] =
                             '\0';
                         http_context->_socket_state =
