@@ -8,6 +8,47 @@ extern "C" {
 #include <stddef.h>
 #include "kii_socket_callback.h"
 
+#ifndef USE_CUSTOM_HTTP_CLIENT
+
+#ifndef KII_SERVER_PORT
+/** Port number of target service.
+ *
+ * This macro becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * defined.
+ */
+#define KII_SERVER_PORT 443
+#endif
+
+#ifndef KII_SOCKET_MAX_BUFF_SIZE
+/** Maximum buffer size which socket sends or receives at a time.
+ *
+ * This is a maximum buffer size which is passed to
+ * kii_http_context_t#send_cb. Value of third argument of
+ * kii_http_context_t#send_cb equals to or is less than this size.
+ *
+ * This is also maximum buffer size which is passed to
+ * kii_http_context_t#recv_cb. Value of third argument of
+ * kii_http_context_t#recv_cb equals to or is less than this size.
+ *
+ * This macro becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * defined.
+ */
+#define KII_SOCKET_MAX_BUFF_SIZE 256
+#endif
+
+/** This is an enumeration to represetn Kii SDK internal state.
+ * Application programmers do not need to use this enumeration.
+ */
+typedef enum prv_kii_socket_state_t {
+    PRV_KII_SOCKET_STATE_IDLE = 0,
+    PRV_KII_SOCKET_STATE_CONNECT,
+    PRV_KII_SOCKET_STATE_SEND,
+    PRV_KII_SOCKET_STATE_RECV,
+    PRV_KII_SOCKET_STATE_CLOSE
+} prv_kii_socket_state_t;
+
+#endif
+
 /** bool type definition */
 typedef enum kii_bool_t {
     KII_FALSE = 0,
@@ -16,7 +57,7 @@ typedef enum kii_bool_t {
 
 /** HTTP client code returned by callback implementation */
 typedef enum kii_http_client_code_t {
-    /** retrun this ocde when operation completed. */
+    /** retrun this code when operation completed. */
     KII_HTTPC_OK = 0,
     /** return this code when operation failed. */
     KII_HTTPC_FAIL,
@@ -29,12 +70,17 @@ typedef enum kii_http_client_code_t {
 
 typedef struct kii_http_context_t
 {
+#ifdef USE_CUSTOM_HTTP_CLIENT
+
     /** application specific context object.
      * used by HTTP callback implementations.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * defined.
      */
     void* app_context;
 
-#ifndef USE_CUSTOM_HTTP_CLIENT
+#else
 
     /** buffer used to communicate with KiiCloud.
      *  application allocate memory before calling apis.
@@ -65,6 +111,30 @@ typedef struct kii_http_context_t
      * defined.
      */
     char* _body_position;
+
+    /** This is a private field for this SDK.
+     * Application programmers must not use this field.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
+    size_t _sent_size;
+
+    /** This is a private field for this SDK.
+     * Application programmers must not use this field.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
+    size_t _received_size;
+
+    /** This is a private field for this SDK.
+     * Application programmers must not use this field.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * defined.
+     */
+    prv_kii_socket_state_t _socket_state;
 
     /** Host name to send HTTP request. You can connect to target
      * server with this host name.
@@ -110,9 +180,15 @@ typedef struct kii_http_context_t
 #endif
 } kii_http_context_t;
 
+#ifdef USE_CUSTOM_HTTP_CLIENT
+
 /** callback for preparing HTTP request line.
  * application implement this callback with the HTTP client
  * in the target environment.
+ *
+ * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * defined.
+ *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
  * do not return KII_HTTPC_AGAIN from this callback.
  * @param [in] http_context context object defined by application.
@@ -130,6 +206,10 @@ typedef kii_http_client_code_t
  * application implement this callback with the HTTP client
  * in the target environment.<br>
  * this callback is called per one header line.
+ *
+ * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * defined.
+ *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
  * do not return KII_HTTPC_AGAIN from this callback.
  * @param [in] http_context context object defined by application.
@@ -145,6 +225,10 @@ typedef kii_http_client_code_t
 /** callback to notify starting HTTP request body creation.
  * Applications implement this callback with the HTTP client in target
  * environment.<br>
+ *
+ * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * defined.
+ *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
  * do not return KII_HTTPC_AGAIN from this callback.
  * @param [in] http_context context object defined by application.
@@ -155,6 +239,10 @@ typedef kii_http_client_code_t
 /** callback for appending HTTP request body.
  * application implement this callback with the HTTP client
  * in the target environment.<br>
+ *
+ * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * defined.
+ *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
  * do not return KII_HTTPC_AGAIN from this callback.
  * @param [in] http_context context object defined by application.
@@ -170,6 +258,10 @@ typedef kii_http_client_code_t
 /** callback to notify ending HTTP request body creation.
  * Applications implement this callback with the HTTP client in target
  * environment.<br>
+ *
+ * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * defined.
+ *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
  * do not return KII_HTTPC_AGAIN from this callback.
  * @param [in] http_context context object defined by application.
@@ -180,6 +272,10 @@ typedef kii_http_client_code_t
 /** callback for execution of HTTP request.
  * application implement this callback with the HTTP client
  * in the target environment.<br>
+ *
+ * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * defined.
+ *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
  * KII_HTTPC_AGAIN can be retuned from this callback.<br>
  * This option may be useful if you execute kii_run() in function which
@@ -193,6 +289,7 @@ typedef kii_http_client_code_t
                 kii_http_context_t* http_context,
                 int* response_code,
                 char** response_body);
+#endif
 
 /** callback for logging.
  * SDK uses this function for logging.
@@ -307,12 +404,16 @@ typedef struct kii_core_t
      * defined.
      */
     KII_HTTPCB_APPEND_BODY_END http_append_body_end_cb;
-#endif
 
     /** execute HTTP request function pointer
      * Should be set before execute apis.
+     *
+     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * defined.
      */
     KII_HTTPCB_EXECUTE http_execute_cb;
+
+#endif
 
     /** logging callback function pointer */
     KII_LOGGER logger_cb;
