@@ -1552,6 +1552,8 @@ kii_error_code_t kii_core_api_call_end(kii_core_t* kii)
         return KIIE_FAIL;
     }
 
+    M_KII_LOG_FORMAT(kii->logger_cb("request: %s\n", kii->http_context.buffer));
+
     // set reday.
     if (kii->_state != KII_STATE_IDLE) {
         return KIIE_FAIL;
