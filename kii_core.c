@@ -1460,14 +1460,14 @@ prv_kii_core_set_authorization_header(kii_core_t* kii)
     if (kii_strlen(kii->author.access_token) <= 0) {
         M_KII_LOG(M_REQUEST_HEADER_CB_NO_AUTH_HEADER);
         return KII_HTTPC_FAIL;
-    } else if (BEARER_LEN + kii_strlen(kii->author.access_token) <
+    } else if (BEARER_LEN + kii_strlen(kii->author.access_token) + 1 >=
             MAX_AUTH_BUFF_SIZE) {
         M_KII_LOG(M_REQUEST_HEADER_CB_AUTH_HEADER);
         return KII_HTTPC_FAIL;
     } else {
         char access_token[MAX_AUTH_BUFF_SIZE];
         memset(access_token, 0x00, sizeof(access_token));
-        kii_sprintf(access_token, "%s%s", BEARER, kii->author.access_token);
+        kii_sprintf(access_token, "%s %s", BEARER, kii->author.access_token);
         return prv_kii_http_set_header(kii, "authorization", access_token);
     }
 }
