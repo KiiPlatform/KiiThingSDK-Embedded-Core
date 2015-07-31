@@ -38,6 +38,12 @@
 #define M_KII_LOG_FORMAT(x)
 #endif
 
+#if defined(DEBUG) && !defined(USE_CUSTOM_HTTP_CLIENT)
+#define M_KII_LOG_DEFAULT_CLIENT(x) M_KII_LOG_FORMAT(x)
+#else
+#define M_KII_LOG_DEFAULT_CLIENT(x)
+#endif
+
 #define M_ACCESS_TOKEN(x, y) \
     x = (kii_strlen((y)) > 0) ? ((y)) : (NULL)
 
@@ -394,16 +400,23 @@ kii_core_run(kii_core_t* kii)
         case KII_STATE_IDLE:
             return KIIE_FAIL;
         case KII_STATE_READY:
+            M_KII_LOG_DEFAULT_CLIENT(kii->logger_cb(
+                    "request: %s\n", kii->http_context.buffer));
             kii->_state = KII_STATE_EXECUTE;
             return KIIE_OK;
         case KII_STATE_EXECUTE:
             cbr = prv_kii_http_execute(kii);
             if (cbr == KII_HTTPC_OK) {
+                M_KII_LOG_DEFAULT_CLIENT(kii->logger_cb(
+                        "response core: %d, response body: %s\n",
+                        kii->response_code, kii->response_body));
                 kii->_state = KII_STATE_IDLE;
                 return KIIE_OK;
             } else if (cbr == KII_HTTPC_AGAIN) {
                 return KIIE_OK;
             } else {
+                M_KII_LOG_DEFAULT_CLIENT(
+                        kii->logger_cb("fail to send request\n"));
                 kii->_state = KII_STATE_IDLE;
                 return KIIE_FAIL;
             }
@@ -1551,8 +1564,6 @@ kii_error_code_t kii_core_api_call_end(kii_core_t* kii)
         M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
         return KIIE_FAIL;
     }
-
-    M_KII_LOG_FORMAT(kii->logger_cb("request: %s\n", kii->http_context.buffer));
 
     // set reday.
     if (kii->_state != KII_STATE_IDLE) {
