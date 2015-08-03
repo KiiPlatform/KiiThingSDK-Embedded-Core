@@ -1,9 +1,9 @@
-override CFLAGS += -std=gnu89 -Wall -pedantic
+override CFLAGS += -std=gnu89 -Wall -pedantic -DUSE_CUSTOM_HTTP_CLIENT
 ifdef DEBUG
 CFLAGS += -g -DDEBUG
 endif
 
-LIBS = -lssl -lcrypto
+LIBS = -lssl -lcrypto -lcurl
 SOURCES = $(wildcard *.c)
 SOURCES += $(wildcard ../*.c)
 TARGET = exampleapp

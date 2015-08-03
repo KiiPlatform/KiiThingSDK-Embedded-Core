@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <sys/types.h>
 #include <netdb.h>
 #include <sys/socket.h>
@@ -11,149 +12,272 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
-#include <openssl/crypto.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-
 #include <getopt.h>
+
+#include <curl/curl.h>
+
+typedef enum prv_http_method_t {
+    PRV_POST,
+    PRV_PUT,
+    PRV_GET,
+    PRV_DELETE,
+    PRV_PATCH
+} prv_http_method_t;
+
+typedef struct prv_memory_t {
+    size_t position;
+    size_t buffer_size;
+    char* buffer;
+} prv_memory_t;
 
 typedef struct context_t
 {
-    SSL *ssl;
-    SSL_CTX *ssl_ctx;
-
+    CURL* curl;
+    char* buffer;
+    size_t buffer_size;
+    struct curl_slist* headers;
+    prv_http_method_t method;
 } context_t;
 
-static kii_socket_code_t connect_cb(
-        kii_socket_context_t* socket_context,
+/* HTTP Callback functions */
+kii_http_client_code_t
+    request_line_cb(
+        kii_http_context_t* http_context,
+        const char* method,
         const char* host,
-        unsigned int port)
+        const char* path)
 {
-    int sock, ret;
-    struct hostent *servhost;
-    struct sockaddr_in server;
-    context_t* ctx = (context_t*)(socket_context->app_context);
-    SSL *ssl;
-    SSL_CTX *ssl_ctx;
+    context_t* app_context = (context_t*)http_context->app_context;
+    char url[512];
 
-    printf("host: %s\n", host);
-    
-    servhost = gethostbyname(host);
-    if (servhost == NULL) {
-        printf("failed to get host.\n");
-        return KII_SOCKETC_FAIL;
-    }
-    memset(&server, 0x00, sizeof(server));
-    server.sin_family = AF_INET;
-    /* More secure. */
-    memcpy(&(server.sin_addr), servhost->h_addr, servhost->h_length);
-
-    /* Get Port number */
-    server.sin_port = htons(port);
-
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
-        printf("failed to init socket.\n");
-        return KII_SOCKETC_FAIL;
-    }
-
-    if (connect(sock, (struct sockaddr*) &server, sizeof(server)) == -1 ){
-        printf("failed to connect socket.\n");
-        return KII_SOCKETC_FAIL;
-    }
-
-    SSL_library_init();
-    ssl_ctx = SSL_CTX_new(SSLv23_client_method());
-    if (ssl_ctx == NULL){
-        printf("failed to init ssl context.\n");
-        return KII_SOCKETC_FAIL;
-    }
-
-    ssl = SSL_new(ssl_ctx);
-    if (ssl == NULL){
-        printf("failed to init ssl.\n");
-        return KII_SOCKETC_FAIL;
-    }
-
-    ret = SSL_set_fd(ssl, sock);
-    if (ret == 0){
-        printf("failed to set fd.\n");
-        return KII_SOCKETC_FAIL;
-    }
-
-    ret = SSL_connect(ssl);
-    if (ret != 1) {
-        int sslErr= SSL_get_error(ssl, ret);
-        char sslErrStr[120];
-        ERR_error_string_n(sslErr, sslErrStr, 120);
-        printf("failed to connect: %s\n", sslErrStr);
-        return KII_SOCKETC_FAIL;
-    }
-    socket_context->socket = sock;
-    ctx->ssl = ssl;
-    ctx->ssl_ctx = ssl_ctx;
-    return KII_SOCKETC_OK;
-}
-
-static kii_socket_code_t send_cb(
-        kii_socket_context_t* socket_context,
-        const char* send_buff,
-        size_t buff_length)
-{
-    context_t* ctx = (context_t*)socket_context->app_context;
-    int ret = SSL_write(ctx->ssl, send_buff, buff_length);
-    if (ret > 0) {
-        return KII_SOCKETC_OK;
+    if (app_context->curl != NULL) {
+        curl_easy_reset(app_context->curl);
     } else {
-        printf("failed to send\n");
-        return KII_SOCKETC_FAIL;
-    }
-}
-
-static kii_socket_code_t recv_cb(
-        kii_socket_context_t* socket_context,
-        char* recv_buff,
-        size_t length_to_read,
-        size_t* out_actual_length)
-{
-    context_t* ctx = (context_t*)socket_context->app_context;
-    int ret = SSL_read(ctx->ssl, recv_buff, length_to_read);
-    if (ret > 0) {
-        *out_actual_length = ret;
-        return KII_SOCKETC_OK;
-    } else {
-        printf("failed to receive:\n");
-        /* TOOD: could be 0 on success? */
-        *out_actual_length = 0;
-        return KII_SOCKETC_FAIL;
-    }
-}
-
-
-static kii_socket_code_t close_cb(kii_socket_context_t* socket_context)
-{
-    context_t* ctx = (context_t*)socket_context->app_context;
-    int ret = SSL_shutdown(ctx->ssl);
-    if (ret != 1) {
-        int sslErr = SSL_get_error(ctx->ssl, ret);
-        if (sslErr == SSL_ERROR_SYSCALL) {
-            /* This is OK.*/
-            /* See https://www.openssl.org/docs/ssl/SSL_shutdown.html */
-            ret = 1;
-        } else {
-            char sslErrStr[120];
-            ERR_error_string_n(sslErr, sslErrStr, 120);
-            printf("failed to shutdown: %s\n", sslErrStr);
+        app_context->curl = curl_easy_init();
+        if (app_context->curl == NULL) {
+            return KII_HTTPC_FAIL;
         }
     }
-    close(socket_context->socket);
-    SSL_free(ctx->ssl);
-    SSL_CTX_free(ctx->ssl_ctx);
-    if (ret != 1) {
-        printf("failed to close:\n");
-        return KII_SOCKETC_FAIL;
+    if (app_context->headers != NULL) {
+        curl_slist_free_all(app_context->headers);
+        app_context->headers = NULL;
     }
-    return KII_SOCKETC_OK;
+
+#ifdef DEBUG
+    curl_easy_setopt(app_context->curl, CURLOPT_VERBOSE, 1);
+#endif
+
+    sprintf(url, "https://%s/%s", host, path);
+    curl_easy_setopt(app_context->curl, CURLOPT_URL, url);
+
+    if (strcmp("POST", method) == 0) {
+        app_context->method = PRV_POST;
+    } else if (strcmp("PUT", method) == 0) {
+        app_context->method = PRV_PUT;
+    } else if (strcmp("GET", method) == 0) {
+        app_context->method = PRV_GET;
+    } else if (strcmp("DELETE", method) == 0) {
+        app_context->method = PRV_DELETE;
+    } else if (strcmp("PATCH", method) == 0) {
+        app_context->method = PRV_PATCH;
+    } else {
+        return KII_HTTPC_FAIL;
+    }
+    return KII_HTTPC_OK;
+}
+
+kii_http_client_code_t
+    header_cb(
+        kii_http_context_t* http_context,
+        const char* key,
+        const char* value)
+{
+    context_t *app_context = (context_t*)http_context->app_context;
+    char header[512];
+    struct curl_slist *headers = NULL;
+    sprintf(header, "%s: %s", key, value);
+    headers = curl_slist_append(app_context->headers, header);
+    if (headers == NULL) {
+        return KII_HTTPC_FAIL;
+    }
+    app_context->headers = headers;
+    return KII_HTTPC_OK;
+}
+
+kii_http_client_code_t append_body_start_cb(kii_http_context_t* http_context)
+{
+    context_t* app_context = (context_t*)http_context->app_context;
+    memset(app_context->buffer, 0x00, app_context->buffer_size);
+    return KII_HTTPC_OK;
+}
+
+kii_http_client_code_t
+    append_body_cb(
+        kii_http_context_t* http_context,
+        const char* body_data,
+        size_t body_size)
+{
+    context_t* app_context = (context_t*)http_context->app_context;
+    char* reqBuff = app_context->buffer;
+
+    if ((strlen(reqBuff) + body_size + 1) > app_context->buffer_size) {
+        return KII_HTTPC_FAIL;
+    }
+
+    if (body_data == NULL) {
+        return KII_HTTPC_FAIL;
+    }
+
+    strncat(reqBuff, body_data, body_size);
+    return KII_HTTPC_OK;
+}
+
+kii_http_client_code_t append_body_end_cb(kii_http_context_t* http_context)
+{
+    // Nothing to do.
+    return KII_HTTPC_OK;
+}
+
+size_t
+read_callback(void* ptr, size_t size, size_t nmemb, void* data)
+{
+    size_t block_size = size * nmemb;
+    prv_memory_t* memory = (prv_memory_t*)data;
+    if (block_size == 0) {
+        return 0;
+    }
+    if (memory->buffer_size - memory->position < block_size) {
+        block_size = memory->buffer_size - memory->position;
+    }
+    memcpy(ptr, memory->buffer + memory->position, block_size);
+    memory->position += block_size;
+    return block_size;
+}
+
+size_t
+write_callback(void* ptr, size_t size, size_t nmemb, void* data)
+{
+    size_t block_size = size * nmemb;
+    prv_memory_t* memory = (prv_memory_t*)data;
+    if (block_size == 0) {
+        return 0;
+    }
+
+    if (memory->position + block_size > memory->buffer_size) {
+        return 0;
+    }
+
+    memcpy(memory->buffer + memory->position, ptr, block_size);
+    memory->position += block_size;
+    memory->buffer[memory->position] = '\0';
+    return block_size;
+}
+
+kii_http_client_code_t
+    execute_cb(
+        kii_http_context_t* http_context,
+        int* response_code,
+        char** response_body)
+{
+    context_t* app_context = (context_t*)http_context->app_context;
+    prv_memory_t request;
+    prv_memory_t response;
+    long resp_code;
+
+    // NOTE: Removing Transfer-Encoding header may be workaround for server.
+    app_context->headers = curl_slist_append(app_context->headers,
+            "Transfer-Encoding: ");
+    if (curl_easy_setopt(app_context->curl, CURLOPT_HTTPHEADER,
+                    app_context->headers) != CURLE_OK) {
+        return KII_HTTPC_FAIL;
+    }
+    switch (app_context->method) {
+        case PRV_POST:
+            if (curl_easy_setopt(app_context->curl, CURLOPT_POST, 1)
+                    != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            if (curl_easy_setopt(app_context->curl, CURLOPT_POSTFIELDSIZE,
+                            strlen(app_context->buffer)) != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            if (curl_easy_setopt(app_context->curl, CURLOPT_POSTFIELDS,
+                            app_context->buffer) != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            break;
+        case PRV_PUT:
+            curl_easy_setopt(app_context->curl, CURLOPT_TRANSFER_ENCODING, 0);
+            if (curl_easy_setopt(app_context->curl, CURLOPT_UPLOAD, 1)
+                    != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            if (curl_easy_setopt(app_context->curl, CURLOPT_READFUNCTION,
+                            read_callback) != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            request.position = 0;
+            request.buffer = app_context->buffer;
+            request.buffer_size = strlen(app_context->buffer);
+            if (curl_easy_setopt(app_context->curl, CURLOPT_READDATA,
+                            &request)!= CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            break;
+        case PRV_GET:
+            if (curl_easy_setopt(app_context->curl, CURLOPT_HTTPGET, 1)
+                    != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            break;
+        case PRV_DELETE:
+            if (curl_easy_setopt(app_context->curl, CURLOPT_CUSTOMREQUEST,
+                            "DELETE") != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            break;
+        case PRV_PATCH:
+            if (curl_easy_setopt(app_context->curl, CURLOPT_CUSTOMREQUEST,
+                            "PATCH") != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            if (curl_easy_setopt(app_context->curl, CURLOPT_POSTFIELDSIZE,
+                            strlen(app_context->buffer)) != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            if (curl_easy_setopt(app_context->curl, CURLOPT_POSTFIELDS,
+                            app_context->buffer) != CURLE_OK) {
+                return KII_HTTPC_FAIL;
+            }
+            break;
+        default:
+            return KII_HTTPC_FAIL;
+    }
+
+    if (curl_easy_setopt(app_context->curl, CURLOPT_WRITEFUNCTION,
+                    write_callback) != CURLE_OK) {
+        return KII_HTTPC_FAIL;
+    }
+
+    response.position = 0;
+    response.buffer = app_context->buffer;
+    response.buffer_size = app_context->buffer_size;
+    if (curl_easy_setopt(app_context->curl, CURLOPT_WRITEDATA, &response)
+            != CURLE_OK) {
+        return KII_HTTPC_FAIL;
+    }
+
+    if (curl_easy_perform(app_context->curl) != CURLE_OK) {
+        return KII_HTTPC_FAIL;
+    }
+    if (curl_easy_getinfo(app_context->curl, CURLINFO_RESPONSE_CODE, &resp_code)
+            != CURLE_OK) {
+        return KII_HTTPC_FAIL;
+    }
+
+    *response_code = resp_code;
+    *response_body = app_context->buffer;
+    return KII_HTTPC_OK;
 }
 
 void logger_cb(const char* format, ...)
@@ -177,15 +301,17 @@ void init(kii_core_t* kii, char* buff, context_t* ctx) {
     kii->app_host = (char*)EX_APP_HOST;
 
     memset(ctx, 0x00, sizeof(context_t));
+    ctx->buffer = buff;
+    ctx->buffer_size = EX_BUFFER_SIZE;
     http_ctx = &kii->http_context;
-    http_ctx->buffer = buff;
-    http_ctx->buffer_size = EX_BUFFER_SIZE;
-    http_ctx->connect_cb = connect_cb;
-    http_ctx->send_cb = send_cb;
-    http_ctx->recv_cb = recv_cb;
-    http_ctx->close_cb = close_cb;
-    http_ctx->socket_context.app_context = ctx;
+    http_ctx->app_context = ctx;
 
+    kii->http_set_request_line_cb = request_line_cb;
+    kii->http_set_header_cb = header_cb;
+    kii->http_append_body_start_cb = append_body_start_cb;
+    kii->http_append_body_cb = append_body_cb;
+    kii->http_append_body_end_cb = append_body_end_cb;
+    kii->http_execute_cb = execute_cb;
     kii->logger_cb = logger_cb;
 
 }
@@ -214,15 +340,17 @@ static void init_topic(kii_topic_t* topic) {
 
 static void print_request(kii_core_t* kii)
 {
+    context_t* app_context = (context_t*)kii->http_context.app_context;
     printf("========request========\n");
-    printf("%s\n", kii->http_context.buffer);
+    printf("%s\n", app_context->buffer);
     printf("========request========\n");
 }
 
 static void print_response(kii_core_t* kii)
 {
+    context_t* app_context = (context_t*)kii->http_context.app_context;
     printf("========response========\n");
-    printf("%s\n", kii->http_context.buffer);
+    printf("%s\n", app_context->buffer);
     printf("========response========\n");
     printf("response_code: %d\n", kii->response_code);
     printf("response_body:\n%s\n", kii->response_body);

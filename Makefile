@@ -1,4 +1,4 @@
-CFLAGS = -std=gnu89 -Wall -pedantic -fPIC -shared
+override CFLAGS += -std=gnu89 -Wall -pedantic -fPIC -shared
 ifdef DEBUG
 CFLAGS += -g -DDEBUG
 endif
@@ -25,8 +25,5 @@ clean:
 doc:
 	doxygen
 
-cc3200:
-	cp -f kii.h CC3200/ && cp -f kii.c CC3200/ 
-
-.PHONY: build clean cc3200 doc
+.PHONY: build clean doc
 
