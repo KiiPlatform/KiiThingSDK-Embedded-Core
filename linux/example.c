@@ -1,193 +1,15 @@
 #include "../kii_core.h"
 #include "example.h"
+#include "kii_core_init.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/types.h>
-#include <sys/uio.h>
-#include <unistd.h>
-
-#include <openssl/crypto.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
 
 #include <getopt.h>
-
-typedef struct context_t
-{
-    SSL *ssl;
-    SSL_CTX *ssl_ctx;
-
-} context_t;
-
-static kii_socket_code_t connect_cb(
-        kii_socket_context_t* socket_context,
-        const char* host,
-        unsigned int port)
-{
-    int sock, ret;
-    struct hostent *servhost;
-    struct sockaddr_in server;
-    context_t* ctx = (context_t*)(socket_context->app_context);
-    SSL *ssl;
-    SSL_CTX *ssl_ctx;
-
-    printf("host: %s\n", host);
-    
-    servhost = gethostbyname(host);
-    if (servhost == NULL) {
-        printf("failed to get host.\n");
-        return KII_SOCKETC_FAIL;
-    }
-    memset(&server, 0x00, sizeof(server));
-    server.sin_family = AF_INET;
-    /* More secure. */
-    memcpy(&(server.sin_addr), servhost->h_addr, servhost->h_length);
-
-    /* Get Port number */
-    server.sin_port = htons(port);
-
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
-        printf("failed to init socket.\n");
-        return KII_SOCKETC_FAIL;
-    }
-
-    if (connect(sock, (struct sockaddr*) &server, sizeof(server)) == -1 ){
-        printf("failed to connect socket.\n");
-        return KII_SOCKETC_FAIL;
-    }
-
-    SSL_library_init();
-    ssl_ctx = SSL_CTX_new(SSLv23_client_method());
-    if (ssl_ctx == NULL){
-        printf("failed to init ssl context.\n");
-        return KII_SOCKETC_FAIL;
-    }
-
-    ssl = SSL_new(ssl_ctx);
-    if (ssl == NULL){
-        printf("failed to init ssl.\n");
-        return KII_SOCKETC_FAIL;
-    }
-
-    ret = SSL_set_fd(ssl, sock);
-    if (ret == 0){
-        printf("failed to set fd.\n");
-        return KII_SOCKETC_FAIL;
-    }
-
-    ret = SSL_connect(ssl);
-    if (ret != 1) {
-        int sslErr= SSL_get_error(ssl, ret);
-        char sslErrStr[120];
-        ERR_error_string_n(sslErr, sslErrStr, 120);
-        printf("failed to connect: %s\n", sslErrStr);
-        return KII_SOCKETC_FAIL;
-    }
-    socket_context->socket = sock;
-    ctx->ssl = ssl;
-    ctx->ssl_ctx = ssl_ctx;
-    return KII_SOCKETC_OK;
-}
-
-static kii_socket_code_t send_cb(
-        kii_socket_context_t* socket_context,
-        const char* send_buff,
-        size_t buff_length)
-{
-    context_t* ctx = (context_t*)socket_context->app_context;
-    int ret = SSL_write(ctx->ssl, send_buff, buff_length);
-    if (ret > 0) {
-        return KII_SOCKETC_OK;
-    } else {
-        printf("failed to send\n");
-        return KII_SOCKETC_FAIL;
-    }
-}
-
-static kii_socket_code_t recv_cb(
-        kii_socket_context_t* socket_context,
-        char* recv_buff,
-        size_t length_to_read,
-        size_t* out_actual_length)
-{
-    context_t* ctx = (context_t*)socket_context->app_context;
-    int ret = SSL_read(ctx->ssl, recv_buff, length_to_read);
-    if (ret > 0) {
-        *out_actual_length = ret;
-        return KII_SOCKETC_OK;
-    } else {
-        printf("failed to receive:\n");
-        /* TOOD: could be 0 on success? */
-        *out_actual_length = 0;
-        return KII_SOCKETC_FAIL;
-    }
-}
-
-
-static kii_socket_code_t close_cb(kii_socket_context_t* socket_context)
-{
-    context_t* ctx = (context_t*)socket_context->app_context;
-    int ret = SSL_shutdown(ctx->ssl);
-    if (ret != 1) {
-        int sslErr = SSL_get_error(ctx->ssl, ret);
-        if (sslErr == SSL_ERROR_SYSCALL) {
-            /* This is OK.*/
-            /* See https://www.openssl.org/docs/ssl/SSL_shutdown.html */
-            ret = 1;
-        } else {
-            char sslErrStr[120];
-            ERR_error_string_n(sslErr, sslErrStr, 120);
-            printf("failed to shutdown: %s\n", sslErrStr);
-        }
-    }
-    close(socket_context->socket);
-    SSL_free(ctx->ssl);
-    SSL_CTX_free(ctx->ssl_ctx);
-    if (ret != 1) {
-        printf("failed to close:\n");
-        return KII_SOCKETC_FAIL;
-    }
-    return KII_SOCKETC_OK;
-}
-
-void logger_cb(const char* format, ...)
-{
-    va_list list;
-    va_start(list, format);
-    vprintf(format, list);
-    va_end(list);
-}
 
 void parse_response(char* resp_body)
 {
     /* TODO: implement */
-}
-
-void init(kii_core_t* kii, char* buff, context_t* ctx) {
-    kii_http_context_t* http_ctx;
-    memset(kii, 0x00, sizeof(kii_core_t));
-    kii->app_id = (char*)EX_APP_ID;
-    kii->app_key = (char*)EX_APP_KEY;
-    kii->app_host = (char*)EX_APP_HOST;
-
-    memset(ctx, 0x00, sizeof(context_t));
-    http_ctx = &kii->http_context;
-    http_ctx->buffer = buff;
-    http_ctx->buffer_size = EX_BUFFER_SIZE;
-    http_ctx->connect_cb = connect_cb;
-    http_ctx->send_cb = send_cb;
-    http_ctx->recv_cb = recv_cb;
-    http_ctx->close_cb = close_cb;
-    http_ctx->socket_context.app_context = ctx;
-
-    kii->logger_cb = logger_cb;
-
 }
 
 static void set_author(kii_core_t* kii, kii_author_t* author)
@@ -814,14 +636,14 @@ static int thing_api_call_example_auth(kii_core_t* kii)
 
 int main(int argc, char** argv)
 {
-    context_t ctx;
     kii_core_t kii;
     char buff[EX_BUFFER_SIZE];
 
     int optval;
 
     /* Initialization */
-    init(&kii, buff, &ctx);
+    kii_core_init(&kii, (char *)EX_APP_HOST, (char *)EX_APP_ID,
+            (char *)EX_APP_KEY, buff, EX_BUFFER_SIZE);
 
     while (1) {
         int option_index = 0;
