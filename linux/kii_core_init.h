@@ -5,8 +5,7 @@
 extern "C" {
 #endif
 
-#include "../kii_core.h"
-#include "kii_core_socket.h"
+#include <kii_core.h>
 
 void kii_core_init(
         kii_core_t* kii,

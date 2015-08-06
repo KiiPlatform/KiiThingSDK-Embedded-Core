@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "kii_core_secure_socket.h"
+
 void logger_cb(const char* format, ...)
 {
     va_list list;
@@ -29,10 +31,10 @@ void kii_core_init(
     http_ctx = &kii->http_context;
     http_ctx->buffer = buff;
     http_ctx->buffer_size = length;
-    http_ctx->connect_cb = connect_cb;
-    http_ctx->send_cb = send_cb;
-    http_ctx->recv_cb = recv_cb;
-    http_ctx->close_cb = close_cb;
+    http_ctx->connect_cb = s_connect_cb;
+    http_ctx->send_cb = s_send_cb;
+    http_ctx->recv_cb = s_recv_cb;
+    http_ctx->close_cb = s_close_cb;
     http_ctx->socket_context.app_context = NULL;
 
     kii->logger_cb = logger_cb;
