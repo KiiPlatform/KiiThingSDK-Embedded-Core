@@ -31,9 +31,7 @@ kii_socket_code_t
     SSL *ssl = NULL;
     SSL_CTX *ssl_ctx = NULL;
 
-    printf("host: %s\n", host);
-    
-    ctx = malloc(sizeof(ssl_context_t));
+    ctx = (ssl_context_t*)malloc(sizeof(ssl_context_t));
     memset(ctx, 0x00, sizeof(ssl_context_t));
 
     servhost = gethostbyname(host);
