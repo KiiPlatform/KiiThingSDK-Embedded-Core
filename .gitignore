@@ -2,3 +2,6 @@ libkiie.so
 html
 latex
 *~
+*.o
+*.a
+testapp

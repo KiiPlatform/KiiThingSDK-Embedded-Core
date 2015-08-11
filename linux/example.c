@@ -1,4 +1,4 @@
-#include "../kii_core.h"
+#include <kii_core.h>
 #include "example.h"
 #include "kii_core_init.h"
 #include <stdio.h>

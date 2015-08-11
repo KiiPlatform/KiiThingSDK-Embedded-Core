@@ -6,7 +6,7 @@
 
 #include "kii_core_secure_socket.h"
 
-void logger_cb(const char* format, ...)
+static void logger_cb(const char* format, ...)
 {
     va_list list;
     va_start(list, format);
