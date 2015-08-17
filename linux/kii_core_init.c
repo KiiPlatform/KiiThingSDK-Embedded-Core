@@ -14,7 +14,7 @@ static void logger_cb(const char* format, ...)
     va_end(list);
 }
 
-void kii_core_init(
+void kii_core_impl_init(
         kii_core_t* kii,
         char* app_host,
         char* app_id,
@@ -24,9 +24,8 @@ void kii_core_init(
 {
     kii_http_context_t* http_ctx;
     memset(kii, 0x00, sizeof(kii_core_t));
-    kii->app_id = app_id;
-    kii->app_key = app_key;
-    kii->app_host = app_host;
+
+    kii_core_init(kii, app_host, app_id, app_key);
 
     http_ctx = &kii->http_context;
     http_ctx->buffer = buff;

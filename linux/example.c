@@ -642,7 +642,7 @@ int main(int argc, char** argv)
     int optval;
 
     /* Initialization */
-    kii_core_init(&kii, (char *)EX_APP_HOST, (char *)EX_APP_ID,
+    kii_core_impl_init(&kii, (char *)EX_APP_HOST, (char *)EX_APP_ID,
             (char *)EX_APP_KEY, buff, EX_BUFFER_SIZE);
 
     while (1) {

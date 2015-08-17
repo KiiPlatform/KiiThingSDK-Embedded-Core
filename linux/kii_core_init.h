@@ -7,7 +7,7 @@ extern "C" {
 
 #include <kii_core.h>
 
-void kii_core_init(
+void kii_core_impl_init(
         kii_core_t* kii,
         char* app_host,
         char* app_id,

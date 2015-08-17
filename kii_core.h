@@ -448,6 +448,20 @@ typedef struct kii_topic_t {
     char* topic_name;
 } kii_topic_t;
 
+/** Initializes Kii SDK
+ *  \param [inout] kii core sdk instance.
+ *  \param [in] site the input of site name,
+ *  should be one of "CN", "JP", "US", "SG"
+ *  \param [in] app_id the input of Application ID
+ *  \param [in] app_key the input of Application Key
+ *  \return  KIIE_OK:success, KIIE_FAIL: failure
+ */
+kii_error_code_t kii_core_init(
+        kii_core_t* kii,
+        const char* site,
+        const char* app_id,
+        const char* app_key);
+
 /** obtain current state of SDK.
  * @return state of SDK.
  */
