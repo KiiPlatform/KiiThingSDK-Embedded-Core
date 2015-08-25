@@ -667,6 +667,35 @@ prv_topic_path(
     }
 }
 
+    static kii_http_client_code_t
+prv_kii_http_append_escaped_body(
+        kii_core_t* kii,
+        const char* string)
+{
+    size_t str_len = kii_strlen(string);
+    size_t i = 0;
+    kii_http_client_code_t retval = KII_HTTPC_OK;
+    for (i = 0; i < str_len; ++i) {
+        if (string[i] == '\'' || string[i] == '\"'|| string[i] == '/') {
+            retval = prv_kii_http_append_body(kii, "\\", 1);
+            if (retval != KII_HTTPC_OK) {
+                return retval;
+            }
+        } else if (string[i] == '\\' &&
+                (string[i] != 'x' || string[i] != 'X')) {
+            retval = prv_kii_http_append_body(kii, "\\", 1);
+            if (retval != KII_HTTPC_OK) {
+                return retval;
+            }
+        }
+        retval = prv_kii_http_append_body(kii, &string[i], 1);
+        if (retval != KII_HTTPC_OK) {
+            return retval;
+        }
+    }
+    return KII_HTTPC_OK;
+}
+
     kii_error_code_t
 kii_core_register_thing(
         kii_core_t* kii,
@@ -734,7 +763,8 @@ kii_core_register_thing_with_id(
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_STR(kii, vendor_thing_id) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_escaped_body(kii, vendor_thing_id)
+            != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -742,18 +772,20 @@ kii_core_register_thing_with_id(
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_STR(kii, password) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_escaped_body(kii, password) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_CONSTANT_STR(kii, "\",\"_thingType\":\"") !=
-            KII_HTTPC_OK) {
-        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
-        return KIIE_FAIL;
-    }
-    if (M_KII_APPEND_STR(kii, thing_type) != KII_HTTPC_OK) {
-        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
-        return KIIE_FAIL;
+    if (thing_type != NULL) {
+        if (M_KII_APPEND_CONSTANT_STR(kii, "\",\"_thingType\":\"") !=
+                KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
+        if (prv_kii_http_append_escaped_body(kii, thing_type) != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
     }
     if (M_KII_APPEND_CONSTANT_STR(kii, "\"}") != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
@@ -821,7 +853,8 @@ kii_core_thing_authentication(kii_core_t* kii,
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_STR(kii, vendor_thing_id) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_escaped_body(kii, vendor_thing_id)
+            != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -829,7 +862,7 @@ kii_core_thing_authentication(kii_core_t* kii,
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_STR(kii, password) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_escaped_body(kii, password) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
