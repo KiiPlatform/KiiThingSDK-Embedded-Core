@@ -746,13 +746,12 @@ prv_kii_http_append_escaped_body(
     size_t i = 0;
     kii_http_client_code_t retval = KII_HTTPC_OK;
     for (i = 0; i < str_len; ++i) {
-        if (string[i] == '\'' || string[i] == '\"'|| string[i] == '/') {
+        if (string[i] == '\"'|| string[i] == '/') {
             retval = M_KII_APPEND_CONSTANT_STR(kii, "\\");
             if (retval != KII_HTTPC_OK) {
                 return retval;
             }
-        } else if (string[i] == '\\' &&
-                (string[i] != 'x' || string[i] != 'X')) {
+        } else if (string[i] == '\\' && string[i + 1] != 'u') {
             retval = M_KII_APPEND_CONSTANT_STR(kii, "\\");
             if (retval != KII_HTTPC_OK) {
                 return retval;
