@@ -36,7 +36,7 @@ extern "C" {
 #define KII_SOCKET_MAX_BUFF_SIZE 256
 #endif
 
-/** This is an enumeration to represetn Kii SDK internal state.
+/** This is an enumeration to represent Kii SDK internal state.
  * Application programmers do not need to use this enumeration.
  */
 typedef enum prv_kii_socket_state_t {
@@ -278,7 +278,7 @@ typedef kii_http_client_code_t
  *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
  * KII_HTTPC_AGAIN can be retuned from this callback.<br>
- * This option may be useful if you execute kii_run() in function which
+ * This option may be useful if you execute kii_core_run() in function which
  * takes care of other events.
  * @param [out] response_code HTTP response code
  * @param [out] response_body pointer refers the HTTP response
@@ -313,9 +313,9 @@ typedef enum kii_error_code_t {
 typedef enum kii_state_t {
     /** SDK is idle. */
     KII_STATE_IDLE = 0,
-    /** SDK is ready to execute kii_run() */
+    /** SDK is ready to execute kii_core_run() */
     KII_STATE_READY,
-    /** SDK is executing request. kii_run() should be called to finish
+    /** SDK is executing request. kii_core_run() should be called to finish
      * operation
      */
     KII_STATE_EXECUTE
@@ -465,7 +465,7 @@ kii_error_code_t kii_core_run(kii_core_t* kii);
  * JSON string, you can add custom properties. "_vendorThingID" and
  * "_password" properties are required in this JSON string.  after
  * this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] thing_data JSON object represents thing to be registered.<br>
@@ -481,7 +481,7 @@ kii_core_register_thing(kii_core_t* kii,
  * Unlike kii_core_register_thing(kii_core_t*, const char*), this
  * function only register "_vendorThingID", "_password" and
  * "_thingType" fields.  after this method succeeded, state of SDK
- * becomes KII_STATE_READY.<br> execute kii_run() to send the request
+ * becomes KII_STATE_READY.<br> execute kii_core_run() to send the request
  * to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
@@ -499,7 +499,7 @@ kii_core_register_thing_with_id(
 
 /** prepare request of thing authentication.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] vendor_thing_id thing id given by vendor on registration.
@@ -512,7 +512,7 @@ kii_core_thing_authentication(kii_core_t* kii,
 
 /** prepare request of create object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -531,7 +531,7 @@ kii_core_create_new_object(
 
 /** prepare request of create object with id.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -552,7 +552,7 @@ kii_core_create_new_object_with_id(
 
 /** prepare request of patch object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -577,7 +577,7 @@ kii_core_patch_object(
 
 /** prepare request of replace object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -602,7 +602,7 @@ kii_core_replace_object(
 
 /** prepare request of get object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -616,7 +616,7 @@ kii_core_get_object(
 
 /** prepare request of delete object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket object to be created.
@@ -630,7 +630,7 @@ kii_core_delete_object(
 
 /** prepare request of subscribe bucket.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * after the execution of request succeeded, you can receive push notification
  * when event happens in the bucket.
  * @return result of preparation.
@@ -643,7 +643,7 @@ kii_core_subscribe_bucket(kii_core_t* kii,
 
 /** prepare request of subscribe bucket.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to be unsubscribed.
@@ -654,7 +654,7 @@ kii_core_unsubscribe_bucket(kii_core_t* kii,
 
 /** prepare request of create topic.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * after execution of the request succeeded, you can subscribe topic to receive
  * message sent to the topic.
  * @return result of preparation.
@@ -667,7 +667,7 @@ kii_core_create_topic(kii_core_t* kii,
 
 /** prepare request of delete topic.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] topic to be deleted.
@@ -678,7 +678,7 @@ kii_core_delete_topic(kii_core_t* kii,
 
 /** prepare request of subscribe topic.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * after the execution of request succeeded, you can receive push notification
  * when the message is sent to the topic.
  * @return result of preparation.
@@ -691,7 +691,7 @@ kii_core_subscribe_topic(kii_core_t* kii,
 
 /** prepare request of unsubscribe topic.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] topic to be unsubscribed.
@@ -702,7 +702,7 @@ kii_core_unsubscribe_topic(kii_core_t* kii,
 
 /** prepare request of install push for thing.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * application get installationRegistrationID field in the response body to
  * obtain MQTT endpoint.
  * for details of response, please refer to<br>
@@ -718,7 +718,7 @@ kii_core_install_thing_push(kii_core_t* kii,
 
 /** prepare request of get MQTT endpoint.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * application get the information of MQTT endpoint from the response body
  * to connect and receive push notification sent from Kii Cloud
  * for details of response, please refer to<br>
