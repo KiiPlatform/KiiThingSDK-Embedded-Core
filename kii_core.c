@@ -310,7 +310,7 @@ prv_kii_http_set_header(
 }
 
     static kii_http_client_code_t
-prv_kii_http_append_body_to_client(
+prv_kii_http_append_string(
         kii_core_t* kii,
         const char* body,
         size_t body_len)
@@ -335,7 +335,7 @@ prv_kii_http_append_body_to_client(
 static kii_http_client_code_t prv_kii_http_append_body_start_on_client(
         kii_core_t* kii)
 {
-    return prv_kii_http_append_body_to_client(kii, "\r\n", 2);
+    return prv_kii_http_append_string(kii, "\r\n", 2);
 }
 
 static kii_http_client_code_t prv_kii_http_append_body_end(kii_core_t* kii)
@@ -373,7 +373,7 @@ prv_kii_http_set_header(
 }
 
     static kii_http_client_code_t
-prv_kii_http_append_body_to_client(
+prv_kii_http_append_string(
         kii_core_t* kii,
         const char* body,
         size_t body_len)
@@ -414,7 +414,7 @@ prv_kii_http_append_body(
         size_t body_size)
 {
     kii_http_client_code_t retval =
-        prv_kii_http_append_body_to_client(kii, body_data, body_size);
+        prv_kii_http_append_string(kii, body_data, body_size);
     if (retval != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return retval;
