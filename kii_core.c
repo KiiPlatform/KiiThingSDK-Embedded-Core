@@ -310,7 +310,7 @@ prv_kii_http_set_header(
 }
 
     static kii_http_client_code_t
-prv_kii_http_append_body(
+prv_kii_http_append_string(
         kii_core_t* kii,
         const char* body,
         size_t body_len)
@@ -332,9 +332,10 @@ prv_kii_http_append_body(
     return KII_HTTPC_OK;
 }
 
-static kii_http_client_code_t prv_kii_http_append_body_start(kii_core_t* kii)
+static kii_http_client_code_t prv_kii_http_append_body_start_on_client(
+        kii_core_t* kii)
 {
-    return prv_kii_http_append_body(kii, "\r\n", 2);
+    return prv_kii_http_append_string(kii, "\r\n", 2);
 }
 
 static kii_http_client_code_t prv_kii_http_append_body_end(kii_core_t* kii)
@@ -372,7 +373,7 @@ prv_kii_http_set_header(
 }
 
     static kii_http_client_code_t
-prv_kii_http_append_body(
+prv_kii_http_append_string(
         kii_core_t* kii,
         const char* body,
         size_t body_len)
@@ -380,7 +381,8 @@ prv_kii_http_append_body(
     return kii->http_append_body_cb(&(kii->http_context), body, body_len);
 }
 
-static kii_http_client_code_t prv_kii_http_append_body_start(kii_core_t* kii)
+static kii_http_client_code_t prv_kii_http_append_body_start_on_client(
+        kii_core_t* kii)
 {
     return kii->http_append_body_start_cb(&(kii->http_context));
 }
@@ -391,6 +393,83 @@ static kii_http_client_code_t prv_kii_http_append_body_end(kii_core_t* kii)
 }
 
 #endif
+
+    static kii_http_client_code_t
+prv_kii_http_append_body_start(kii_core_t* kii)
+{
+    kii_http_client_code_t retval =
+        prv_kii_http_append_body_start_on_client(kii);
+    if (retval != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
+        return retval;
+    }
+    kii->_content_length = 0;
+    return retval;
+}
+
+    static kii_http_client_code_t
+prv_kii_http_append_body(
+        kii_core_t* kii,
+        const char* body_data,
+        size_t body_size)
+{
+    kii_http_client_code_t retval =
+        prv_kii_http_append_string(kii, body_data, body_size);
+    if (retval != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+        return retval;
+    }
+    kii->_content_length += body_size;
+    return retval;
+}
+
+    static void
+prv_content_length_str(
+        size_t content_length,
+        char* buff,
+        size_t buff_len)
+{
+    kii_sprintf(buff, "%lu", ((unsigned long)content_length));
+}
+
+static kii_http_client_code_t
+prv_kii_core_http_set_content_length_header(
+        kii_core_t* kii,
+        size_t content_length)
+{
+    if (content_length > 0) {
+        char content_length_str[8];
+        kii_memset(content_length_str, 0x00, 8);
+        prv_content_length_str(content_length, content_length_str, 8);
+        return prv_kii_http_set_header(kii, "content-length",
+                content_length_str);
+    } else {
+        return KII_HTTPC_FAIL;
+    }
+}
+
+static kii_error_code_t prv_kii_http_message_creation_end(kii_core_t* kii)
+{
+    // close body cb.
+    if (prv_kii_http_append_body_end(kii) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    // set content length.
+    if (prv_kii_core_http_set_content_length_header(kii,
+                    kii->_content_length) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    // set reday.
+    if (kii->_state != KII_STATE_IDLE) {
+        return KIIE_FAIL;
+    }
+    kii->_state = KII_STATE_READY;
+    return KIIE_OK;
+}
 
     kii_error_code_t
 kii_core_run(kii_core_t* kii)
@@ -424,15 +503,6 @@ kii_core_run(kii_core_t* kii)
             M_KII_ASSERT(0);
 
     }
-}
-
-    static void
-prv_content_length_str(
-        size_t content_length,
-        char* buff,
-        size_t buff_len)
-{
-    kii_sprintf(buff, "%lu", ((unsigned long)content_length));
 }
 
     static void
@@ -667,6 +737,34 @@ prv_topic_path(
     }
 }
 
+    static kii_http_client_code_t
+prv_kii_http_append_escaped_body(
+        kii_core_t* kii,
+        const char* string)
+{
+    size_t str_len = kii_strlen(string);
+    size_t i = 0;
+    kii_http_client_code_t retval = KII_HTTPC_OK;
+    for (i = 0; i < str_len; ++i) {
+        if (string[i] == '\"'|| string[i] == '/') {
+            retval = M_KII_APPEND_CONSTANT_STR(kii, "\\");
+            if (retval != KII_HTTPC_OK) {
+                return retval;
+            }
+        } else if (string[i] == '\\' && string[i + 1] != 'u') {
+            retval = M_KII_APPEND_CONSTANT_STR(kii, "\\");
+            if (retval != KII_HTTPC_OK) {
+                return retval;
+            }
+        }
+        retval = prv_kii_http_append_body(kii, &string[i], 1);
+        if (retval != KII_HTTPC_OK) {
+            return retval;
+        }
+    }
+    return KII_HTTPC_OK;
+}
+
     kii_error_code_t
 kii_core_register_thing(
         kii_core_t* kii,
@@ -698,8 +796,6 @@ kii_core_register_thing_with_id(
         const char* thing_type)
 {
     kii_error_code_t result;
-    char content_length_str[8];
-    size_t content_length = 0;
 
     prv_set_thing_register_path(kii);
     result = prv_http_request_line_and_headers(
@@ -711,20 +807,6 @@ kii_core_register_thing_with_id(
             NULL
             );
 
-    content_length = M_KII_CONST_STR_LEN("{\"_vendorThingID\":\"");
-    content_length += kii_strlen(vendor_thing_id);
-    content_length += M_KII_CONST_STR_LEN("\",\"_password\":\"");
-    content_length += kii_strlen(password);
-    content_length += M_KII_CONST_STR_LEN("\",\"_thingType\":\"");
-    content_length += kii_strlen(thing_type);
-    content_length += M_KII_CONST_STR_LEN("\"}");
-    kii_memset(content_length_str, 0x00, 8);
-    prv_content_length_str(content_length, content_length_str, 8);
-    if (prv_kii_http_set_header(kii,
-                     "content-length", content_length_str) != KII_HTTPC_OK) {
-        return KIIE_FAIL;
-    }
-
     if (prv_kii_http_append_body_start(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
         return KIIE_FAIL;
@@ -734,7 +816,8 @@ kii_core_register_thing_with_id(
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_STR(kii, vendor_thing_id) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_escaped_body(kii, vendor_thing_id)
+            != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -742,30 +825,27 @@ kii_core_register_thing_with_id(
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_STR(kii, password) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_escaped_body(kii, password) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_CONSTANT_STR(kii, "\",\"_thingType\":\"") !=
-            KII_HTTPC_OK) {
-        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
-        return KIIE_FAIL;
-    }
-    if (M_KII_APPEND_STR(kii, thing_type) != KII_HTTPC_OK) {
-        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
-        return KIIE_FAIL;
+    if (thing_type != NULL) {
+        if (M_KII_APPEND_CONSTANT_STR(kii, "\",\"_thingType\":\"") !=
+                KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
+        if (prv_kii_http_append_escaped_body(kii, thing_type) != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
     }
     if (M_KII_APPEND_CONSTANT_STR(kii, "\"}") != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (prv_kii_http_append_body_end(kii) != KII_HTTPC_OK) {
-        M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
-        return KIIE_FAIL;
-    }
 
-    kii->_state = KII_STATE_READY;
-    return KIIE_OK;
+    return prv_kii_http_message_creation_end(kii);
 }
 
     static void
@@ -782,8 +862,6 @@ kii_core_thing_authentication(kii_core_t* kii,
         )
 {
     kii_error_code_t result;
-    char content_length_str[8];
-    size_t content_length = 0;
 
     prv_set_auth_path(kii);
 
@@ -799,19 +877,6 @@ kii_core_thing_authentication(kii_core_t* kii,
         return result;
     }
 
-    content_length = M_KII_CONST_STR_LEN("{\"username\":\"VENDOR_THING_ID:");
-    content_length += kii_strlen(vendor_thing_id);
-    content_length += M_KII_CONST_STR_LEN("\",\"password\":\"");
-    content_length += kii_strlen(password);
-    content_length += M_KII_CONST_STR_LEN("\"}");
-
-    kii_memset(content_length_str, 0x00, 8);
-    prv_content_length_str(content_length, content_length_str, 8);
-    if (prv_kii_http_set_header(kii,
-                    "content-length", content_length_str) != KII_HTTPC_OK) {
-        return KIIE_FAIL;
-    }
-
     if (prv_kii_http_append_body_start(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
         return KIIE_FAIL;
@@ -821,7 +886,8 @@ kii_core_thing_authentication(kii_core_t* kii,
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_STR(kii, vendor_thing_id) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_escaped_body(kii, vendor_thing_id)
+            != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -829,7 +895,7 @@ kii_core_thing_authentication(kii_core_t* kii,
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_STR(kii, password) != KII_HTTPC_OK) {
+    if (prv_kii_http_append_escaped_body(kii, password) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
@@ -837,13 +903,7 @@ kii_core_thing_authentication(kii_core_t* kii,
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (prv_kii_http_append_body_end(kii) != KII_HTTPC_OK) {
-        M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
-        return KIIE_FAIL;
-    }
-
-    kii->_state = KII_STATE_READY;
-    return KIIE_OK;
+    return prv_kii_http_message_creation_end(kii);
 }
 
 
@@ -1525,52 +1585,16 @@ kii_core_api_call_start(
 
     // start body cb.
     if (prv_kii_http_append_body_start(kii) != KII_HTTPC_OK) {
-        M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
         return KIIE_FAIL;
     }
-    kii->_content_length = 0;
 
     return KIIE_OK;
 
-}
-
-static kii_http_client_code_t
-prv_kii_core_http_set_content_length_header(
-        kii_core_t* kii,
-        size_t content_length)
-{
-    if (content_length > 0) {
-        char content_length_str[8];
-        kii_memset(content_length_str, 0x00, 8);
-        prv_content_length_str(content_length, content_length_str, 8);
-        return prv_kii_http_set_header(kii, "content-length",
-                content_length_str);
-    } else {
-        return KII_HTTPC_FAIL;
-    }
 }
 
 kii_error_code_t kii_core_api_call_end(kii_core_t* kii)
 {
-    // close body cb.
-    if (prv_kii_http_append_body_end(kii) != KII_HTTPC_OK) {
-        M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
-        return KIIE_FAIL;
-    }
-
-    // set content length.
-    if (prv_kii_core_http_set_content_length_header(kii,
-                    kii->_content_length) != KII_HTTPC_OK) {
-        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
-        return KIIE_FAIL;
-    }
-
-    // set reday.
-    if (kii->_state != KII_STATE_IDLE) {
-        return KIIE_FAIL;
-    }
-    kii->_state = KII_STATE_READY;
-    return KIIE_OK;
+    return prv_kii_http_message_creation_end(kii);
 }
 
 kii_error_code_t
@@ -1581,10 +1605,8 @@ kii_core_api_call_append_body(
 {
     if (prv_kii_http_append_body(kii, body_data, body_size) !=
             KII_HTTPC_OK) {
-        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    kii->_content_length += body_size;
     return KIIE_OK;
 }
 

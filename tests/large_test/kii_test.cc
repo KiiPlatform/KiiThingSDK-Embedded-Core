@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <gtest/gtest.h>
 
 #include <kii_core_init.h>
@@ -18,10 +19,16 @@ static void init(
         char* buffer,
         int buffer_size)
 {
+    static int first = 0;
+
     kii_core_init(kii, APP_HOST, APP_ID, APP_KEY, buffer, buffer_size);
 
     strcpy(kii->author.author_id, THING_ID);
     strcpy(kii->author.access_token, ACCESS_TOKEN);
+    if (first == 0) {
+        first = 1;
+        srand(getpid());
+    }
 }
 
 static void initBucket(kii_bucket_t* bucket)
@@ -70,7 +77,7 @@ TEST(kiiTest, register)
 
     sprintf(thingData,
             "{\"_vendorThingID\":\"%d\",\"_password\":\"1234\",\"_thingType\":\"my_type\"}",
-            getpid());
+            rand());
 
     init(&kii, buffer, 4096);
 
@@ -102,7 +109,7 @@ TEST(kiiTest, register_with_id)
     char vendorId[1024];
     kii_core_t kii;
 
-    sprintf(vendorId, "%d", getpid() + 1);
+    sprintf(vendorId, "%d", rand());
 
     init(&kii, buffer, 4096);
 
@@ -588,4 +595,55 @@ TEST(kiiTest, mqtt)
     ASSERT_TRUE(strstr(kii.response_body, "\"portTCP\"") != NULL);
     ASSERT_TRUE(strstr(kii.response_body, "\"portSSL\"") != NULL);
     ASSERT_TRUE(strstr(kii.response_body, "\"X-MQTT-TTL\"") != NULL);
+}
+
+TEST(kiiTest, escaped_characters)
+{
+    kii_error_code_t core_err;
+    kii_state_t state;
+    char buffer[4096];
+    char vendorId[1024];
+    kii_core_t kii;
+
+    // register thing.
+    sprintf(vendorId, "%d", rand());
+
+    init(&kii, buffer, sizeof(buffer) / sizeof(buffer[0]));
+
+    strcpy(kii.author.author_id, "");
+    strcpy(kii.author.access_token, "");
+    kii.response_code = 0;
+
+    core_err = kii_core_register_thing_with_id(&kii, vendorId, "\"\\/'1234",
+            "my_type");
+    ASSERT_EQ(KIIE_OK, core_err);
+
+    do {
+        core_err = kii_core_run(&kii);
+        state = kii_core_get_state(&kii);
+    } while (state != KII_STATE_IDLE);
+
+    ASSERT_EQ(KIIE_OK, core_err);
+    ASSERT_EQ(201, kii.response_code);
+    ASSERT_STRNE("", kii.response_body);
+
+    ASSERT_TRUE(strstr(kii.response_body, "\"_accessToken\"") != NULL);
+    ASSERT_TRUE(strstr(kii.response_body, "\"_thingID\"") != NULL);
+
+    // authenticate thing.
+    core_err = kii_core_thing_authentication(&kii, vendorId, "\"\\/'1234");
+    ASSERT_EQ(KIIE_OK, core_err);
+
+    do {
+        core_err = kii_core_run(&kii);
+        state = kii_core_get_state(&kii);
+    } while (state != KII_STATE_IDLE);
+
+    ASSERT_EQ(KIIE_OK, core_err);
+    ASSERT_EQ(200, kii.response_code);
+    ASSERT_STRNE("", kii.response_body);
+
+    ASSERT_TRUE(strstr(kii.response_body, "\"id\"") != NULL);
+    ASSERT_TRUE(strstr(kii.response_body, "\"access_token\"") != NULL);
+
 }
