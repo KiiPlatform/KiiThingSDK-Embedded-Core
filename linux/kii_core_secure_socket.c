@@ -13,6 +13,11 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+#ifdef __APPLE__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 typedef struct _ssl_context
 {
     SSL *ssl;
@@ -161,3 +166,7 @@ kii_socket_code_t
     socket_context->app_context = NULL;
     return KII_SOCKETC_OK;
 }
+
+#ifdef __APPLE__
+#pragma GCC diagnostic pop
+#endif
