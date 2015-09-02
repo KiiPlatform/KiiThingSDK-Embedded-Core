@@ -296,9 +296,7 @@ void parse_response(char* resp_body)
 void init(kii_core_t* kii, char* buff, context_t* ctx) {
     kii_http_context_t* http_ctx;
     memset(kii, 0x00, sizeof(kii_core_t));
-    kii->app_id = (char*)EX_APP_ID;
-    kii->app_key = (char*)EX_APP_KEY;
-    kii->app_host = (char*)EX_APP_HOST;
+    kii_core_init(kii, (char*)EX_APP_HOST, (char*)EX_APP_ID, (char*)EX_APP_KEY);
 
     memset(ctx, 0x00, sizeof(context_t));
     ctx->buffer = buff;

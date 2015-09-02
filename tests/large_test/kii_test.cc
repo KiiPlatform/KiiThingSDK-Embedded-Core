@@ -18,7 +18,7 @@ static void init(
         char* buffer,
         int buffer_size)
 {
-    kii_core_init(kii, APP_HOST, APP_ID, APP_KEY, buffer, buffer_size);
+    kii_core_impl_init(kii, APP_HOST, APP_ID, APP_KEY, buffer, buffer_size);
 
     strcpy(kii->author.author_id, THING_ID);
     strcpy(kii->author.access_token, ACCESS_TOKEN);

@@ -69,6 +69,46 @@
 
 const char DEFAULT_OBJECT_CONTENT_TYPE[] = "application/json";
 
+    kii_error_code_t
+kii_core_init(
+        kii_core_t* kii,
+        const char* site,
+        const char* app_id,
+        const char* app_key)
+{
+    M_KII_ASSERT(kii != NULL);
+    M_KII_ASSERT(site != NULL);
+    M_KII_ASSERT(app_id != NULL);
+    M_KII_ASSERT(app_key != NULL);
+
+    memset(kii, 0, sizeof(kii_core_t));
+    if(strcmp(site, "CN") == 0)
+    {
+        kii->app_host = "api-cn2.kii.com";
+    }
+    else if(strcmp(site, "JP") == 0)
+    {
+        kii->app_host = "api-jp.kii.com";
+    }
+    else if(strcmp(site, "US") == 0)
+    {
+        kii->app_host = "api.kii.com";
+    }
+    else if(strcmp(site, "SG") == 0)
+    {
+        kii->app_host = "api-sg.kii.com";
+    }
+    else
+    {
+        /* Let's enable to set custom host */
+        kii->app_host = (char*)site;
+    }
+
+    kii->app_id = (char*)app_id;
+    kii->app_key = (char*)app_key;
+    return KIIE_OK;
+}
+
     kii_state_t
 kii_core_get_state(kii_core_t* kii)
 {
