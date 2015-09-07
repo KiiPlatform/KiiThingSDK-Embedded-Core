@@ -142,7 +142,7 @@ prv_kii_http_execute(kii_core_t* kii)
                     http_context->_socket_state = PRV_KII_SOCKET_STATE_IDLE;
                     return KII_HTTPC_FAIL;
             }
-            // This is programing error.
+            /* This is programing error. */
             M_KII_ASSERT(0);
             return KII_HTTPC_FAIL;
         case PRV_KII_SOCKET_STATE_SEND:
@@ -159,11 +159,11 @@ prv_kii_http_execute(kii_core_t* kii)
                     http_context->_sent_size += size;
                     if (http_context->_sent_size ==
                             http_context->total_send_size) {
-                        // All contents were sent.
+                        /* All contents were sent. */
                         http_context->_socket_state = PRV_KII_SOCKET_STATE_RECV;
                     }
-                    // If _sent_size is over total_send_size, it is
-                    // programming error.
+                    /* If _sent_size is over total_send_size, it is
+                       programming error. */
                     M_KII_ASSERT(http_context->_sent_size <=
                             http_context->total_send_size);
                     return KII_HTTPC_AGAIN;
@@ -173,7 +173,7 @@ prv_kii_http_execute(kii_core_t* kii)
                     http_context->_socket_state = PRV_KII_SOCKET_STATE_IDLE;
                     return KII_HTTPC_FAIL;
             }
-            // This is programing error.
+            /* This is programing error. */
             M_KII_ASSERT(0);
             return KII_HTTPC_FAIL;
         }
@@ -199,8 +199,8 @@ prv_kii_http_execute(kii_core_t* kii)
                         M_KII_LOG("buffer is smaller than receiving data.");
                         return KII_HTTPC_FAIL;
                     }
-                    // TODO: We may check content-length and decide to
-                    // finish calling recv_cb.
+                    /* TODO: We may check content-length and decide to
+                       finish calling recv_cb. */
                     if (actualLength < size) {
                         http_context->buffer[http_context->_received_size] =
                             '\0';
@@ -214,7 +214,7 @@ prv_kii_http_execute(kii_core_t* kii)
                     http_context->_socket_state = PRV_KII_SOCKET_STATE_IDLE;
                     return KII_HTTPC_FAIL;
             }
-            // This is programing error.
+            /* This is programing error. */
             M_KII_ASSERT(0);
             return KII_HTTPC_FAIL;
         }
@@ -233,9 +233,9 @@ prv_kii_http_execute(kii_core_t* kii)
 
                     kii->response_code = 0;
                     pointer += CONST_LEN(HTTP1_1);
-                    // parse status code.
+                    /* parse status code. */
                     for (i = 0; i < 3; ++i) {
-                        if (isdigit(pointer[i]) == 0) {
+                        if (isdigit((int)pointer[i]) == 0) {
                             M_KII_LOG("invalid status code.");
                             kii->response_code = 0;
                             return KII_HTTPC_FAIL;
@@ -259,13 +259,13 @@ prv_kii_http_execute(kii_core_t* kii)
                     http_context->_socket_state = PRV_KII_SOCKET_STATE_IDLE;
                     return KII_HTTPC_FAIL;
             }
-            // This is programing error.
+            /* This is programing error. */
             M_KII_ASSERT(0);
             return KII_HTTPC_FAIL;
         }
     }
 
-    // This is programing error.
+    /* This is programing error. */
     M_KII_ASSERT(0);
     return KII_HTTPC_FAIL;
 }
@@ -296,7 +296,7 @@ prv_kii_http_set_request_line(
     http_context->_body_position =
         http_context->buffer + http_context->total_send_size;
 
-    // Correct position of initializing socket_state is under consideration.
+    /* Correct position of initializing socket_state is under consideration. */
     http_context->_socket_state = PRV_KII_SOCKET_STATE_IDLE;
     return KII_HTTPC_OK;
 }
@@ -323,13 +323,13 @@ prv_kii_http_set_header(
         M_KII_LOG("buffer size too short. can't insert header.\n");
         return KII_HTTPC_FAIL;
     }
-    // move body.
+    /* move body. */
     memmove(http_context->_body_position + header_size,
             http_context->_body_position, body_size);
     http_context->_body_position += header_size;
     http_context->buffer[http_context->total_send_size + header_size] = '\0';
 
-    // set header.
+    /* set header. */
     len = kii_strlen(key);
     memcpy(insert_positin, key, len);
     insert_positin += len;
@@ -379,7 +379,7 @@ static kii_http_client_code_t prv_kii_http_append_body_start(kii_core_t* kii)
 
 static kii_http_client_code_t prv_kii_http_append_body_end(kii_core_t* kii)
 {
-    // Nothing to do.
+    /* Nothing to do. */
     return KII_HTTPC_OK;
 }
 
@@ -462,7 +462,7 @@ kii_core_run(kii_core_t* kii)
             }
         default:
             M_KII_ASSERT(0);
-
+            return KIIE_FAIL;
     }
 }
 
@@ -750,6 +750,9 @@ kii_core_register_thing_with_id(
             NULL,
             NULL
             );
+    if (result != KIIE_OK) {
+        return result;
+    }
 
     content_length = M_KII_CONST_STR_LEN("{\"_vendorThingID\":\"");
     content_length += kii_strlen(vendor_thing_id);
@@ -1533,14 +1536,14 @@ kii_core_api_call_start(
         const char* content_type,
         kii_bool_t set_authentication_header)
 {
-    // set request line.
+    /* set request line. */
     if (prv_kii_http_set_request_line(kii, http_method,
                     resource_path) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
         return KIIE_FAIL;
     }
 
-    // set default headers.
+    /* set default headers. */
     if (prv_kii_http_set_header(kii, "x-kii-appid",
                     kii->app_id) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
@@ -1563,7 +1566,7 @@ kii_core_api_call_start(
         }
     }
 
-    // start body cb.
+    /* start body cb. */
     if (prv_kii_http_append_body_start(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_START_CB_FAILED);
         return KIIE_FAIL;
@@ -1592,20 +1595,20 @@ prv_kii_core_http_set_content_length_header(
 
 kii_error_code_t kii_core_api_call_end(kii_core_t* kii)
 {
-    // close body cb.
+    /* close body cb. */
     if (prv_kii_http_append_body_end(kii) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_END_CB_FAILED);
         return KIIE_FAIL;
     }
 
-    // set content length.
+    /* set content length. */
     if (prv_kii_core_http_set_content_length_header(kii,
                     kii->_content_length) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
         return KIIE_FAIL;
     }
 
-    // set reday.
+    /* set reday. */
     if (kii->_state != KII_STATE_IDLE) {
         return KIIE_FAIL;
     }
@@ -1634,7 +1637,7 @@ kii_core_api_call_append_header(
         const char* key,
         const char* value)
 {
-    if (prv_kii_http_set_header(kii,key, value) != KIIE_OK) {
+    if (prv_kii_http_set_header(kii,key, value) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
         return KIIE_FAIL;
     }
