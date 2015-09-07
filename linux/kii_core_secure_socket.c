@@ -13,6 +13,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+/* Suppress warnings, because OpenSSL was deprecated in Mac. */
 #ifdef __APPLE__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
