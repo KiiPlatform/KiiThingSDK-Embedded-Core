@@ -1,5 +1,12 @@
 #include <stdio.h>
+
+// Suppress warnings in gtest.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wvariadic-macros"
+#pragma GCC diagnostic ignored "-Wlong-long"
+#pragma GCC diagnostic ignored "-Wsign-compare"
 #include <gtest/gtest.h>
+#pragma GCC diagnostic pop
 
 #include <kii_core_init.h>
 
@@ -7,11 +14,14 @@
 
 #define KII_UPLOADID_SIZE 64
 
-#define APP_HOST "api-development-jp.internal.kii.com"
-#define APP_ID "84fff36e"
-#define APP_KEY "e45fcc2d31d6aca675af639bc5f04a26"
-#define THING_ID "th.53ae324be5a0-26f8-4e11-a13c-03da6fb2"
-#define ACCESS_TOKEN "ablTGrnsE20rSRBFKPnJkWyTaeqQ50msqUizvR_61hU"
+static char APP_HOST[] = "api-development-jp.internal.kii.com";
+static char APP_ID[] = "84fff36e";
+static char APP_KEY[] = "e45fcc2d31d6aca675af639bc5f04a26";
+static char THING_ID[] = "th.53ae324be5a0-26f8-4e11-a13c-03da6fb2";
+static char ACCESS_TOKEN[] = "ablTGrnsE20rSRBFKPnJkWyTaeqQ50msqUizvR_61hU";
+static char BUCKET[] = "myBucket";
+static char TOPIC[] = "myTopic";
+static char DUMMY_HEADER[] = "DummyHeader:DummyValue";
 
 static void init(
         kii_core_t* kii,
@@ -28,7 +38,7 @@ static void initBucket(kii_bucket_t* bucket)
 {
     bucket->scope = KII_SCOPE_THING;
     bucket->scope_id = THING_ID;
-    bucket->bucket_name = "myBucket";
+    bucket->bucket_name = BUCKET;
 }
 
 TEST(kiiTest, authenticate)
@@ -389,7 +399,7 @@ TEST(kiiTest, pushTopic)
     init(&kii, buffer, 4096);
     topic.scope = KII_SCOPE_THING;
     topic.scope_id = THING_ID;
-    topic.topic_name = "myTopic";
+    topic.topic_name = TOPIC;
 
     kii.response_code = 0;
     kii.response_body = NULL;
@@ -518,9 +528,9 @@ TEST(kiiTest, genericApis2)
 
     ASSERT_EQ(KIIE_OK, kii_core_api_call(&kii, "POST", "api/oauth2/token",
                 "{\"username\":\"VENDOR_THING_ID:1426830900\",\"password\":\"1234\"}",
-                59, "application/json", "DummyHeader:DummyValue", NULL));
+                59, "application/json", DUMMY_HEADER, NULL));
 
-    ASSERT_TRUE(strstr(buffer, "DummyHeader:DummyValue") != NULL);
+    ASSERT_TRUE(strstr(buffer, DUMMY_HEADER) != NULL);
 
     do {
         core_err = kii_core_run(&kii);
