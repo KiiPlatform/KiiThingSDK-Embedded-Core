@@ -70,6 +70,36 @@ TEST(kiiTest, authenticate)
     ASSERT_TRUE(strstr(kii.response_body, "\"access_token\"") != NULL);
 }
 
+TEST(kiiTest, authenticate_with_body)
+{
+    kii_error_code_t core_err;
+    kii_state_t state;
+    char buffer[4096];
+    kii_core_t kii;
+
+    init(&kii, buffer, 4096);
+
+    strcpy(kii.author.author_id, "");
+    strcpy(kii.author.access_token, "");
+    kii.response_code = 0;
+
+    core_err = kii_core_thing_authentication_with_body(&kii,
+            "{\"username\":\"VENDOR_THING_ID:1426830900\",\"password\":\"1234\"}");
+    ASSERT_EQ(KIIE_OK, core_err);
+
+    do {
+        core_err = kii_core_run(&kii);
+        state = kii_core_get_state(&kii);
+    } while (state != KII_STATE_IDLE);
+
+    ASSERT_EQ(KIIE_OK, core_err);
+    ASSERT_EQ(200, kii.response_code);
+    ASSERT_STRNE("", kii.response_body);
+
+    ASSERT_TRUE(strstr(kii.response_body, "\"id\"") != NULL);
+    ASSERT_TRUE(strstr(kii.response_body, "\"access_token\"") != NULL);
+}
+
 TEST(kiiTest, register)
 {
     kii_error_code_t core_err;
