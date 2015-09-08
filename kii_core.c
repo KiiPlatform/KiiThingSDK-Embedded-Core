@@ -889,6 +889,28 @@ kii_core_thing_authentication(kii_core_t* kii,
     return KIIE_OK;
 }
 
+    kii_error_code_t
+kii_core_thing_authentication_with_body(
+        kii_core_t* kii,
+        const char* body)
+{
+    kii_error_code_t result;
+
+    prv_set_auth_path(kii);
+    result = prv_http_request(
+            kii,
+            "POST",
+            kii->_http_request_path,
+            "application/json",
+            NULL,
+            NULL,
+            body);
+    if (result == KIIE_OK) {
+        kii->_state = KII_STATE_READY;
+    }
+
+    return result;
+}
 
     kii_error_code_t
 kii_core_create_new_object(
