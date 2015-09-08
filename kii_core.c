@@ -38,7 +38,7 @@
 #define M_KII_LOG_FORMAT(x)
 #endif
 
-#if defined(DEBUG) && !defined(USE_CUSTOM_HTTP_CLIENT)
+#if defined(DEBUG) && !defined(KII_USE_CUSTOM_HTTP_CLIENT)
 #define M_KII_LOG_DEFAULT_CLIENT(x) M_KII_LOG_FORMAT(x)
 #else
 #define M_KII_LOG_DEFAULT_CLIENT(x)
@@ -115,7 +115,7 @@ kii_core_get_state(kii_core_t* kii)
     return kii->_state;
 }
 
-#ifndef USE_CUSTOM_HTTP_CLIENT
+#ifndef KII_USE_CUSTOM_HTTP_CLIENT
 
     static kii_http_client_code_t
 prv_kii_http_execute(kii_core_t* kii)

@@ -8,12 +8,12 @@ extern "C" {
 #include <stddef.h>
 #include "kii_socket_callback.h"
 
-#ifndef USE_CUSTOM_HTTP_CLIENT
+#ifndef KII_USE_CUSTOM_HTTP_CLIENT
 
 #ifndef KII_SERVER_PORT
 /** Port number of target service.
  *
- * This macro becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This macro becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  */
 #define KII_SERVER_PORT 443
@@ -30,7 +30,7 @@ extern "C" {
  * kii_http_context_t#recv_cb. Value of third argument of
  * kii_http_context_t#recv_cb equals to or is less than this size.
  *
- * This macro becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This macro becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  */
 #define KII_SOCKET_MAX_BUFF_SIZE 256
@@ -70,12 +70,12 @@ typedef enum kii_http_client_code_t {
 
 typedef struct kii_http_context_t
 {
-#ifdef USE_CUSTOM_HTTP_CLIENT
+#ifdef KII_USE_CUSTOM_HTTP_CLIENT
 
     /** application specific context object.
      * used by HTTP callback implementations.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is
      * defined.
      */
     void* app_context;
@@ -85,21 +85,21 @@ typedef struct kii_http_context_t
     /** buffer used to communicate with KiiCloud.
      *  application allocate memory before calling apis.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     char* buffer;
 
     /** size of buffer.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     size_t buffer_size;
 
     /** total size of data to be sent.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     size_t total_send_size;
@@ -107,7 +107,7 @@ typedef struct kii_http_context_t
     /** This is a private field for this SDK.
      * Application programmers must not use this field.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     char* _body_position;
@@ -115,7 +115,7 @@ typedef struct kii_http_context_t
     /** This is a private field for this SDK.
      * Application programmers must not use this field.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     size_t _sent_size;
@@ -123,7 +123,7 @@ typedef struct kii_http_context_t
     /** This is a private field for this SDK.
      * Application programmers must not use this field.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     size_t _received_size;
@@ -131,7 +131,7 @@ typedef struct kii_http_context_t
     /** This is a private field for this SDK.
      * Application programmers must not use this field.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     prv_kii_socket_state_t _socket_state;
@@ -139,40 +139,40 @@ typedef struct kii_http_context_t
     /** Host name to send HTTP request. You can connect to target
      * server with this host name.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     const char* host;
 
     /** socket context used by the http client
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     kii_socket_context_t socket_context;
 
     /** socket close function callback.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
 
     KII_SOCKET_CONNECT_CB connect_cb;
     /** socket send function callback.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     KII_SOCKET_SEND_CB send_cb;
     /** socket recv function callback.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     KII_SOCKET_RECV_CB recv_cb;
     /** socket close function callback.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     KII_SOCKET_CLOSE_CB close_cb;
@@ -180,13 +180,13 @@ typedef struct kii_http_context_t
 #endif
 } kii_http_context_t;
 
-#ifdef USE_CUSTOM_HTTP_CLIENT
+#ifdef KII_USE_CUSTOM_HTTP_CLIENT
 
 /** callback for preparing HTTP request line.
  * application implement this callback with the HTTP client
  * in the target environment.
  *
- * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This type becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
@@ -207,7 +207,7 @@ typedef kii_http_client_code_t
  * in the target environment.<br>
  * this callback is called per one header line.
  *
- * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This type becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
@@ -226,7 +226,7 @@ typedef kii_http_client_code_t
  * Applications implement this callback with the HTTP client in target
  * environment.<br>
  *
- * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This type becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
@@ -240,7 +240,7 @@ typedef kii_http_client_code_t
  * application implement this callback with the HTTP client
  * in the target environment.<br>
  *
- * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This type becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
@@ -259,7 +259,7 @@ typedef kii_http_client_code_t
  * Applications implement this callback with the HTTP client in target
  * environment.<br>
  *
- * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This type becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
@@ -273,7 +273,7 @@ typedef kii_http_client_code_t
  * application implement this callback with the HTTP client
  * in the target environment.<br>
  *
- * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This type becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
@@ -362,18 +362,18 @@ typedef struct kii_core_t
     /** application's context object used by HTTP callback implementations. */
     kii_http_context_t http_context;
 
-#ifdef USE_CUSTOM_HTTP_CLIENT
+#ifdef KII_USE_CUSTOM_HTTP_CLIENT
     /** request line callback function pointer
      * Should be set before execute apis.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is
      * defined.
      */
     KII_HTTPCB_SET_REQUEST_LINE http_set_request_line_cb;
     /** request header callback function pointer
      * Should be set before execute apis.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is
      * defined.
      */
     KII_HTTPCB_SET_HEADER http_set_header_cb;
@@ -382,7 +382,7 @@ typedef struct kii_core_t
      * Notifying start of creation of request body callback function.
      * Should be set before execute APIs.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is
      * defined.
      */
     KII_HTTPCB_APPEND_BODY_START http_append_body_start_cb;
@@ -391,7 +391,7 @@ typedef struct kii_core_t
      * Appending request body callback function.
      * Should be set before execute APIs.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is
      * defined.
      */
     KII_HTTPCB_APPEND_BODY http_append_body_cb;
@@ -400,7 +400,7 @@ typedef struct kii_core_t
      * Notifying end of creation of request body callback function.
      * Should be set before execute APIs.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is
      * defined.
      */
     KII_HTTPCB_APPEND_BODY_END http_append_body_end_cb;
@@ -408,7 +408,7 @@ typedef struct kii_core_t
     /** execute HTTP request function pointer
      * Should be set before execute apis.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is
      * defined.
      */
     KII_HTTPCB_EXECUTE http_execute_cb;
