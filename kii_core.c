@@ -789,14 +789,16 @@ kii_core_register_thing_with_id(
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
         return KIIE_FAIL;
     }
-    if (M_KII_APPEND_CONSTANT_STR(kii, "\",\"_thingType\":\"") !=
-            KII_HTTPC_OK) {
-        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
-        return KIIE_FAIL;
-    }
-    if (M_KII_APPEND_STR(kii, thing_type) != KII_HTTPC_OK) {
-        M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
-        return KIIE_FAIL;
+    if (thing_type != NULL) {
+        if (M_KII_APPEND_CONSTANT_STR(kii, "\",\"_thingType\":\"") !=
+                KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
+        if (M_KII_APPEND_STR(kii, thing_type) != KII_HTTPC_OK) {
+            M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
+            return KIIE_FAIL;
+        }
     }
     if (M_KII_APPEND_CONSTANT_STR(kii, "\"}") != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_APPEND_BODY_CB_FAILED);
