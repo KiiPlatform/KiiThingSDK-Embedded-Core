@@ -24,6 +24,15 @@ static char BUCKET[] = "myBucket";
 static char TOPIC[] = "myTopic";
 static char DUMMY_HEADER[] = "DummyHeader:DummyValue";
 
+static int send_counter;
+static int recv_counter;
+
+typedef struct _test_context
+{
+    const char *send_body;
+    const char *recv_body;
+} test_context_t;
+
 static void logger_cb(const char* format, ...)
 {
     va_list list;
@@ -36,6 +45,7 @@ static void init(
         kii_core_t* kii,
         char* buffer,
         int buffer_size,
+        test_context_t* test_ctx,
         KII_SOCKET_CONNECT_CB connect_cb,
         KII_SOCKET_SEND_CB send_cb,
         KII_SOCKET_RECV_CB recv_cb,
@@ -53,7 +63,7 @@ static void init(
     http_ctx->send_cb = send_cb;
     http_ctx->recv_cb = recv_cb;
     http_ctx->close_cb = close_cb;
-    http_ctx->socket_context.app_context = NULL;
+    http_ctx->socket_context.app_context = test_ctx;
 
     kii->logger_cb = logger_cb;
 
@@ -68,7 +78,7 @@ static void initBucket(kii_bucket_t* bucket)
     bucket->bucket_name = BUCKET;
 }
 
-static kii_socket_code_t auth_connect_cb(
+static kii_socket_code_t common_connect_cb(
         kii_socket_context_t* socket_context,
         const char* host,
         unsigned int port)
@@ -76,49 +86,48 @@ static kii_socket_code_t auth_connect_cb(
     EXPECT_NE((kii_socket_context_t*)NULL, socket_context);
     EXPECT_STREQ(APP_HOST, host);
     EXPECT_EQ(443, port);
+
+    send_counter = 0;
+    recv_counter = 0;
+
     return KII_SOCKETC_OK;
 }
 
-static int auth_read_counter;
-
-static kii_socket_code_t auth_send_cb(
+static kii_socket_code_t common_send_cb(
         kii_socket_context_t* socket_context,
         const char* buffer,
         size_t length)
 {
-    const char* body = "POST https://api-development-jp.internal.kii.com/api/oauth2/token HTTP/1.1\r\nx-kii-appid:84fff36e\r\nx-kii-appkey:e45fcc2d31d6aca675af639bc5f04a26\r\ncontent-type:application/json\r\ncontent-length:59\r\n\r\n{\"username\":\"VENDOR_THING_ID:1426830900\",\"password\":\"1234\"}";
-    int body_length = strlen(body);
+    test_context_t* ctx = (test_context_t*)socket_context->app_context;
 
-    EXPECT_NE((kii_socket_context_t*)NULL, socket_context);
+    EXPECT_NE((char*)NULL, buffer);
+    EXPECT_TRUE(0 < length);
 
-    auth_read_counter = 0;
-
-    EXPECT_STREQ(body, buffer);
-    EXPECT_EQ(body_length, length);
+    EXPECT_STREQ(&(ctx->send_body[send_counter]), buffer);
+    send_counter += length;
 
     return KII_SOCKETC_OK;
 }
 
-static kii_socket_code_t auth_recv_cb(
+static kii_socket_code_t common_recv_cb(
         kii_socket_context_t* socket_context,
         char* buffer,
         size_t length_to_read,
         size_t* out_actual_length)
 {
-    const char* body = "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Expose-Headers: Content-Type, Authorization, Content-Length, X-Requested-With, ETag, X-Step-Count\r\nAge: 0\r\nCache-Control: max-age=0, no-cache, no-store\r\nContent-Type: application/json;charset=UTF-8\r\nDate: Fri, 25 Sep 2015 11:07:16 GMT\r\nServer: nginx/1.2.3\r\nVia: 1.1 varnish\r\nX-HTTP-Status-Code: 200\r\nX-Varnish: 726929556\r\nContent-Length: 176\r\nConnection: keep-alive\r\n\r\n{\r\n  \"id\" : \"th.396587a00022-51e9-4e11-5eec-07846c59\",\r\n  \"access_token\" : \"sLvyokzOngTVCRIogpnSV9oSdselet63EoBQiJRu0R4\",\r\n  \"expires_in\" : 2147483639,\r\n  \"token_type\" : \"Bearer\"\r\n}";
+    test_context_t* ctx = (test_context_t*)socket_context->app_context;
 
-    EXPECT_NE((kii_socket_context_t*)NULL, socket_context);
     EXPECT_NE((char*)NULL, buffer);
     EXPECT_TRUE(0 < length_to_read);
 
-    strncpy(buffer, &body[auth_read_counter], length_to_read);
+    strncpy(buffer, &(ctx->recv_body[recv_counter]), length_to_read);
     *out_actual_length = strlen(buffer);
-    auth_read_counter += *out_actual_length;
+    recv_counter += *out_actual_length;
 
     return KII_SOCKETC_OK;
 }
 
-static kii_socket_code_t auth_close_cb(kii_socket_context_t* socket_context)
+static kii_socket_code_t common_close_cb(kii_socket_context_t* socket_context)
 {
     EXPECT_NE((kii_socket_context_t*)NULL, socket_context);
     return KII_SOCKETC_OK;
@@ -130,9 +139,43 @@ TEST(kiiTest, authenticate)
     kii_state_t state;
     char buffer[4096];
     kii_core_t kii;
+    const char* send_body =
+"POST https://api-development-jp.internal.kii.com/api/oauth2/token HTTP/1.1\r\n"
+"x-kii-appid:84fff36e\r\n"
+"x-kii-appkey:e45fcc2d31d6aca675af639bc5f04a26\r\n"
+"content-type:application/json\r\n"
+"content-length:59\r\n"
+"\r\n"
+"{\"username\":\"VENDOR_THING_ID:1426830900\",\"password\":\"1234\"}";
+    const char* recv_body =
+"HTTP/1.1 200 OK\r\n"
+"Accept-Ranges: bytes\r\n"
+"Access-Control-Allow-Origin: *\r\n"
+"Access-Control-Expose-Headers: Content-Type, Authorization, Content-Length, X-Requested-With, ETag, X-Step-Count\r\n"
+"Age: 0\r\n"
+"Cache-Control: max-age=0, no-cache, no-store\r\n"
+"Content-Type: application/json;charset=UTF-8\r\n"
+"Date: Fri, 25 Sep 2015 11:07:16 GMT\r\n"
+"Server: nginx/1.2.3\r\n"
+"Via: 1.1 varnish\r\n"
+"X-HTTP-Status-Code: 200\r\n"
+"X-Varnish: 726929556\r\n"
+"Content-Length: 176\r\n"
+"Connection: keep-alive\r\n"
+"\r\n"
+"{\r\n"
+"  \"id\" : \"th.53ae324be5a0-26f8-4e11-a13c-03da6fb2\",\r\n"
+"  \"access_token\" : \"ablTGrnsE20rSRBFKPnJkWyTaeqQ50msqUizvR_61hU\",\r\n"
+"  \"expires_in\" : 2147483639,\r\n"
+"  \"token_type\" : \"Bearer\"\r\n"
+"}";
+    test_context_t ctx;
 
-    init(&kii, buffer, 4096, auth_connect_cb, auth_send_cb, auth_recv_cb,
-            auth_close_cb);
+    ctx.send_body = send_body;
+    ctx.recv_body = recv_body;
+
+    init(&kii, buffer, 4096, &ctx, common_connect_cb, common_send_cb,
+            common_recv_cb, common_close_cb);
 
     strcpy(kii.author.author_id, "");
     strcpy(kii.author.access_token, "");
@@ -152,5 +195,72 @@ TEST(kiiTest, authenticate)
 
     ASSERT_TRUE(strstr(kii.response_body, "\"id\"") != NULL);
     ASSERT_TRUE(strstr(kii.response_body, "\"access_token\"") != NULL);
+}
+
+TEST(kiiTest, register)
+{
+    kii_error_code_t core_err;
+    kii_state_t state;
+    char buffer[4096];
+    const char* thingData = "{\"_vendorThingID\":\"4792\",\"_password\":\"1234\",\"_thingType\":\"my_type\"}";
+    kii_core_t kii;
+    const char* send_body =
+"POST https://api-development-jp.internal.kii.com/api/apps/84fff36e/things HTTP/1.1\r\n"
+"x-kii-appid:84fff36e\r\n"
+"x-kii-appkey:e45fcc2d31d6aca675af639bc5f04a26\r\n"
+"content-type:application/vnd.kii.ThingRegistrationAndAuthorizationRequest+json\r\n"
+"content-length:67\r\n"
+"\r\n"
+"{\"_vendorThingID\":\"4792\",\"_password\":\"1234\",\"_thingType\":\"my_type\"}";
+    const char* recv_body =
+"HTTP/1.1 201 Created\r\n"
+"Accept-Ranges: bytes\r\n"
+"Access-Control-Allow-Origin: *\r\n"
+"Access-Control-Expose-Headers: Content-Type, Authorization, Content-Length, X-Requested-With, ETag, X-Step-Count\r\n"
+"Age: 0\r\n"
+"Cache-Control: max-age=0, no-cache, no-store\r\n"
+"Content-Type: application/vnd.kii.ThingRegistrationAndAuthorizationResponse+json;charset=UTF-8\r\n"
+"Date: Tue, 29 Sep 2015 05:42:52 GMT\r\n"
+"Location: https://api-jp.kii.com/api/apps/9ab34d8b/things/th.d3d808a00022-abf8-5e11-c666-0d9475de\r\n"
+"Server: nginx/1.2.3\r\n"
+"Via: 1.1 varnish\r\n"
+"X-HTTP-Status-Code: 201\r\n"
+"X-Varnish: 1950832960\r\n"
+"Content-Length: 208\r\n"
+"Connection: keep-alive\r\n"
+"\r\n"
+"{\r\n"
+"  \"_thingID\" : \"th.d3d808a00022-abf8-5e11-c666-0d9475de\",\r\n"
+"  \"_vendorThingID\" : \"4972\",\r\n"
+"  \"_created\" : 1443505372909,\r\n"
+"  \"_disabled\" : false,\r\n"
+"  \"_accessToken\" : \"uwWY3MQ77i43NqN3zY67q_ZxO3dEvw1xkgnqJXC-mqc\"\r\n"
+"}";
+    test_context_t ctx;
+
+    ctx.send_body = send_body;
+    ctx.recv_body = recv_body;
+
+    init(&kii, buffer, 4096, &ctx, common_connect_cb, common_send_cb,
+            common_recv_cb, common_close_cb);
+
+    strcpy(kii.author.author_id, "");
+    strcpy(kii.author.access_token, "");
+    kii.response_code = 0;
+
+    core_err = kii_core_register_thing(&kii, thingData);
+    ASSERT_EQ(KIIE_OK, core_err);
+
+    do {
+        core_err = kii_core_run(&kii);
+        state = kii_core_get_state(&kii);
+    } while (state != KII_STATE_IDLE);
+
+    ASSERT_EQ(KIIE_OK, core_err);
+    ASSERT_EQ(201, kii.response_code);
+    ASSERT_STRNE("", kii.response_body);
+
+    ASSERT_TRUE(strstr(kii.response_body, "\"_accessToken\"") != NULL);
+    ASSERT_TRUE(strstr(kii.response_body, "\"_thingID\"") != NULL);
 }
 
