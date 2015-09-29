@@ -15,11 +15,17 @@
 
 #define KII_UPLOADID_SIZE 64
 
-static char APP_HOST[] = "api-development-jp.internal.kii.com";
-static char APP_ID[] = "84fff36e";
-static char APP_KEY[] = "e45fcc2d31d6aca675af639bc5f04a26";
-static char THING_ID[] = "th.53ae324be5a0-26f8-4e11-a13c-03da6fb2";
-static char ACCESS_TOKEN[] = "ablTGrnsE20rSRBFKPnJkWyTaeqQ50msqUizvR_61hU";
+#define DEF_APP_HOST "api-development-jp.internal.kii.com"
+#define DEF_APP_ID "84fff36e"
+#define DEF_APP_KEY "e45fcc2d31d6aca675af639bc5f04a26"
+#define DEF_THING_ID "th.53ae324be5a0-26f8-4e11-a13c-03da6fb2"
+#define DEF_ACCESS_TOKEN "ablTGrnsE20rSRBFKPnJkWyTaeqQ50msqUizvR_61hU"
+
+static char APP_HOST[] = DEF_APP_HOST;
+static char APP_ID[] = DEF_APP_ID;
+static char APP_KEY[] = DEF_APP_KEY;
+static char THING_ID[] = DEF_THING_ID;
+static char ACCESS_TOKEN[] = DEF_ACCESS_TOKEN;
 static char BUCKET[] = "myBucket";
 static char TOPIC[] = "myTopic";
 static char DUMMY_HEADER[] = "DummyHeader:DummyValue";
@@ -140,9 +146,9 @@ TEST(kiiTest, authenticate)
     char buffer[4096];
     kii_core_t kii;
     const char* send_body =
-"POST https://api-development-jp.internal.kii.com/api/oauth2/token HTTP/1.1\r\n"
-"x-kii-appid:84fff36e\r\n"
-"x-kii-appkey:e45fcc2d31d6aca675af639bc5f04a26\r\n"
+"POST https://" DEF_APP_HOST "/api/oauth2/token HTTP/1.1\r\n"
+"x-kii-appid:" DEF_APP_ID "\r\n"
+"x-kii-appkey:" DEF_APP_KEY "\r\n"
 "content-type:application/json\r\n"
 "content-length:59\r\n"
 "\r\n"
@@ -164,8 +170,8 @@ TEST(kiiTest, authenticate)
 "Connection: keep-alive\r\n"
 "\r\n"
 "{\r\n"
-"  \"id\" : \"th.53ae324be5a0-26f8-4e11-a13c-03da6fb2\",\r\n"
-"  \"access_token\" : \"ablTGrnsE20rSRBFKPnJkWyTaeqQ50msqUizvR_61hU\",\r\n"
+"  \"id\" : \"" DEF_THING_ID "\",\r\n"
+"  \"access_token\" : \"" DEF_ACCESS_TOKEN "\",\r\n"
 "  \"expires_in\" : 2147483639,\r\n"
 "  \"token_type\" : \"Bearer\"\r\n"
 "}";
@@ -205,9 +211,9 @@ TEST(kiiTest, register)
     const char* thingData = "{\"_vendorThingID\":\"4792\",\"_password\":\"1234\",\"_thingType\":\"my_type\"}";
     kii_core_t kii;
     const char* send_body =
-"POST https://api-development-jp.internal.kii.com/api/apps/84fff36e/things HTTP/1.1\r\n"
-"x-kii-appid:84fff36e\r\n"
-"x-kii-appkey:e45fcc2d31d6aca675af639bc5f04a26\r\n"
+"POST https://" DEF_APP_HOST "/api/apps/" DEF_APP_ID "/things HTTP/1.1\r\n"
+"x-kii-appid:" DEF_APP_ID "\r\n"
+"x-kii-appkey:" DEF_APP_KEY "\r\n"
 "content-type:application/vnd.kii.ThingRegistrationAndAuthorizationRequest+json\r\n"
 "content-length:67\r\n"
 "\r\n"
@@ -221,7 +227,7 @@ TEST(kiiTest, register)
 "Cache-Control: max-age=0, no-cache, no-store\r\n"
 "Content-Type: application/vnd.kii.ThingRegistrationAndAuthorizationResponse+json;charset=UTF-8\r\n"
 "Date: Tue, 29 Sep 2015 05:42:52 GMT\r\n"
-"Location: https://api-jp.kii.com/api/apps/9ab34d8b/things/th.d3d808a00022-abf8-5e11-c666-0d9475de\r\n"
+"Location: https://" DEF_APP_HOST "/api/apps/" DEF_APP_ID "/things/" DEF_THING_ID "\r\n"
 "Server: nginx/1.2.3\r\n"
 "Via: 1.1 varnish\r\n"
 "X-HTTP-Status-Code: 201\r\n"
@@ -230,11 +236,11 @@ TEST(kiiTest, register)
 "Connection: keep-alive\r\n"
 "\r\n"
 "{\r\n"
-"  \"_thingID\" : \"th.d3d808a00022-abf8-5e11-c666-0d9475de\",\r\n"
+"  \"_thingID\" : \"" DEF_THING_ID "\",\r\n"
 "  \"_vendorThingID\" : \"4972\",\r\n"
 "  \"_created\" : 1443505372909,\r\n"
 "  \"_disabled\" : false,\r\n"
-"  \"_accessToken\" : \"uwWY3MQ77i43NqN3zY67q_ZxO3dEvw1xkgnqJXC-mqc\"\r\n"
+"  \"_accessToken\" : \"" DEF_ACCESS_TOKEN "\"\r\n"
 "}";
     test_context_t ctx;
 
@@ -249,6 +255,73 @@ TEST(kiiTest, register)
     kii.response_code = 0;
 
     core_err = kii_core_register_thing(&kii, thingData);
+    ASSERT_EQ(KIIE_OK, core_err);
+
+    do {
+        core_err = kii_core_run(&kii);
+        state = kii_core_get_state(&kii);
+    } while (state != KII_STATE_IDLE);
+
+    ASSERT_EQ(KIIE_OK, core_err);
+    ASSERT_EQ(201, kii.response_code);
+    ASSERT_STRNE("", kii.response_body);
+
+    ASSERT_TRUE(strstr(kii.response_body, "\"_accessToken\"") != NULL);
+    ASSERT_TRUE(strstr(kii.response_body, "\"_thingID\"") != NULL);
+}
+
+TEST(kiiTest, register_with_id)
+{
+    kii_error_code_t core_err;
+    kii_state_t state;
+    char buffer[4096];
+    kii_core_t kii;
+    const char* send_body =
+"POST https://" DEF_APP_HOST "/api/apps/" DEF_APP_ID "/things HTTP/1.1\r\n"
+"x-kii-appid:" DEF_APP_ID "\r\n"
+"x-kii-appkey:" DEF_APP_KEY "\r\n"
+"content-type:application/vnd.kii.ThingRegistrationAndAuthorizationRequest+json\r\n"
+"content-length:67\r\n"
+"\r\n"
+"{\"_vendorThingID\":\"4792\",\"_password\":\"1234\",\"_thingType\":\"my_type\"}";
+    const char* recv_body =
+"HTTP/1.1 201 Created\r\n"
+"Accept-Ranges: bytes\r\n"
+"Access-Control-Allow-Origin: *\r\n"
+"Access-Control-Expose-Headers: Content-Type, Authorization, Content-Length, X-Requested-With, ETag, X-Step-Count\r\n"
+"Age: 0\r\n"
+"Cache-Control: max-age=0, no-cache, no-store\r\n"
+"Content-Type: application/vnd.kii.ThingRegistrationAndAuthorizationResponse+json;charset=UTF-8\r\n"
+"Date: Tue, 29 Sep 2015 05:42:52 GMT\r\n"
+"Location: https://" DEF_APP_HOST "/api/apps/" DEF_APP_ID "/things/" DEF_THING_ID "\r\n"
+"Server: nginx/1.2.3\r\n"
+"Via: 1.1 varnish\r\n"
+"X-HTTP-Status-Code: 201\r\n"
+"X-Varnish: 1950832960\r\n"
+"Content-Length: 208\r\n"
+"Connection: keep-alive\r\n"
+"\r\n"
+"{\r\n"
+"  \"_thingID\" : \"" DEF_THING_ID "\",\r\n"
+"  \"_vendorThingID\" : \"4972\",\r\n"
+"  \"_created\" : 1443505372909,\r\n"
+"  \"_disabled\" : false,\r\n"
+"  \"_accessToken\" : \"" DEF_ACCESS_TOKEN "\"\r\n"
+"}";
+    test_context_t ctx;
+
+    ctx.send_body = send_body;
+    ctx.recv_body = recv_body;
+
+    init(&kii, buffer, 4096, &ctx, common_connect_cb, common_send_cb,
+            common_recv_cb, common_close_cb);
+
+    strcpy(kii.author.author_id, "");
+    strcpy(kii.author.access_token, "");
+    kii.response_code = 0;
+
+    core_err = kii_core_register_thing_with_id(&kii, "4792", "1234",
+            "my_type");
     ASSERT_EQ(KIIE_OK, core_err);
 
     do {
