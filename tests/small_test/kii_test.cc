@@ -414,7 +414,6 @@ TEST(kiiTest, create_new_object)
     ASSERT_STREQ(
             "{\n  \"objectID\" : \"10e9d740-673b-11e5-ac56-123143070e33\",\n  \"createdAt\" : 1443593908916,\n  \"dataType\" : \"application/json\"\n}",
             kii.response_body);
-    ASSERT_TRUE(strstr(kii.response_body, "\"objectID\"") != NULL);
 }
 
 TEST(kiiTest, create_new_object_with_id)
