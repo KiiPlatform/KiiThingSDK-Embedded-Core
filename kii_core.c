@@ -86,6 +86,10 @@ kii_core_init(
     {
         kii->app_host = "api-cn2.kii.com";
     }
+    else if(strcmp(site, "CN3") == 0)
+    {
+        kii->app_host = "api-cn3.kii.com";
+    }
     else if(strcmp(site, "JP") == 0)
     {
         kii->app_host = "api-jp.kii.com";
