@@ -501,6 +501,15 @@ prv_http_request_line_and_headers(
 
     result = prv_kii_http_set_header(
             kii,
+            "host",
+            kii->app_host);
+    if (result != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+        return KIIE_FAIL;
+    }
+
+    result = prv_kii_http_set_header(
+            kii,
             "x-kii-appid",
             kii->app_id);
     if (result != KII_HTTPC_OK) {
@@ -1367,6 +1376,17 @@ kii_core_api_call(
         return KIIE_FAIL;
     }
 
+    /* set host */
+    result = prv_kii_http_set_header(
+            kii,
+            "host",
+            kii->host
+            );
+    if (result != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
+        goto exit;
+    }
+
     /* set app id */
     result = prv_kii_http_set_header(
             kii,
@@ -1399,7 +1419,7 @@ kii_core_api_call(
             goto exit;
         }
     }
-    
+
     /* set access token if there are. */
     M_ACCESS_TOKEN(access_token, kii->author.access_token);
     memset(value, 0x00, sizeof(value));
@@ -1544,6 +1564,11 @@ kii_core_api_call_start(
     }
 
     /* set default headers. */
+    if (prv_kii_http_set_header(kii, "host",
+                    kii->app_host) != KII_HTTPC_OK) {
+        M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
+        return KIIE_FAIL;
+    }
     if (prv_kii_http_set_header(kii, "x-kii-appid",
                     kii->app_id) != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_HEADER_CB_FAILED);
