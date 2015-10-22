@@ -8,12 +8,12 @@ extern "C" {
 #include <stddef.h>
 #include "kii_socket_callback.h"
 
-#ifndef USE_CUSTOM_HTTP_CLIENT
+#ifndef KII_USE_CUSTOM_HTTP_CLIENT
 
 #ifndef KII_SERVER_PORT
 /** Port number of target service.
  *
- * This macro becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This macro becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  */
 #define KII_SERVER_PORT 443
@@ -30,13 +30,13 @@ extern "C" {
  * kii_http_context_t#recv_cb. Value of third argument of
  * kii_http_context_t#recv_cb equals to or is less than this size.
  *
- * This macro becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This macro becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  */
 #define KII_SOCKET_MAX_BUFF_SIZE 256
 #endif
 
-/** This is an enumeration to represetn Kii SDK internal state.
+/** This is an enumeration to represent Kii SDK internal state.
  * Application programmers do not need to use this enumeration.
  */
 typedef enum prv_kii_socket_state_t {
@@ -70,12 +70,12 @@ typedef enum kii_http_client_code_t {
 
 typedef struct kii_http_context_t
 {
-#ifdef USE_CUSTOM_HTTP_CLIENT
+#ifdef KII_USE_CUSTOM_HTTP_CLIENT
 
     /** application specific context object.
      * used by HTTP callback implementations.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is
      * defined.
      */
     void* app_context;
@@ -85,21 +85,21 @@ typedef struct kii_http_context_t
     /** buffer used to communicate with KiiCloud.
      *  application allocate memory before calling apis.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     char* buffer;
 
     /** size of buffer.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     size_t buffer_size;
 
     /** total size of data to be sent.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     size_t total_send_size;
@@ -107,7 +107,7 @@ typedef struct kii_http_context_t
     /** This is a private field for this SDK.
      * Application programmers must not use this field.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     char* _body_position;
@@ -115,7 +115,7 @@ typedef struct kii_http_context_t
     /** This is a private field for this SDK.
      * Application programmers must not use this field.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     size_t _sent_size;
@@ -123,7 +123,7 @@ typedef struct kii_http_context_t
     /** This is a private field for this SDK.
      * Application programmers must not use this field.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     size_t _received_size;
@@ -131,7 +131,7 @@ typedef struct kii_http_context_t
     /** This is a private field for this SDK.
      * Application programmers must not use this field.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     prv_kii_socket_state_t _socket_state;
@@ -139,40 +139,40 @@ typedef struct kii_http_context_t
     /** Host name to send HTTP request. You can connect to target
      * server with this host name.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     const char* host;
 
     /** socket context used by the http client
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     kii_socket_context_t socket_context;
 
     /** socket close function callback.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
 
     KII_SOCKET_CONNECT_CB connect_cb;
     /** socket send function callback.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     KII_SOCKET_SEND_CB send_cb;
     /** socket recv function callback.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     KII_SOCKET_RECV_CB recv_cb;
     /** socket close function callback.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
      * defined.
      */
     KII_SOCKET_CLOSE_CB close_cb;
@@ -180,13 +180,13 @@ typedef struct kii_http_context_t
 #endif
 } kii_http_context_t;
 
-#ifdef USE_CUSTOM_HTTP_CLIENT
+#ifdef KII_USE_CUSTOM_HTTP_CLIENT
 
 /** callback for preparing HTTP request line.
  * application implement this callback with the HTTP client
  * in the target environment.
  *
- * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This type becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
@@ -207,7 +207,7 @@ typedef kii_http_client_code_t
  * in the target environment.<br>
  * this callback is called per one header line.
  *
- * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This type becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
@@ -226,7 +226,7 @@ typedef kii_http_client_code_t
  * Applications implement this callback with the HTTP client in target
  * environment.<br>
  *
- * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This type becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
@@ -240,7 +240,7 @@ typedef kii_http_client_code_t
  * application implement this callback with the HTTP client
  * in the target environment.<br>
  *
- * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This type becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
@@ -259,7 +259,7 @@ typedef kii_http_client_code_t
  * Applications implement this callback with the HTTP client in target
  * environment.<br>
  *
- * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This type becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
@@ -273,12 +273,12 @@ typedef kii_http_client_code_t
  * application implement this callback with the HTTP client
  * in the target environment.<br>
  *
- * This type becomes activate, if USE_CUSTOM_HTTP_CLIENT is not
+ * This type becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is not
  * defined.
  *
  * @return KII_HTTPC_OK on success, KII_HTTPC_FAIL on error.<br>
  * KII_HTTPC_AGAIN can be retuned from this callback.<br>
- * This option may be useful if you execute kii_run() in function which
+ * This option may be useful if you execute kii_core_run() in function which
  * takes care of other events.
  * @param [out] response_code HTTP response code
  * @param [out] response_body pointer refers the HTTP response
@@ -313,9 +313,9 @@ typedef enum kii_error_code_t {
 typedef enum kii_state_t {
     /** SDK is idle. */
     KII_STATE_IDLE = 0,
-    /** SDK is ready to execute kii_run() */
+    /** SDK is ready to execute kii_core_run() */
     KII_STATE_READY,
-    /** SDK is executing request. kii_run() should be called to finish
+    /** SDK is executing request. kii_core_run() should be called to finish
      * operation
      */
     KII_STATE_EXECUTE
@@ -343,6 +343,7 @@ typedef struct kii_core_t
      *  Site JP : "api-jp.kii.com"
      *  Site US : "api.kii.com"
      *  Site CN : "api-cn2.kii.com"
+     *  Site CN3: "api-cn3.kii.com"
      *  Site SG : "api-sg.kii.com"
      */
     char* app_host;
@@ -362,18 +363,18 @@ typedef struct kii_core_t
     /** application's context object used by HTTP callback implementations. */
     kii_http_context_t http_context;
 
-#ifdef USE_CUSTOM_HTTP_CLIENT
+#ifdef KII_USE_CUSTOM_HTTP_CLIENT
     /** request line callback function pointer
      * Should be set before execute apis.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is
      * defined.
      */
     KII_HTTPCB_SET_REQUEST_LINE http_set_request_line_cb;
     /** request header callback function pointer
      * Should be set before execute apis.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is
      * defined.
      */
     KII_HTTPCB_SET_HEADER http_set_header_cb;
@@ -382,7 +383,7 @@ typedef struct kii_core_t
      * Notifying start of creation of request body callback function.
      * Should be set before execute APIs.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is
      * defined.
      */
     KII_HTTPCB_APPEND_BODY_START http_append_body_start_cb;
@@ -391,7 +392,7 @@ typedef struct kii_core_t
      * Appending request body callback function.
      * Should be set before execute APIs.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is
      * defined.
      */
     KII_HTTPCB_APPEND_BODY http_append_body_cb;
@@ -400,7 +401,7 @@ typedef struct kii_core_t
      * Notifying end of creation of request body callback function.
      * Should be set before execute APIs.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is
      * defined.
      */
     KII_HTTPCB_APPEND_BODY_END http_append_body_end_cb;
@@ -408,7 +409,7 @@ typedef struct kii_core_t
     /** execute HTTP request function pointer
      * Should be set before execute apis.
      *
-     * This field becomes activate, if USE_CUSTOM_HTTP_CLIENT is
+     * This field becomes activate, if KII_USE_CUSTOM_HTTP_CLIENT is
      * defined.
      */
     KII_HTTPCB_EXECUTE http_execute_cb;
@@ -448,6 +449,20 @@ typedef struct kii_topic_t {
     char* topic_name;
 } kii_topic_t;
 
+/** Initializes Kii SDK
+ *  \param [inout] kii core sdk instance.
+ *  \param [in] site the input of site name,
+ *  should be one of "CN", "CN3", "JP", "US", "SG"
+ *  \param [in] app_id the input of Application ID
+ *  \param [in] app_key the input of Application Key
+ *  \return  KIIE_OK:success, KIIE_FAIL: failure
+ */
+kii_error_code_t kii_core_init(
+        kii_core_t* kii,
+        const char* site,
+        const char* app_id,
+        const char* app_key);
+
 /** obtain current state of SDK.
  * @return state of SDK.
  */
@@ -465,7 +480,7 @@ kii_error_code_t kii_core_run(kii_core_t* kii);
  * JSON string, you can add custom properties. "_vendorThingID" and
  * "_password" properties are required in this JSON string.  after
  * this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] thing_data JSON object represents thing to be registered.<br>
@@ -481,7 +496,7 @@ kii_core_register_thing(kii_core_t* kii,
  * Unlike kii_core_register_thing(kii_core_t*, const char*), this
  * function only register "_vendorThingID", "_password" and
  * "_thingType" fields.  after this method succeeded, state of SDK
- * becomes KII_STATE_READY.<br> execute kii_run() to send the request
+ * becomes KII_STATE_READY.<br> execute kii_core_run() to send the request
  * to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
@@ -499,7 +514,7 @@ kii_core_register_thing_with_id(
 
 /** prepare request of thing authentication.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] vendor_thing_id thing id given by vendor on registration.
@@ -512,7 +527,7 @@ kii_core_thing_authentication(kii_core_t* kii,
 
 /** prepare request of create object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -531,7 +546,7 @@ kii_core_create_new_object(
 
 /** prepare request of create object with id.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -552,7 +567,7 @@ kii_core_create_new_object_with_id(
 
 /** prepare request of patch object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -577,7 +592,7 @@ kii_core_patch_object(
 
 /** prepare request of replace object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -602,7 +617,7 @@ kii_core_replace_object(
 
 /** prepare request of get object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to which object belongs.
@@ -616,7 +631,7 @@ kii_core_get_object(
 
 /** prepare request of delete object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket object to be created.
@@ -630,7 +645,7 @@ kii_core_delete_object(
 
 /** prepare request of subscribe bucket.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * after the execution of request succeeded, you can receive push notification
  * when event happens in the bucket.
  * @return result of preparation.
@@ -643,7 +658,7 @@ kii_core_subscribe_bucket(kii_core_t* kii,
 
 /** prepare request of subscribe bucket.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] bucket to be unsubscribed.
@@ -654,7 +669,7 @@ kii_core_unsubscribe_bucket(kii_core_t* kii,
 
 /** prepare request of create topic.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * after execution of the request succeeded, you can subscribe topic to receive
  * message sent to the topic.
  * @return result of preparation.
@@ -667,7 +682,7 @@ kii_core_create_topic(kii_core_t* kii,
 
 /** prepare request of delete topic.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] topic to be deleted.
@@ -678,7 +693,7 @@ kii_core_delete_topic(kii_core_t* kii,
 
 /** prepare request of subscribe topic.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * after the execution of request succeeded, you can receive push notification
  * when the message is sent to the topic.
  * @return result of preparation.
@@ -691,7 +706,7 @@ kii_core_subscribe_topic(kii_core_t* kii,
 
 /** prepare request of unsubscribe topic.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] topic to be unsubscribed.
@@ -702,7 +717,7 @@ kii_core_unsubscribe_topic(kii_core_t* kii,
 
 /** prepare request of install push for thing.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * application get installationRegistrationID field in the response body to
  * obtain MQTT endpoint.
  * for details of response, please refer to<br>
@@ -718,7 +733,7 @@ kii_core_install_thing_push(kii_core_t* kii,
 
 /** prepare request of get MQTT endpoint.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
- * execute kii_run() to send the request to Kii Cloud.
+ * execute kii_core_run() to send the request to Kii Cloud.
  * application get the information of MQTT endpoint from the response body
  * to connect and receive push notification sent from Kii Cloud
  * for details of response, please refer to<br>

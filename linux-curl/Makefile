@@ -1,4 +1,4 @@
-override CFLAGS += -std=gnu89 -Wall -pedantic -DUSE_CUSTOM_HTTP_CLIENT
+override CFLAGS += -std=gnu89 -Wall -pedantic -DKII_USE_CUSTOM_HTTP_CLIENT
 ifdef DEBUG
 CFLAGS += -g -DDEBUG
 endif

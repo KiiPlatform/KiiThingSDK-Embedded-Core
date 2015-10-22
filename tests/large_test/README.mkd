@@ -1,0 +1,14 @@
+## Building and executing Test
+
+Test application can be built by following command:
+
+```sh
+make
+```
+
+After aht, you can get `testapp`. You can execute this `testapp` by
+following command.
+
+```
+./testapp
+```
