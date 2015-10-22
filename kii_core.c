@@ -1380,7 +1380,7 @@ kii_core_api_call(
     result = prv_kii_http_set_header(
             kii,
             "host",
-            kii->host
+            kii->app_host
             );
     if (result != KII_HTTPC_OK) {
         M_KII_LOG(M_REQUEST_LINE_CB_FAILED);
