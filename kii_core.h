@@ -498,6 +498,10 @@ kii_core_register_thing(kii_core_t* kii,
  * "_thingType" fields.  after this method succeeded, state of SDK
  * becomes KII_STATE_READY.<br> execute kii_core_run() to send the request
  * to Kii Cloud.
+ *
+ * vendor_thing_id, password and thing_type must be escaped in JSON
+ * manner. http://www.json.org/
+ *
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] vendor_thing_id the thing identifier given by vendor.
@@ -515,6 +519,10 @@ kii_core_register_thing_with_id(
 /** prepare request of thing authentication.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
  * execute kii_core_run() to send the request to Kii Cloud.
+ *
+ * vendor_thing_id and password must be escaped in JSON
+ * manner. http://www.json.org/
+ *
  * @return result of preparation.
  * @param [in] kii SDK object.
  * @param [in] vendor_thing_id thing id given by vendor on registration.
@@ -524,6 +532,18 @@ kii_error_code_t
 kii_core_thing_authentication(kii_core_t* kii,
         const char* vendor_thing_id,
         const char* password);
+
+/** prepare request of thing authentication with http body.
+ * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
+ * execute kii_core_run() to send the request to Kii Cloud.
+ *
+ * @return result of preparation.
+ * @param [in] kii SDK object.
+ * @param [in] body body of authentication request.
+ */
+kii_error_code_t
+kii_core_thing_authentication_with_body(kii_core_t* kii,
+        const char* body);
 
 /** prepare request of create object.
  * after this method succeeded, state of SDK becomes KII_STATE_READY.<br>
