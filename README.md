@@ -1,5 +1,16 @@
 # KiiThingSDK Embedded
 
+**_THIS PROJECT IS FROZEN. DON'T MODIFY THIS PROJECT._**
+
+This project was integrated into
+[KiiThingSDK-Embedde](https://github.com/KiiPlatform/KiiThingSDK-Embedded).
+
+This project souce files were moved to
+[here](https://github.com/KiiPlatform/KiiThingSDK-Embedded/tree/master/kii).
+If you find bugs or want to modifiy this project, Please modifiy the
+code in
+[there](https://github.com/KiiPlatform/KiiThingSDK-Embedded/tree/master/kii).
+
 Kii Thing SDK designed for resource limited environment.
  - No dynamic memory allocation.
  - No external library dependency.
